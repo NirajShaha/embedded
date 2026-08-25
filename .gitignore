@@ -68,14 +68,14 @@ yarn-error.log*
 # ---------- IDE / Editor ----------
 
 .idea/
-.vscode/*
-!.vscode/extensions.json
-!.vscode/settings.json
-!.vscode/launch.json
-!.vscode/tasks.json
+.vscode/
 *.swp
 *.swo
 *~
+
+# ---------- Command Code / Agent ----------
+
+.commandcode/
 
 # ---------- OS ----------
 
