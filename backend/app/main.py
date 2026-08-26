@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 from app.database import Base, async_session_factory, engine, ensure_database
-from app.routers import pages, projects
+from app.routers import ecu_details, pages, projects, test_cases
 from app.seed import ensure_attributes
 
 
@@ -32,7 +32,9 @@ app.add_middleware(
 
 api_prefix = "/api"
 app.include_router(projects.router, prefix=api_prefix)
+app.include_router(ecu_details.router, prefix=api_prefix)
 app.include_router(pages.router, prefix=api_prefix)
+app.include_router(test_cases.router, prefix=api_prefix)
 
 
 @app.get("/api/health")

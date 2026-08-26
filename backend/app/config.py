@@ -11,7 +11,7 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
     )
 
-    database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/embedded"
+    database_url: str = "mysql+aiomysql://root:root@localhost:3306/embedded_db"
     cors_origins: list[str] = ["http://localhost:3000"]
 
 

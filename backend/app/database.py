@@ -12,26 +12,32 @@ async_session_factory = async_sessionmaker(
 
 
 async def ensure_database() -> None:
-    """Create the target database if it doesn't exist yet (requiring Postgres up)."""
-    import asyncpg
+    """Create the target MySQL database if it doesn't exist yet."""
+    import aiomysql
 
     url = make_url(settings.database_url)
     dbname = url.database
-    admin = await asyncpg.connect(
+    admin = await aiomysql.connect(
         host=url.host or "localhost",
-        port=url.port or 5432,
+        port=url.port or 3306,
         user=url.username,
         password=url.password,
-        database="postgres",
     )
     try:
-        exists = await admin.fetchval(
-            "SELECT 1 FROM pg_database WHERE datname = $1", dbname
-        )
-        if not exists and dbname:
-            await admin.execute(f'CREATE DATABASE "{dbname}"')
+        async with admin.cursor() as cursor:
+            await cursor.execute(
+                "SELECT SCHEMA_NAME FROM information_schema.SCHEMATA "
+                "WHERE SCHEMA_NAME = %s",
+                (dbname,),
+            )
+            exists = await cursor.fetchone()
+            if not exists and dbname:
+                await cursor.execute(
+                    f"CREATE DATABASE `{dbname}` "
+                    "CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
+                )
     finally:
-        await admin.close()
+        admin.close()
 
 
 class Base(DeclarativeBase):

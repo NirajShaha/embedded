@@ -35,7 +35,7 @@ export function ProjectCard({ project }: { project: Project }) {
       </CardContent>
       <CardFooter>
         <Button asChild variant="default" className="w-full">
-          <Link href={`/projects/${project.id}/page/1`}>Continue setup</Link>
+          <Link href={`/projects/${project.id}/dashboard`}>Open project</Link>
         </Button>
       </CardFooter>
     </Card>

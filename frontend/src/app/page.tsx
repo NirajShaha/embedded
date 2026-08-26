@@ -17,7 +17,12 @@ export default function DashboardPage() {
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = React.useState(false);
 
-  const { data: projects, isLoading, isError, error } = useQuery({
+  const {
+    data: projects,
+    isLoading,
+    isError,
+    error,
+  } = useQuery({
     queryKey: ["projects"],
     queryFn: listProjects,
   });
@@ -25,7 +30,7 @@ export default function DashboardPage() {
   const handleCreated = (projectId: number) => {
     setDialogOpen(false);
     queryClient.invalidateQueries({ queryKey: ["projects"] });
-    router.push(`/projects/${projectId}/page/1`);
+    router.push(`/projects/${projectId}/dashboard`);
   };
 
   return (
@@ -55,7 +60,8 @@ export default function DashboardPage() {
         </div>
       ) : isError ? (
         <p className="text-destructive">
-          Failed to load projects: {error instanceof Error ? error.message : "unknown error"}
+          Failed to load projects:{" "}
+          {error instanceof Error ? error.message : "unknown error"}
         </p>
       ) : projects && projects.length > 0 ? (
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">

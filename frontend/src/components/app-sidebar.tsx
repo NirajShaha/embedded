@@ -75,27 +75,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarGroup>
-
-        {project && (
-          <SidebarGroup>
-            <SidebarGroupLabel>{project.name}</SidebarGroupLabel>
-            <SidebarMenu>
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                <SidebarMenuItem key={page}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={currentPage === page}
-                  >
-                    <Link href={`/projects/${project.id}/page/${page}`}>
-                      <Layers />
-                      <span>Page {page}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroup>
-        )}
       </SidebarContent>
 
       <SidebarFooter>

@@ -1,24 +1,25 @@
 # Embedded Config App — Full Setup Guide
 
 A two-part application: a **Next.js frontend** (TypeScript, shadcn/ui, Tailwind, dark/light
-mode) and a **FastAPI backend** (PostgreSQL via SQLAlchemy async). This guide takes you
+mode) and a **FastAPI backend** (MySQL via SQLAlchemy async). This guide takes you
 from a clean machine to a running app.
 
 **What you get:** a dashboard that greets the user, lists past projects in cards, lets you
-create a project (name + description), and then walks through **4 multi-select attribute
-pages** one by one. Every selection is persisted to Postgres.
+create a project (name + description), add ECU details for each project, view test cases
+filtered by category and test type, and walk through **4 multi-select attribute pages**
+one by one. Every selection is persisted to MySQL.
 
 ---
 
 ## 1. Prerequisites
 
-| Tool       | Version tested | Check with           |
-|------------|----------------|----------------------|
-| Node.js    | v26 (any LTS 18+) | `node --version` |
-| Python     | 3.14 (3.11+)   | `python --version` |
-| PostgreSQL | 18 (12+)       | `psql --version` or service running on `localhost:5432` |
+| Tool    | Version tested    | Check with                                               |
+| ------- | ----------------- | -------------------------------------------------------- |
+| Node.js | v26 (any LTS 18+) | `node --version`                                         |
+| Python  | 3.14 (3.11+)      | `python --version`                                       |
+| MySQL   | 8.0 (5.7+)        | `mysql --version` or service running on `localhost:3306` |
 
-**PostgreSQL must be running** before you start the backend. Nothing else has to be
+**MySQL must be running** before you start the backend. Nothing else has to be
 pre-created — the backend creates its **database, tables, and seed data automatically**
 on first start. All you need is a working `user` / `password`.
 
@@ -30,29 +31,33 @@ on first start. All you need is a working `user` / `password`.
 embedded/
   backend/
     app/
-      main.py          # FastAPI app, CORS, startup (create db+seed)
-      config.py        # reads .env (DATABASE_URL, CORS_ORIGINS)
-      database.py      # async engine + auto-create database
-      models.py        # Project, AttributeGroup, Attribute, ProjectSelection
-      schemas.py       # Pydantic request/response models
-      seed.py          # 4 pages x 5 groups x sub-attributes (idempotent)
+      main.py                    # FastAPI app, CORS, startup (create db+seed)
+      config.py                  # reads .env (DATABASE_URL, CORS_ORIGINS)
+      database.py                # async engine + auto-create database
+      models.py                  # Project, EcuDetail, TestCase, Categories, etc.
+      schemas.py                 # Pydantic request/response models
+      seed.py                    # 4 pages x 5 groups x sub-attributes (idempotent)
       routers/
-        projects.py    # GET/POST projects
-        pages.py       # page attributes + per-project page selections
+        projects.py              # GET/POST projects
+        ecu_details.py          # GET/POST/PUT ECU details
+        test_cases.py           # GET test cases with filtering
+        pages.py                # page attributes + per-project page selections
+    schema/
+      schema.sql                # MySQL table definitions
     requirements.txt
-    .env.example       # template for .env
-    run.py             # uvicorn launcher
+    .env.example                # template for .env
+    run.py                      # uvicorn launcher
   frontend/
     src/
-      app/             # dashboard + projects/[id]/page/[n]
-      components/      # sidebar, theme toggle, dialogs, cards, selection form
-      lib/             # types, api client, navigation
-    .env.local         # NEXT_PUBLIC_API_URL (not committed)
+      app/                      # dashboard + projects/[id]/dashboard + page/[n]
+      components/               # sidebar, ECU form, test cases dashboard, etc.
+      lib/                      # types, api client, navigation
+    .env.local                  # NEXT_PUBLIC_API_URL (not committed)
 ```
 
 ---
 
-## 3. Backend setup (FastAPI + PostgreSQL)
+## 3. Backend setup (FastAPI + MySQL)
 
 ### 3.1 Create a virtual env and install dependencies
 
@@ -87,11 +92,11 @@ cp .env.example .env
 
 ```ini
 # backend/.env
-DATABASE_URL=postgresql+asyncpg://postgres:manager@localhost:5432/embedded
+DATABASE_URL=mysql+aiomysql://root:manager@localhost:3306/embedded_db
 CORS_ORIGINS=["http://localhost:3000"]
 ```
 
-- Replace `postgres:manager` with **your** Postgres user and password.
+- Replace `root:manager` with **your** MySQL user and password.
 - `CORS_ORIGINS` **must be JSON syntax** (it's a list) because pydantic-settings parses
   lists as JSON.
 
@@ -108,8 +113,8 @@ python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
 
 On startup the backend **automatically**:
 
-1. Creates the `embedded` database if it doesn't exist.
-2. Creates all tables (`projects`, `attribute_groups`, `attributes`, `project_selections`).
+1. Creates the `embedded_db` database if it doesn't exist.
+2. Creates all tables (projects, ECU details, test cases, categories, etc.).
 3. Seeds the 4 pages with 5 main attributes each (idempotent — safe to restart).
 
 Verify:
@@ -118,6 +123,7 @@ Verify:
 curl http://localhost:8000/api/health        # {"status":"ok"}
 curl http://localhost:8000/api/projects      # []
 curl http://localhost:8000/api/pages/1/attributes  # 5 seeded groups
+curl http://localhost:8000/api/test-cases/categories  # test categories
 ```
 
 Interactive docs: **http://localhost:8000/docs**
@@ -126,8 +132,8 @@ Interactive docs: **http://localhost:8000/docs**
 
 ## 4. Frontend setup (Next.js + shadcn)
 
-The shadcn/ui components are already vendor-committed into `frontend/src/components/ui`,
-so `npm install` is all you need — no shadcn CLI step required.
+The shadcn/ui components are pre-installed in `frontend/src/components/ui`,
+so `npm install` is all you need.
 
 ```bash
 cd frontend
@@ -184,12 +190,12 @@ sidebar footer. Reloading a page restores your saved selections from the backend
 
 ## 6. Config summary
 
-| Setting | Backend (`.env`) | Frontend (`.env.local`) |
-|---------|------------------|--------------------------|
-| API URL | — | `NEXT_PUBLIC_API_URL=http://localhost:8000/api` |
-| Database | `DATABASE_URL=postgresql+asyncpg://user:pass@localhost:5432/embedded` | — |
-| Allowed CORS origins | `CORS_ORIGINS=["http://localhost:3000"]` | — |
-| Greeting name | — | `src/config.ts` → `APP_USER_NAME = "Alex"` |
+| Setting              | Backend (`.env`)                                                      | Frontend (`.env.local`)                         |
+| -------------------- | --------------------------------------------------------------------- | ----------------------------------------------- |
+| API URL              | —                                                                     | `NEXT_PUBLIC_API_URL=http://localhost:8000/api` |
+| Database             | `DATABASE_URL=postgresql+asyncpg://user:pass@localhost:5432/embedded` | —                                               |
+| Allowed CORS origins | `CORS_ORIGINS=["http://localhost:3000"]`                              | —                                               |
+| Greeting name        | —                                                                     | `src/config.ts` → `APP_USER_NAME = "Alex"`      |
 
 CORS already allows `http://localhost:3000`, so the frontend can call the API.
 
