@@ -5,3 +5,6 @@ aiomysql
 pydantic
 pydantic-settings
 python-dotenv
+pandas
+cryptography
+openpyxl
