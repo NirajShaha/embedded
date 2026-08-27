@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, ArrowRight, Loader2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Loader2 } from "lucide-react";
 
 import { totalPages } from "@/lib/navigation";
 import { getPageAttributes, getSelections, saveSelections } from "@/lib/api";
@@ -40,14 +40,20 @@ export function PageSelectionForm({
     queryFn: () => getSelections(projectId, pageNumber),
   });
 
-  const [selected, setSelected] = React.useState<Set<number>>(new Set());
+  const [selected, setSelected] = React.useState<Set<number>>(
+    () => new Set(selectionsQuery.data?.attribute_ids ?? []),
+  );
   const [saving, setSaving] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
+  // Re-seed selection when the server returns a different selection payload.
+  const lastSeededRef = React.useRef<number[] | null>(null);
   React.useEffect(() => {
-    if (selectionsQuery.data) {
-      setSelected(new Set(selectionsQuery.data.attribute_ids));
-    }
+    const ids = selectionsQuery.data?.attribute_ids;
+    if (!ids) return;
+    if (lastSeededRef.current === ids) return;
+    lastSeededRef.current = ids;
+    setSelected(new Set(ids));
   }, [selectionsQuery.data]);
 
   const toggle = (id: number) => {
@@ -63,7 +69,11 @@ export function PageSelectionForm({
     setSaving(true);
     setError(null);
     try {
-      await saveSelections(projectId, pageNumber, Array.from(selected).sort((a, b) => a - b));
+      await saveSelections(
+        projectId,
+        pageNumber,
+        Array.from(selected).sort((a, b) => a - b),
+      );
       queryClient.invalidateQueries({
         queryKey: ["selections", projectId, pageNumber],
       });
@@ -81,21 +91,33 @@ export function PageSelectionForm({
   };
 
   const loading = groupsQuery.isLoading;
+  const progressPct = (pageNumber / totalPages) * 100;
 
   return (
-    <div className="mx-auto flex max-w-4xl flex-col gap-6">
-      <section className="flex flex-col gap-3">
+    <div className="flex flex-col gap-8">
+      <section className="space-y-4">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-semibold tracking-tight">
-            Page {pageNumber} of {totalPages}
-          </h1>
-          <span className="text-sm text-muted-foreground">
-            {selected.size} selected
-          </span>
+          <div className="space-y-1">
+            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              Setup step
+            </p>
+            <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+              Step {pageNumber}{" "}
+              <span className="text-muted-foreground">of {totalPages}</span>
+            </h1>
+          </div>
+          <div className="hidden items-center gap-2 rounded-full border border-border/60 bg-card px-3 py-1.5 text-xs sm:flex">
+            <span className="size-1.5 rounded-full bg-[var(--signal)] shadow-[0_0_0_3px_oklch(0.62_0.13_215/0.18)]" />
+            <span className="font-medium text-foreground">
+              {selected.size}
+            </span>
+            <span className="text-muted-foreground">selected</span>
+          </div>
         </div>
-        <Progress value={(pageNumber / totalPages) * 100} />
+        <Progress value={progressPct} className="h-1.5" />
         <p className="text-sm text-muted-foreground">
-          Select one or more sub-attributes for each group below.
+          Select one or more sub-attributes for each group below. You can
+          change your choices at any time before continuing.
         </p>
       </section>
 
@@ -106,32 +128,48 @@ export function PageSelectionForm({
           ))}
         </div>
       ) : groupsQuery.isError ? (
-        <p className="text-destructive">
+        <p className="text-sm text-destructive">
           Failed to load attributes:{" "}
-          {groupsQuery.error instanceof Error ? groupsQuery.error.message : "unknown error"}
+          {groupsQuery.error instanceof Error
+            ? groupsQuery.error.message
+            : "unknown error"}
         </p>
       ) : (
         <div className="flex flex-col gap-4">
           {(groupsQuery.data ?? []).map((group) => (
             <Card key={group.id}>
               <CardHeader>
-                <CardTitle className="text-base">{group.name}</CardTitle>
-                <CardDescription>Multiple selections allowed</CardDescription>
+                <CardTitle className="text-base font-semibold">
+                  {group.name}
+                </CardTitle>
+                <CardDescription>
+                  Multiple selections allowed
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="flex flex-wrap gap-2">
                   {group.attributes.map((attr) => {
                     const isSelected = selected.has(attr.id);
                     return (
-                      <Button
+                      <button
                         key={attr.id}
                         type="button"
-                        variant={isSelected ? "default" : "outline"}
-                        size="sm"
                         onClick={() => toggle(attr.id)}
+                        aria-pressed={isSelected}
+                        className={
+                          "inline-flex h-9 items-center gap-1.5 rounded-md border px-3 text-sm font-medium transition-colors " +
+                          (isSelected
+                            ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                            : "border-border bg-card text-foreground hover:border-foreground/30 hover:bg-accent")
+                        }
                       >
+                        {isSelected ? (
+                          <Check className="size-3.5" />
+                        ) : (
+                          <span className="size-1.5 rounded-full bg-muted-foreground/40" />
+                        )}
                         {attr.name}
-                      </Button>
+                      </button>
                     );
                   })}
                 </div>
@@ -141,10 +179,14 @@ export function PageSelectionForm({
         </div>
       )}
 
-      {error && <p className="text-sm text-destructive">{error}</p>}
+      {error && (
+        <p className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
+          {error}
+        </p>
+      )}
 
-      <section className="flex items-center justify-between">
-        <Button variant="outline" onClick={goBack}>
+      <div className="sticky bottom-0 -mx-6 flex items-center justify-between gap-3 border-t border-border/60 bg-background/80 px-6 py-4 backdrop-blur sm:-mx-8 sm:px-8">
+        <Button variant="outline" onClick={goBack} disabled={saving}>
           <ArrowLeft />
           Back
         </Button>
@@ -152,10 +194,13 @@ export function PageSelectionForm({
           {saving ? (
             <>
               <Loader2 className="animate-spin" />
-              Saving...
+              Saving…
             </>
           ) : pageNumber >= totalPages ? (
-            "Finish"
+            <>
+              <Check />
+              Finish
+            </>
           ) : (
             <>
               Save &amp; continue
@@ -163,7 +208,7 @@ export function PageSelectionForm({
             </>
           )}
         </Button>
-      </section>
+      </div>
     </div>
   );
 }

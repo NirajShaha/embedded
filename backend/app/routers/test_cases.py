@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -38,15 +38,46 @@ async def get_test_types(db: AsyncSession = Depends(get_db)) -> list[dict]:
 
 @router.get("", response_model=list[TestCaseRead])
 async def list_test_cases(
-    category_id: int | None = None,
-    test_type_id: int | None = None,
+    category_ids: list[int] | None = Query(default=None),
+    test_type_ids: list[int] | None = Query(default=None),
+    category_id: int | None = Query(default=None, deprecated=True),
+    test_type_id: int | None = Query(default=None, deprecated=True),
     db: AsyncSession = Depends(get_db),
 ) -> list[TestCase]:
     """
-    List test cases, optionally filtered by category and/or test type.
+    List test cases, optionally filtered by categories and/or test types.
+
+    Accepts either the new plural params (e.g. ``?category_ids=1&category_ids=2``)
+    or the deprecated singular params for backward compatibility.
+
+    A test type named "Both" (case-insensitive) is treated as a wildcard:
+    when it is included in the filter, the test_type filter is disabled so
+    that test cases of every test type are returned. This matches the
+    domain semantics where "Both" means "testable both manually and
+    automatically".
     """
     from app.models import TestCaseTool, TestCaseReference
-    
+
+    effective_category_ids: list[int] = []
+    if category_ids:
+        effective_category_ids.extend(category_ids)
+    if category_id is not None and category_id not in effective_category_ids:
+        effective_category_ids.append(category_id)
+
+    effective_test_type_ids: list[int] = []
+    if test_type_ids:
+        effective_test_type_ids.extend(test_type_ids)
+    if test_type_id is not None and test_type_id not in effective_test_type_ids:
+        effective_test_type_ids.append(test_type_id)
+
+    # Treat "Both" as a wildcard for the test_type filter.
+    if effective_test_type_ids:
+        both_row = await db.scalar(
+            select(TestType).where(TestType.name.ilike("Both"))
+        )
+        if both_row is not None and both_row.id in effective_test_type_ids:
+            effective_test_type_ids = []
+
     query = select(TestCase).options(
         selectinload(TestCase.category),
         selectinload(TestCase.objective),
@@ -60,19 +91,11 @@ async def list_test_cases(
         selectinload(TestCase.test_case_references).selectinload(TestCaseReference.reference),
     )
 
-    if category_id is not None:
-        # Verify category exists
-        category = await db.get(Category, category_id)
-        if category is None:
-            raise HTTPException(status_code=404, detail="Category not found")
-        query = query.where(TestCase.category_id == category_id)
+    if effective_category_ids:
+        query = query.where(TestCase.category_id.in_(effective_category_ids))
 
-    if test_type_id is not None:
-        # Verify test type exists
-        test_type = await db.get(TestType, test_type_id)
-        if test_type is None:
-            raise HTTPException(status_code=404, detail="Test type not found")
-        query = query.where(TestCase.test_type_id == test_type_id)
+    if effective_test_type_ids:
+        query = query.where(TestCase.test_type_id.in_(effective_test_type_ids))
 
     result = await db.scalars(query.order_by(TestCase.id))
     return list(result)
