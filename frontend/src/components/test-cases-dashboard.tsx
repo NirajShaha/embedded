@@ -3,16 +3,18 @@
 import * as React from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
-  ChevronDown,
-  ChevronRight,
-  Shield,
-  AlertTriangle,
-  AlertCircle,
-  CheckCircle,
-  Zap,
+  SlidersHorizontal,
   Target,
   Wrench,
-  FileText,
+  ShieldCheck,
+  Eye,
+  ChevronDown,
+  CheckCircle,
+  Zap,
+  CircleAlert,
+  ShieldAlert,
+  X,
+  type LucideIcon,
 } from "lucide-react";
 
 import {
@@ -23,11 +25,14 @@ import {
   type TestCase,
   type TestType,
 } from "@/lib/api";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -38,30 +43,144 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Pagination } from "@/components/pagination";
+import { TestCaseDetailDialog } from "@/components/test-case-detail-dialog";
 
 interface TestCasesDashboardProps {
   projectId: number;
 }
 
-export function TestCasesDashboard({ projectId }: TestCasesDashboardProps) {
-  const [selectedCategory, setSelectedCategory] = React.useState<number | null>(
-    null,
+type SeverityRank = 1 | 2 | 3 | 4;
+
+const severityMeta: Record<
+  SeverityRank,
+  { label: string; color: string; ring: string; icon: LucideIcon }
+> = {
+  1: {
+    label: "Low",
+    color: "bg-[var(--severity-low)]/12 text-[var(--severity-low)]",
+    ring: "ring-[var(--severity-low)]/30",
+    icon: CheckCircle,
+  },
+  2: {
+    label: "Medium",
+    color: "bg-[var(--severity-medium)]/15 text-[var(--severity-medium)]",
+    ring: "ring-[var(--severity-medium)]/30",
+    icon: Zap,
+  },
+  3: {
+    label: "High",
+    color: "bg-[var(--severity-high)]/15 text-[var(--severity-high)]",
+    ring: "ring-[var(--severity-high)]/30",
+    icon: CircleAlert,
+  },
+  4: {
+    label: "Critical",
+    color: "bg-[var(--severity-critical)]/15 text-[var(--severity-critical)]",
+    ring: "ring-[var(--severity-critical)]/40",
+    icon: ShieldAlert,
+  },
+};
+
+function severityFromRank(rank: number | undefined) {
+  if (!rank) return null;
+  const safe = (rank >= 4 ? 4 : rank <= 1 ? 1 : rank) as SeverityRank;
+  return severityMeta[safe];
+}
+
+interface MultiFilterDropdownProps<T extends { id: number; name: string }> {
+  label: string;
+  items: T[] | undefined;
+  selected: number[];
+  onToggle: (id: number) => void;
+  onClear: () => void;
+  icon: LucideIcon;
+  allLabel: string;
+}
+
+function MultiFilterDropdown<T extends { id: number; name: string }>({
+  label,
+  items,
+  selected,
+  onToggle,
+  onClear,
+  icon: Icon,
+  allLabel,
+}: MultiFilterDropdownProps<T>) {
+  const selectedItems = items?.filter((i) => selected.includes(i.id)) ?? [];
+  const triggerLabel =
+    selectedItems.length === 0
+      ? allLabel
+      : selectedItems.length === 1
+        ? selectedItems[0].name
+        : `${selectedItems.length} selected`;
+
+  return (
+    <div className="flex min-w-[12rem] flex-col gap-1.5">
+      <span className="text-xs font-medium text-muted-foreground">{label}</span>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="outline"
+            className={cn(
+              "justify-between font-normal",
+              selectedItems.length > 0 &&
+                "border-primary/40 bg-primary/5 text-foreground",
+            )}
+          >
+            <span className="flex items-center gap-2 truncate">
+              <Icon className="size-3.5 text-muted-foreground" />
+              {triggerLabel}
+            </span>
+            <ChevronDown className="size-4 text-muted-foreground" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="w-64">
+          <DropdownMenuLabel className="flex items-center justify-between">
+            <span>{label}</span>
+            {selectedItems.length > 0 && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  onClear();
+                }}
+                className="text-xs font-normal text-muted-foreground hover:text-foreground"
+              >
+                Clear
+              </button>
+            )}
+          </DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          {items?.map((item) => (
+            <DropdownMenuCheckboxItem
+              key={item.id}
+              checked={selected.includes(item.id)}
+              onCheckedChange={() => onToggle(item.id)}
+            >
+              {item.name}
+            </DropdownMenuCheckboxItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
   );
-  const [selectedTestType, setSelectedTestType] = React.useState<number | null>(
-    null,
+}
+
+const PAGE_SIZE_DEFAULT = 10;
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function TestCasesDashboard({ projectId: _projectId }: TestCasesDashboardProps) {
+  const [selectedCategories, setSelectedCategories] = React.useState<number[]>(
+    [],
   );
-  const [expandedRows, setExpandedRows] = React.useState<Set<number>>(
-    new Set(),
+  const [selectedTestTypes, setSelectedTestTypes] = React.useState<number[]>(
+    [],
   );
+  const [page, setPage] = React.useState(1);
+  const [pageSize, setPageSize] = React.useState(PAGE_SIZE_DEFAULT);
+  const [activeTestCase, setActiveTestCase] = React.useState<TestCase | null>(null);
 
   const { data: categories, isLoading: categoriesLoading } = useQuery({
     queryKey: ["categories"],
@@ -74,492 +193,274 @@ export function TestCasesDashboard({ projectId }: TestCasesDashboardProps) {
   });
 
   const { data: testCases, isLoading: casesLoading } = useQuery({
-    queryKey: ["test-cases", selectedCategory, selectedTestType],
+    queryKey: [
+      "test-cases",
+      [...selectedCategories].sort((a, b) => a - b),
+      [...selectedTestTypes].sort((a, b) => a - b),
+    ],
     queryFn: () =>
       listTestCases(
-        selectedCategory ?? undefined,
-        selectedTestType ?? undefined,
+        selectedCategories.length > 0 ? selectedCategories : undefined,
+        selectedTestTypes.length > 0 ? selectedTestTypes : undefined,
       ),
   });
 
-  const toggleRow = (testCaseId: number) => {
-    const newExpanded = new Set(expandedRows);
-    if (newExpanded.has(testCaseId)) {
-      newExpanded.delete(testCaseId);
-    } else {
-      newExpanded.add(testCaseId);
-    }
-    setExpandedRows(newExpanded);
-  };
+  const toggleCategory = React.useCallback((id: number) => {
+    setSelectedCategories((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    );
+    setPage(1);
+  }, []);
 
-  const selectedCategoryName = categories?.find(
-    (c) => c.id === selectedCategory,
-  )?.name;
-  const selectedTestTypeName = testTypes?.find(
-    (t) => t.id === selectedTestType,
-  )?.name;
+  const toggleTestType = React.useCallback((id: number) => {
+    setSelectedTestTypes((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    );
+    setPage(1);
+  }, []);
+
+  const clearCategories = React.useCallback(() => {
+    setSelectedCategories([]);
+    setPage(1);
+  }, []);
+
+  const clearTestTypes = React.useCallback(() => {
+    setSelectedTestTypes([]);
+    setPage(1);
+  }, []);
+
+  const clearAllFilters = React.useCallback(() => {
+    setSelectedCategories([]);
+    setSelectedTestTypes([]);
+    setPage(1);
+  }, []);
+
+  const totalItems = testCases?.length ?? 0;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const safePage = Math.min(page, totalPages);
+  const pageStart = (safePage - 1) * pageSize;
+  const visible = (testCases ?? []).slice(pageStart, pageStart + pageSize);
 
   const isLoading = categoriesLoading || testTypesLoading || casesLoading;
+  const hasFilters =
+    selectedCategories.length > 0 || selectedTestTypes.length > 0;
 
-  const getSeverityColor = (rank: number) => {
-    if (rank >= 4)
-      return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200";
-    if (rank === 3)
-      return "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200";
-    if (rank === 2)
-      return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200";
-    return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
-  };
-
-  const getSeverityIcon = (rank: number) => {
-    if (rank >= 4) return <AlertTriangle className="h-3 w-3" />;
-    if (rank === 3) return <AlertCircle className="h-3 w-3" />;
-    if (rank === 2) return <Zap className="h-3 w-3" />;
-    return <CheckCircle className="h-3 w-3" />;
-  };
+  const categoryChips = (categories ?? [])
+    .filter((c) => selectedCategories.includes(c.id))
+    .map((c) => ({ id: c.id, name: c.name, kind: "category" as const }));
+  const testTypeChips = (testTypes ?? [])
+    .filter((t) => selectedTestTypes.includes(t.id))
+    .map((t) => ({ id: t.id, name: t.name, kind: "testType" as const }));
+  const activeChips = [...categoryChips, ...testTypeChips];
 
   return (
-    <div className="space-y-6">
-      <Card className="border-l-4 border-l-blue-500 shadow-sm">
-        <CardHeader className="pb-3">
-          <div className="flex items-center gap-2">
-            <Shield className="h-5 w-5 text-blue-600" />
-            <CardTitle>Security Test Cases</CardTitle>
-          </div>
-          <CardDescription>
-            Browse and filter comprehensive test cases by category and type
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-3 flex-wrap items-end">
-            <div className="space-y-2">
-              <p className="text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide">
-                Category
-              </p>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="w-48 bg-gradient-to-r from-blue-50 to-blue-50/50 dark:from-blue-950/30 dark:to-blue-950/20 border-blue-200 dark:border-blue-800 hover:border-blue-400 dark:hover:border-blue-600"
-                  >
-                    {selectedCategoryName ? (
-                      <span className="flex items-center gap-2">
-                        <Target className="h-3.5 w-3.5" />
-                        {selectedCategoryName}
-                      </span>
-                    ) : (
-                      "Select Category"
-                    )}
-                    <ChevronDown className="ml-auto h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-48">
-                  <DropdownMenuCheckboxItem
-                    checked={selectedCategory === null}
-                    onCheckedChange={() => setSelectedCategory(null)}
-                  >
-                    All Categories
-                  </DropdownMenuCheckboxItem>
-                  {categories?.map((category) => (
-                    <DropdownMenuCheckboxItem
-                      key={category.id}
-                      checked={selectedCategory === category.id}
-                      onCheckedChange={() => setSelectedCategory(category.id)}
-                    >
-                      {category.name}
-                    </DropdownMenuCheckboxItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+    <div className="space-y-5">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="space-y-1">
+          <h2 className="text-lg font-semibold tracking-tight">Security test cases</h2>
+          <p className="text-sm text-muted-foreground">
+            Filter by category and test type to narrow the relevant coverage.
+          </p>
+        </div>
+        <div className="hidden items-center gap-2 text-xs text-muted-foreground sm:flex">
+          <SlidersHorizontal className="size-3.5" />
+          <span>{totalItems} matching</span>
+        </div>
+      </div>
 
-            <div className="space-y-2">
-              <p className="text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide">
-                Test Type
-              </p>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="w-48 bg-gradient-to-r from-purple-50 to-purple-50/50 dark:from-purple-950/30 dark:to-purple-950/20 border-purple-200 dark:border-purple-800 hover:border-purple-400 dark:hover:border-purple-600"
-                  >
-                    {selectedTestTypeName ? (
-                      <span className="flex items-center gap-2">
-                        <Wrench className="h-3.5 w-3.5" />
-                        {selectedTestTypeName}
-                      </span>
-                    ) : (
-                      "Select Test Type"
-                    )}
-                    <ChevronDown className="ml-auto h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-48">
-                  <DropdownMenuCheckboxItem
-                    checked={selectedTestType === null}
-                    onCheckedChange={() => setSelectedTestType(null)}
-                  >
-                    All Test Types
-                  </DropdownMenuCheckboxItem>
-                  {testTypes?.map((testType) => (
-                    <DropdownMenuCheckboxItem
-                      key={testType.id}
-                      checked={selectedTestType === testType.id}
-                      onCheckedChange={() => setSelectedTestType(testType.id)}
-                    >
-                      {testType.name}
-                    </DropdownMenuCheckboxItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex flex-wrap items-end gap-3 rounded-lg border border-border/60 bg-card/60 p-4">
+        <MultiFilterDropdown
+          label="Category"
+          items={categories as Category[] | undefined}
+          selected={selectedCategories}
+          onToggle={toggleCategory}
+          onClear={clearCategories}
+          icon={Target}
+          allLabel="All categories"
+        />
+        <MultiFilterDropdown
+          label="Test type"
+          items={testTypes as TestType[] | undefined}
+          selected={selectedTestTypes}
+          onToggle={toggleTestType}
+          onClear={clearTestTypes}
+          icon={Wrench}
+          allLabel="All test types"
+        />
+        {hasFilters && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={clearAllFilters}
+            className="self-end"
+          >
+            Clear filters
+          </Button>
+        )}
+      </div>
 
-      <Card className="border shadow-sm">
+      {activeChips.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="text-xs text-muted-foreground">Active:</span>
+          {activeChips.map((chip) => (
+            <button
+              key={`${chip.kind}-${chip.id}`}
+              type="button"
+              onClick={() =>
+                chip.kind === "category"
+                  ? toggleCategory(chip.id)
+                  : toggleTestType(chip.id)
+              }
+              className="group inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/5 px-2.5 py-0.5 text-xs font-medium text-foreground transition-colors hover:bg-primary/10"
+            >
+              <span>{chip.name}</span>
+              <X className="size-3 text-muted-foreground group-hover:text-foreground" />
+            </button>
+          ))}
+        </div>
+      )}
+
+      <div className="overflow-hidden rounded-xl border border-border/60 bg-card">
         {isLoading ? (
           <div className="space-y-3 p-6">
             {Array.from({ length: 5 }).map((_, i) => (
               <div key={i} className="space-y-2">
                 <Skeleton className="h-4 w-3/4" />
-                <Skeleton className="h-12 w-full" />
+                <Skeleton className="h-10 w-full" />
               </div>
             ))}
           </div>
         ) : testCases && testCases.length > 0 ? (
-          <div className="overflow-hidden">
-            <Table>
+          <>
+            <Table className="table-fixed">
+              <colgroup>
+                <col className="w-[40%]" />
+                <col className="w-[14%]" />
+                <col className="w-[10%]" />
+                <col className="w-[12%]" />
+                <col className="w-[16%]" />
+                <col className="w-[8%]" />
+              </colgroup>
               <TableHeader>
-                <TableRow className="bg-gradient-to-r from-slate-50 to-slate-50 dark:from-slate-900 dark:to-slate-800 border-b-2 border-slate-200 dark:border-slate-700">
-                  <TableHead className="w-8 text-slate-700 dark:text-slate-300 font-semibold"></TableHead>
-                  <TableHead className="w-1/4 text-slate-700 dark:text-slate-300 font-semibold">
-                    Test Case
-                  </TableHead>
-                  <TableHead className="text-slate-700 dark:text-slate-300 font-semibold">
-                    Category
-                  </TableHead>
-                  <TableHead className="text-slate-700 dark:text-slate-300 font-semibold">
-                    Type
-                  </TableHead>
-                  <TableHead className="text-slate-700 dark:text-slate-300 font-semibold">
-                    Severity
-                  </TableHead>
-                  <TableHead className="text-slate-700 dark:text-slate-300 font-semibold">
-                    Asset
-                  </TableHead>
-                  <TableHead className="text-right text-slate-700 dark:text-slate-300 font-semibold">
-                    Actions
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="font-semibold">Test case</TableHead>
+                  <TableHead className="font-semibold">Category</TableHead>
+                  <TableHead className="font-semibold">Type</TableHead>
+                  <TableHead className="font-semibold">Severity</TableHead>
+                  <TableHead className="font-semibold">Asset</TableHead>
+                  <TableHead className="text-right">
+                    <span className="sr-only">View details</span>
                   </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {testCases.map((testCase, index) => (
-                  <React.Fragment key={testCase.id}>
+                {visible.map((testCase) => {
+                  const sev = severityFromRank(testCase.severity?.severity_rank);
+                  const SevIcon = sev?.icon;
+                  return (
                     <TableRow
-                      className={`cursor-pointer transition-colors ${
-                        index % 2 === 0
-                          ? "bg-white dark:bg-slate-950"
-                          : "bg-slate-50 dark:bg-slate-900/50"
-                      } hover:bg-blue-50 dark:hover:bg-blue-950/30 border-b border-slate-100 dark:border-slate-800`}
-                      onClick={() => toggleRow(testCase.id)}
+                      key={testCase.id}
+                      className="cursor-pointer"
+                      onClick={() => setActiveTestCase(testCase)}
                     >
-                      <TableCell className="pl-4">
-                        <div className="text-blue-600 dark:text-blue-400">
-                          {expandedRows.has(testCase.id) ? (
-                            <ChevronDown className="h-4 w-4" />
-                          ) : (
-                            <ChevronRight className="h-4 w-4" />
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell className="font-semibold text-slate-900 dark:text-slate-100">
-                        <div className="line-clamp-2 text-sm">
+                      <TableCell className="whitespace-normal">
+                        <div className="line-clamp-3 text-sm font-medium leading-snug text-foreground break-words">
                           {testCase.action_test_case}
                         </div>
-                      </TableCell>
-                      <TableCell>
-                        {testCase.category ? (
-                          <Badge className="bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200 hover:bg-indigo-200 dark:hover:bg-indigo-800">
-                            {testCase.category.name}
-                          </Badge>
-                        ) : (
-                          <span className="text-slate-400">—</span>
+                        {testCase.objective?.name && (
+                          <div className="mt-0.5 line-clamp-1 text-xs text-muted-foreground break-words">
+                            {testCase.objective.name}
+                          </div>
                         )}
                       </TableCell>
-                      <TableCell>
-                        {testCase.test_type ? (
-                          <Badge className="bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200 hover:bg-cyan-200 dark:hover:bg-cyan-800">
-                            {testCase.test_type.name}
-                          </Badge>
-                        ) : (
-                          <span className="text-slate-400">—</span>
-                        )}
+                      <TableCell className="whitespace-normal">
+                        <span className="block break-words text-sm text-muted-foreground">
+                          {testCase.category?.name ?? "—"}
+                        </span>
                       </TableCell>
-                      <TableCell>
-                        {testCase.severity ? (
-                          <Badge
-                            className={`${getSeverityColor(
-                              testCase.severity.severity_rank,
-                            )} flex items-center gap-1 w-fit`}
+                      <TableCell className="whitespace-normal">
+                        <span className="block break-words text-sm text-muted-foreground">
+                          {testCase.test_type?.name ?? "—"}
+                        </span>
+                      </TableCell>
+                      <TableCell className="whitespace-normal">
+                        {sev && SevIcon ? (
+                          <span
+                            className={`inline-flex w-fit max-w-full items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${sev.color} ${sev.ring}`}
                           >
-                            {getSeverityIcon(testCase.severity.severity_rank)}
-                            {testCase.severity.name}
-                          </Badge>
-                        ) : (
-                          <span className="text-slate-400">—</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {testCase.asset ? (
-                          <span className="text-sm text-slate-700 dark:text-slate-300">
-                            {testCase.asset.asset_name}
+                            <SevIcon className="size-3 shrink-0" />
+                            <span className="truncate">
+                              {testCase.severity?.name}
+                            </span>
                           </span>
                         ) : (
-                          <span className="text-slate-400">—</span>
+                          <span className="text-muted-foreground">—</span>
                         )}
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="whitespace-normal">
+                        <span className="block break-words text-sm text-foreground">
+                          {testCase.asset?.asset_name ?? "—"}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right whitespace-normal">
                         <Button
                           variant="ghost"
-                          size="sm"
-                          className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+                          size="icon-sm"
                           onClick={(e) => {
                             e.stopPropagation();
+                            setActiveTestCase(testCase);
                           }}
+                          aria-label={`View details for ${testCase.action_test_case}`}
                         >
-                          View
+                          <Eye className="size-3.5" />
                         </Button>
                       </TableCell>
                     </TableRow>
-
-                    {/* Expandable Details Row */}
-                    {expandedRows.has(testCase.id) && (
-                      <TableRow className="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 border-b-2 border-blue-200 dark:border-blue-900">
-                        <TableCell colSpan={7} className="p-0">
-                          <div className="p-6 space-y-6">
-                            {/* Main Description Section */}
-                            {testCase.description && (
-                              <div className="bg-blue-50 dark:bg-blue-950/20 border-l-4 border-blue-500 p-4 rounded-r-lg">
-                                <div className="flex items-start gap-2">
-                                  <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-1 flex-shrink-0" />
-                                  <div className="flex-1">
-                                    <p className="text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wide mb-2">
-                                      Description
-                                    </p>
-                                    <p className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">
-                                      {testCase.description}
-                                    </p>
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Test Steps Section */}
-                            {testCase.test_steps && (
-                              <div className="bg-purple-50 dark:bg-purple-950/20 border-l-4 border-purple-500 p-4 rounded-r-lg">
-                                <div className="flex items-start gap-2">
-                                  <Wrench className="h-4 w-4 text-purple-600 dark:text-purple-400 mt-1 flex-shrink-0" />
-                                  <div className="flex-1">
-                                    <p className="text-xs font-semibold text-purple-600 dark:text-purple-400 uppercase tracking-wide mb-2">
-                                      Test Steps
-                                    </p>
-                                    <p className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">
-                                      {testCase.test_steps}
-                                    </p>
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Expected Output Section */}
-                            {testCase.expected_output && (
-                              <div className="bg-green-50 dark:bg-green-950/20 border-l-4 border-green-500 p-4 rounded-r-lg">
-                                <div className="flex items-start gap-2">
-                                  <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400 mt-1 flex-shrink-0" />
-                                  <div className="flex-1">
-                                    <p className="text-xs font-semibold text-green-600 dark:text-green-400 uppercase tracking-wide mb-2">
-                                      Expected Output
-                                    </p>
-                                    <p className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">
-                                      {testCase.expected_output}
-                                    </p>
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Attack Information Section */}
-                            {(testCase.attack_path ||
-                              testCase.attack_feasibility) && (
-                              <div className="bg-red-50 dark:bg-red-950/20 border-l-4 border-red-500 p-4 rounded-r-lg space-y-3">
-                                <div className="flex items-start gap-2">
-                                  <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400 mt-1 flex-shrink-0" />
-                                  <div className="flex-1 space-y-3">
-                                    <p className="text-xs font-semibold text-red-600 dark:text-red-400 uppercase tracking-wide">
-                                      Attack Information
-                                    </p>
-                                    {testCase.attack_path && (
-                                      <div>
-                                        <p className="text-xs font-medium text-red-700 dark:text-red-300 mb-1">
-                                          Attack Path
-                                        </p>
-                                        <p className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">
-                                          {testCase.attack_path}
-                                        </p>
-                                      </div>
-                                    )}
-                                    {testCase.attack_feasibility && (
-                                      <div>
-                                        <p className="text-xs font-medium text-red-700 dark:text-red-300 mb-1">
-                                          Attack Feasibility
-                                        </p>
-                                        <p className="text-sm text-slate-700 dark:text-slate-300">
-                                          {testCase.attack_feasibility}
-                                        </p>
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Impact Analysis Grid */}
-                            <div className="grid grid-cols-2 gap-4">
-                              {testCase.cia_impact && (
-                                <div className="bg-orange-50 dark:bg-orange-950/20 border-l-4 border-orange-500 p-3 rounded-r">
-                                  <p className="text-xs font-semibold text-orange-600 dark:text-orange-400 uppercase tracking-wide mb-1">
-                                    CIA Impact
-                                  </p>
-                                  <p className="text-sm text-slate-700 dark:text-slate-300">
-                                    {testCase.cia_impact}
-                                  </p>
-                                </div>
-                              )}
-
-                              {testCase.safety_impact && (
-                                <div className="bg-pink-50 dark:bg-pink-950/20 border-l-4 border-pink-500 p-3 rounded-r">
-                                  <p className="text-xs font-semibold text-pink-600 dark:text-pink-400 uppercase tracking-wide mb-1">
-                                    Safety Impact
-                                  </p>
-                                  <p className="text-sm text-slate-700 dark:text-slate-300">
-                                    {testCase.safety_impact}
-                                  </p>
-                                </div>
-                              )}
-
-                              {testCase.automation_possible && (
-                                <div className="bg-teal-50 dark:bg-teal-950/20 border-l-4 border-teal-500 p-3 rounded-r">
-                                  <p className="text-xs font-semibold text-teal-600 dark:text-teal-400 uppercase tracking-wide mb-1">
-                                    Automation
-                                  </p>
-                                  <p className="text-sm text-slate-700 dark:text-slate-300">
-                                    {testCase.automation_possible}
-                                  </p>
-                                </div>
-                              )}
-
-                              {testCase.protocol && (
-                                <div className="bg-indigo-50 dark:bg-indigo-950/20 border-l-4 border-indigo-500 p-3 rounded-r">
-                                  <p className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 uppercase tracking-wide mb-1">
-                                    Protocol
-                                  </p>
-                                  <p className="text-sm text-slate-700 dark:text-slate-300">
-                                    {testCase.protocol.name}
-                                  </p>
-                                </div>
-                              )}
-                            </div>
-
-                            {/* Threat and Attack Vector */}
-                            <div className="grid grid-cols-2 gap-4">
-                              {testCase.threat && (
-                                <div className="bg-yellow-50 dark:bg-yellow-950/20 border-l-4 border-yellow-500 p-3 rounded-r">
-                                  <p className="text-xs font-semibold text-yellow-600 dark:text-yellow-400 uppercase tracking-wide mb-1">
-                                    Threat
-                                  </p>
-                                  <p className="text-sm text-slate-700 dark:text-slate-300">
-                                    {testCase.threat.threat_text}
-                                  </p>
-                                </div>
-                              )}
-
-                              {testCase.attack_vector && (
-                                <div className="bg-violet-50 dark:bg-violet-950/20 border-l-4 border-violet-500 p-3 rounded-r">
-                                  <p className="text-xs font-semibold text-violet-600 dark:text-violet-400 uppercase tracking-wide mb-1">
-                                    Attack Vector
-                                  </p>
-                                  <p className="text-sm text-slate-700 dark:text-slate-300">
-                                    {testCase.attack_vector.name}
-                                  </p>
-                                </div>
-                              )}
-                            </div>
-
-                            {/* Tools Section */}
-                            {testCase.test_case_tools.length > 0 && (
-                              <div className="bg-slate-200/30 dark:bg-slate-700/30 p-4 rounded-lg border border-slate-300 dark:border-slate-600">
-                                <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wide mb-3">
-                                  <Wrench className="inline-block h-3 w-3 mr-1" />
-                                  Tools Used
-                                </p>
-                                <div className="flex flex-wrap gap-2">
-                                  {testCase.test_case_tools.map((tool, idx) => (
-                                    <Badge
-                                      key={idx}
-                                      className="bg-slate-600 text-white dark:bg-slate-400 dark:text-slate-900 hover:bg-slate-700 dark:hover:bg-slate-300"
-                                    >
-                                      {tool.tool.tool_name}
-                                    </Badge>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-
-                            {/* References Section */}
-                            {testCase.test_case_references.length > 0 && (
-                              <div className="bg-slate-200/30 dark:bg-slate-700/30 p-4 rounded-lg border border-slate-300 dark:border-slate-600">
-                                <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wide mb-3">
-                                  <FileText className="inline-block h-3 w-3 mr-1" />
-                                  References
-                                </p>
-                                <div className="space-y-2">
-                                  {testCase.test_case_references.map(
-                                    (ref, idx) => (
-                                      <div
-                                        key={idx}
-                                        className="text-sm text-slate-700 dark:text-slate-300 pl-3 border-l-2 border-slate-400 dark:border-slate-600"
-                                      >
-                                        {ref.reference.ref_text}
-                                      </div>
-                                    ),
-                                  )}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </React.Fragment>
-                ))}
+                  );
+                })}
               </TableBody>
             </Table>
-          </div>
+
+            <Pagination
+              page={safePage}
+              pageSize={pageSize}
+              totalItems={totalItems}
+              onPageChange={setPage}
+              onPageSizeChange={(n) => {
+                setPageSize(n);
+                setPage(1);
+              }}
+            />
+          </>
         ) : (
-          <div className="flex items-center justify-center p-16 text-center">
-            <div>
-              <Shield className="h-12 w-12 text-slate-300 dark:text-slate-600 mx-auto mb-4" />
-              <p className="font-semibold text-slate-900 dark:text-slate-100 mb-2">
-                No test cases found
-              </p>
-              <p className="text-sm text-slate-600 dark:text-slate-400">
-                Try adjusting your filters to find relevant security test cases
+          <div className="flex flex-col items-center justify-center gap-3 px-6 py-16 text-center">
+            <div className="flex size-12 items-center justify-center rounded-full bg-muted text-muted-foreground">
+              <ShieldCheck className="size-5" />
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm font-semibold">No test cases match</p>
+              <p className="mx-auto max-w-sm text-xs text-muted-foreground">
+                {hasFilters
+                  ? "Try removing some filters."
+                  : "Try adjusting your search."}
               </p>
             </div>
+            {hasFilters && (
+              <Button variant="outline" size="sm" onClick={clearAllFilters}>
+                Clear filters
+              </Button>
+            )}
           </div>
         )}
-      </Card>
+      </div>
+
+      <TestCaseDetailDialog
+        testCase={activeTestCase}
+        open={activeTestCase !== null}
+        onOpenChange={(open) => {
+          if (!open) setActiveTestCase(null);
+        }}
+      />
     </div>
   );
 }

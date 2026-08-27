@@ -4,7 +4,6 @@ import * as React from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertCircle,
-  Plus,
   Cpu,
   Hash,
   AlertTriangle,
@@ -13,12 +12,13 @@ import {
   Calendar,
   Shield,
   Lock,
-  CheckSquare,
-  Zap,
-  Edit2,
+  Plus,
+  Pencil,
+  Check,
+  Save,
 } from "lucide-react";
 
-import { createEcuDetail, getEcuDetail, updateEcuDetail } from "@/lib/api";
+import { createEcuDetail, getEcuDetail, updateEcuDetail, type EcuDetail } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -29,21 +29,56 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface EcuDetailFormProps {
   projectId: number;
   onSuccess?: () => void;
 }
 
+type FormState = {
+  ecu_name: string;
+  part_number: string;
+  ecu_risk_rating: string;
+  architecture: string;
+  vehicle_line: string;
+  year: number;
+  microcontroller_cpu_provider: string;
+  date_hardware_b_sample_available: string;
+  date_harness_available: string;
+  date_production_intent_software_available: string;
+  export_control_classification: string;
+  pentest_provider_name: string;
+};
+
+const emptyForm: FormState = {
+  ecu_name: "",
+  part_number: "",
+  ecu_risk_rating: "",
+  architecture: "",
+  vehicle_line: "",
+  year: new Date().getFullYear(),
+  microcontroller_cpu_provider: "",
+  date_hardware_b_sample_available: "",
+  date_harness_available: "",
+  date_production_intent_software_available: "",
+  export_control_classification: "",
+  pentest_provider_name: "",
+};
+
 export function EcuDetailForm({ projectId, onSuccess }: EcuDetailFormProps) {
   const queryClient = useQueryClient();
   const [isOpen, setIsOpen] = React.useState(false);
+  const [formData, setFormData] = React.useState<FormState>(emptyForm);
 
   const { data: existingDetail, isLoading: isLoadingDetail } = useQuery({
     queryKey: ["ecu-detail", projectId],
@@ -51,44 +86,40 @@ export function EcuDetailForm({ projectId, onSuccess }: EcuDetailFormProps) {
     retry: false,
   });
 
-  const [formData, setFormData] = React.useState({
-    ecu_name: "",
-    part_number: "",
-    ecu_risk_rating: "",
-    architecture: "",
-    vehicle_line: "",
-    year: new Date().getFullYear(),
-    microcontroller_cpu_provider: "",
-    date_hardware_b_sample_available: "",
-    date_harness_available: "",
-    date_production_intent_software_available: "",
-    export_control_classification: "",
-    pentest_provider_name: "",
-  });
-
-  // Load existing data if available
+  // Sync form data when the server returns a different ECU detail.
+  const lastSeededDetailRef = React.useRef<EcuDetail | null>(null);
   React.useEffect(() => {
-    if (existingDetail) {
-      setFormData({
-        ecu_name: existingDetail.ecu_name,
-        part_number: existingDetail.part_number,
-        ecu_risk_rating: existingDetail.ecu_risk_rating,
-        architecture: existingDetail.architecture,
-        vehicle_line: existingDetail.vehicle_line,
-        year: existingDetail.year,
-        microcontroller_cpu_provider:
-          existingDetail.microcontroller_cpu_provider,
-        date_hardware_b_sample_available:
-          existingDetail.date_hardware_b_sample_available || "",
-        date_harness_available: existingDetail.date_harness_available || "",
-        date_production_intent_software_available:
-          existingDetail.date_production_intent_software_available || "",
-        export_control_classification:
-          existingDetail.export_control_classification,
-        pentest_provider_name: existingDetail.pentest_provider_name,
-      });
-    }
+    if (!existingDetail) return;
+    if (lastSeededDetailRef.current === existingDetail) return;
+    lastSeededDetailRef.current = existingDetail;
+    setFormData({
+      ecu_name: existingDetail.ecu_name,
+      part_number: existingDetail.part_number,
+      ecu_risk_rating: existingDetail.ecu_risk_rating,
+      architecture: existingDetail.architecture,
+      vehicle_line: existingDetail.vehicle_line,
+      year: existingDetail.year,
+      microcontroller_cpu_provider:
+        existingDetail.microcontroller_cpu_provider,
+      date_hardware_b_sample_available:
+        existingDetail.date_hardware_b_sample_available || "",
+      date_harness_available: existingDetail.date_harness_available || "",
+      date_production_intent_software_available:
+        existingDetail.date_production_intent_software_available || "",
+      export_control_classification:
+        existingDetail.export_control_classification,
+      pentest_provider_name: existingDetail.pentest_provider_name,
+    });
   }, [existingDetail]);
+
+  // Reset form whenever the dialog closes (handled in the open-state wrapper below).
+  const handleOpenChange = React.useCallback((next: boolean) => {
+    if (!next) {
+      lastSeededDetailRef.current = null;
+      setFormData(emptyForm);
+    }
+    setIsOpen(next);
+  }, []);
 
   const createMutation = useMutation({
     mutationFn: () => createEcuDetail(projectId, formData),
@@ -114,443 +145,488 @@ export function EcuDetailForm({ projectId, onSuccess }: EcuDetailFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (existingDetail) {
-      await updateMutation.mutateAsync();
-    } else {
-      await createMutation.mutateAsync();
-    }
+    if (existingDetail) await updateMutation.mutateAsync();
+    else await createMutation.mutateAsync();
   };
 
-  const handleChange = (field: string, value: string | number) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
+  const handleChange = (field: keyof FormState, value: string | number) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  if (!isOpen && !existingDetail && !isLoadingDetail) {
+  if (isLoadingDetail) {
     return (
-      <Card className="border-2 border-dashed border-blue-300 dark:border-blue-700 bg-gradient-to-br from-blue-50 to-blue-50/50 dark:from-blue-950/20 dark:to-blue-950/10">
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <Shield className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-            <div>
-              <CardTitle>ECU Details</CardTitle>
-              <CardDescription>
-                Add ECU specifications for this project
-              </CardDescription>
+      <>
+        <Card>
+          <CardContent className="p-6">
+            <div className="space-y-3">
+              <div className="h-4 w-32 animate-pulse rounded bg-muted" />
+              <div className="h-8 w-full animate-pulse rounded bg-muted" />
+              <div className="h-8 w-2/3 animate-pulse rounded bg-muted" />
             </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <Button
-            onClick={() => setIsOpen(true)}
-            className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white"
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            Add ECU Details
-          </Button>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+        <EcuFormDialog
+          open={isOpen}
+          onOpenChange={handleOpenChange}
+          formData={formData}
+          onChange={handleChange}
+          onSubmit={handleSubmit}
+          isLoading={isLoading}
+          isError={isError}
+          error={
+            createMutation.error?.message || updateMutation.error?.message
+          }
+          isEditing={!!existingDetail}
+        />
+      </>
+    );
+  }
+
+  if (!existingDetail) {
+    return (
+      <>
+        <Card className="border-dashed bg-card/60">
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <div className="flex size-9 items-center justify-center rounded-md bg-accent text-accent-foreground">
+                <Shield className="size-4" />
+              </div>
+              <div>
+                <CardTitle className="text-base">ECU details</CardTitle>
+                <CardDescription>
+                  Add ECU specifications to start running security tests.
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <Button onClick={() => setIsOpen(true)} className="w-full">
+              <Plus />
+              Add ECU details
+            </Button>
+          </CardContent>
+        </Card>
+        <EcuFormDialog
+          open={isOpen}
+          onOpenChange={handleOpenChange}
+          formData={formData}
+          onChange={handleChange}
+          onSubmit={handleSubmit}
+          isLoading={isLoading}
+          isError={isError}
+          error={
+            createMutation.error?.message || updateMutation.error?.message
+          }
+          isEditing={!!existingDetail}
+        />
+      </>
     );
   }
 
   return (
     <>
-      {existingDetail && !isOpen && (
-        <Card className="border-l-4 border-l-green-500 shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 bg-gradient-to-r from-green-50 to-green-50/50 dark:from-green-950/20 dark:to-green-950/10">
-            <div className="flex items-start gap-3">
-              <Cpu className="h-5 w-5 text-green-600 dark:text-green-400 mt-1" />
+      <Card>
+        <CardHeader>
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="flex size-9 items-center justify-center rounded-md bg-[var(--signal)]/15 text-[var(--signal)]">
+                <Cpu className="size-4" />
+              </div>
               <div>
-                <CardTitle className="text-lg">
+                <CardTitle className="text-base font-semibold">
                   {existingDetail.ecu_name}
                 </CardTitle>
-                <CardDescription className="mt-1">
-                  ECU Configuration
-                </CardDescription>
+                <CardDescription>ECU configuration</CardDescription>
               </div>
             </div>
             <Button
               variant="outline"
               size="sm"
               onClick={() => setIsOpen(true)}
-              className="border-green-300 dark:border-green-700 hover:bg-green-50 dark:hover:bg-green-950/30"
             >
-              <Edit2 className="mr-2 h-4 w-4" />
+              <Pencil className="size-3.5" />
               Edit
             </Button>
-          </CardHeader>
-          <CardContent className="pt-6 space-y-4">
-            {/* Row 1: Part Number & Risk Rating */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-purple-50 dark:bg-purple-950/20 border-l-4 border-purple-500 p-3 rounded-r-lg">
-                <div className="flex items-center gap-2 mb-1">
-                  <Hash className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-                  <p className="text-xs font-semibold text-purple-600 dark:text-purple-400 uppercase tracking-wide">
-                    Part Number
-                  </p>
-                </div>
-                <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                  {existingDetail.part_number}
-                </p>
-              </div>
-              <div className="bg-red-50 dark:bg-red-950/20 border-l-4 border-red-500 p-3 rounded-r-lg">
-                <div className="flex items-center gap-2 mb-1">
-                  <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400" />
-                  <p className="text-xs font-semibold text-red-600 dark:text-red-400 uppercase tracking-wide">
-                    Risk Rating
-                  </p>
-                </div>
-                <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                  {existingDetail.ecu_risk_rating}
-                </p>
-              </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-5">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            <Field
+              label="Part number"
+              value={existingDetail.part_number}
+              icon={Hash}
+            />
+            <Field
+              label="Risk rating"
+              value={existingDetail.ecu_risk_rating}
+              icon={AlertTriangle}
+            />
+            <Field
+              label="Architecture"
+              value={existingDetail.architecture}
+              icon={Layers}
+            />
+            <Field
+              label="Vehicle line"
+              value={existingDetail.vehicle_line}
+              icon={Truck}
+            />
+            <Field
+              label="Year"
+              value={String(existingDetail.year)}
+              icon={Calendar}
+            />
+            <Field
+              label="CPU provider"
+              value={existingDetail.microcontroller_cpu_provider}
+              icon={Cpu}
+            />
+            <Field
+              label="Export control"
+              value={existingDetail.export_control_classification}
+              icon={Lock}
+            />
+            <Field
+              label="Pentest provider"
+              value={existingDetail.pentest_provider_name}
+              icon={Shield}
+            />
+          </div>
+
+          <Separator />
+
+          <div>
+            <h4 className="mb-3 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              <Calendar className="size-3.5" />
+              Availability dates
+            </h4>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <DateField
+                label="Hardware B-sample"
+                value={existingDetail.date_hardware_b_sample_available}
+              />
+              <DateField
+                label="Harness"
+                value={existingDetail.date_harness_available}
+              />
+              <DateField
+                label="Production software"
+                value={existingDetail.date_production_intent_software_available}
+              />
             </div>
+          </div>
+        </CardContent>
+      </Card>
 
-            {/* Row 2: Architecture & Vehicle Line */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-blue-50 dark:bg-blue-950/20 border-l-4 border-blue-500 p-3 rounded-r-lg">
-                <div className="flex items-center gap-2 mb-1">
-                  <Layers className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                  <p className="text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wide">
-                    Architecture
-                  </p>
-                </div>
-                <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                  {existingDetail.architecture}
-                </p>
-              </div>
-              <div className="bg-indigo-50 dark:bg-indigo-950/20 border-l-4 border-indigo-500 p-3 rounded-r-lg">
-                <div className="flex items-center gap-2 mb-1">
-                  <Truck className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
-                  <p className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 uppercase tracking-wide">
-                    Vehicle Line
-                  </p>
-                </div>
-                <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                  {existingDetail.vehicle_line}
-                </p>
-              </div>
-            </div>
+      <EcuFormDialog
+        open={isOpen}
+        onOpenChange={handleOpenChange}
+        formData={formData}
+        onChange={handleChange}
+        onSubmit={handleSubmit}
+        isLoading={isLoading}
+        isError={isError}
+        error={
+          createMutation.error?.message || updateMutation.error?.message
+        }
+        isEditing={!!existingDetail}
+      />
+    </>
+  );
+}
 
-            {/* Row 3: Year & CPU Provider */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-orange-50 dark:bg-orange-950/20 border-l-4 border-orange-500 p-3 rounded-r-lg">
-                <div className="flex items-center gap-2 mb-1">
-                  <Calendar className="h-4 w-4 text-orange-600 dark:text-orange-400" />
-                  <p className="text-xs font-semibold text-orange-600 dark:text-orange-400 uppercase tracking-wide">
-                    Year
-                  </p>
-                </div>
-                <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                  {existingDetail.year}
-                </p>
-              </div>
-              <div className="bg-cyan-50 dark:bg-cyan-950/20 border-l-4 border-cyan-500 p-3 rounded-r-lg">
-                <div className="flex items-center gap-2 mb-1">
-                  <Cpu className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
-                  <p className="text-xs font-semibold text-cyan-600 dark:text-cyan-400 uppercase tracking-wide">
-                    CPU Provider
-                  </p>
-                </div>
-                <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                  {existingDetail.microcontroller_cpu_provider}
-                </p>
-              </div>
-            </div>
+function Field({
+  label,
+  value,
+  icon: Icon,
+}: {
+  label: string;
+  value: string;
+  icon: React.ElementType;
+}) {
+  return (
+    <div className="rounded-md border border-border/60 bg-card p-3">
+      <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+        <Icon className="size-3.5" />
+        {label}
+      </div>
+      <div className="mt-1 text-sm font-medium text-foreground">{value}</div>
+    </div>
+  );
+}
 
-            {/* Row 4: Export Control & Pentest Provider */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-green-50 dark:bg-green-950/20 border-l-4 border-green-500 p-3 rounded-r-lg">
-                <div className="flex items-center gap-2 mb-1">
-                  <Lock className="h-4 w-4 text-green-600 dark:text-green-400" />
-                  <p className="text-xs font-semibold text-green-600 dark:text-green-400 uppercase tracking-wide">
-                    Export Control
-                  </p>
-                </div>
-                <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                  {existingDetail.export_control_classification}
-                </p>
-              </div>
-              <div className="bg-pink-50 dark:bg-pink-950/20 border-l-4 border-pink-500 p-3 rounded-r-lg">
-                <div className="flex items-center gap-2 mb-1">
-                  <Shield className="h-4 w-4 text-pink-600 dark:text-pink-400" />
-                  <p className="text-xs font-semibold text-pink-600 dark:text-pink-400 uppercase tracking-wide">
-                    Pentest Provider
-                  </p>
-                </div>
-                <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                  {existingDetail.pentest_provider_name}
-                </p>
-              </div>
-            </div>
+function DateField({ label, value }: { label: string; value?: string | null }) {
+  if (!value) {
+    return (
+      <div className="rounded-md border border-dashed border-border/60 bg-card/50 p-3">
+        <div className="text-xs font-medium text-muted-foreground">{label}</div>
+        <div className="mt-1 text-sm text-muted-foreground">Not set</div>
+      </div>
+    );
+  }
+  return (
+    <div className="rounded-md border border-border/60 bg-card p-3">
+      <div className="text-xs font-medium text-muted-foreground">{label}</div>
+      <div className="mt-1 text-sm font-medium text-foreground font-tabular">
+        {new Date(value).toLocaleDateString("en", {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+        })}
+      </div>
+    </div>
+  );
+}
 
-            {/* Dates Section */}
-            <div className="bg-slate-100 dark:bg-slate-800 p-4 rounded-lg border border-slate-200 dark:border-slate-700 space-y-3 mt-4">
-              <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wide flex items-center gap-2">
-                <Calendar className="h-4 w-4" />
-                Availability Dates
-              </p>
-              <div className="grid grid-cols-3 gap-3 text-sm">
-                {existingDetail.date_hardware_b_sample_available && (
-                  <div>
-                    <p className="text-xs text-slate-600 dark:text-slate-400 font-medium mb-1">
-                      Hardware B-Sample
-                    </p>
-                    <p className="text-slate-900 dark:text-slate-100 font-medium">
-                      {existingDetail.date_hardware_b_sample_available}
-                    </p>
-                  </div>
-                )}
-                {existingDetail.date_harness_available && (
-                  <div>
-                    <p className="text-xs text-slate-600 dark:text-slate-400 font-medium mb-1">
-                      Harness Available
-                    </p>
-                    <p className="text-slate-900 dark:text-slate-100 font-medium">
-                      {existingDetail.date_harness_available}
-                    </p>
-                  </div>
-                )}
-                {existingDetail.date_production_intent_software_available && (
-                  <div>
-                    <p className="text-xs text-slate-600 dark:text-slate-400 font-medium mb-1">
-                      Production Software
-                    </p>
-                    <p className="text-slate-900 dark:text-slate-100 font-medium">
-                      {existingDetail.date_production_intent_software_available}
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+function EcuFormDialog({
+  open,
+  onOpenChange,
+  formData,
+  onChange,
+  onSubmit,
+  isLoading,
+  isError,
+  error,
+  isEditing,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  formData: FormState;
+  onChange: (field: keyof FormState, value: string | number) => void;
+  onSubmit: (e: React.FormEvent) => void;
+  isLoading: boolean;
+  isError: boolean;
+  error?: string;
+  isEditing: boolean;
+}) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="flex max-h-[min(85vh,820px)] w-[min(1400px,calc(100vw-2rem))] max-w-none flex-col gap-0 overflow-hidden p-0 sm:max-w-none">
+        <DialogHeader className="shrink-0 gap-2 border-b border-border/60 bg-card/50 p-6">
+          <DialogTitle className="text-xl">
+            {isEditing ? "Edit ECU details" : "Add ECU details"}
+          </DialogTitle>
+          <DialogDescription>
+            Enter the hardware and program details for this project&apos;s ECU.
+          </DialogDescription>
+        </DialogHeader>
 
-      <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
-        <AlertDialogContent className="max-h-screen max-w-2xl overflow-y-auto">
-          <AlertDialogTitle>
-            {existingDetail ? "Edit ECU Details" : "Add ECU Details"}
-          </AlertDialogTitle>
-          <AlertDialogDescription>
-            Enter detailed information about the ECU for this project.
-          </AlertDialogDescription>
+        <form
+          onSubmit={onSubmit}
+          className="flex min-h-0 flex-1 flex-col"
+          id="ecu-form"
+        >
+          <ScrollArea className="min-h-0 flex-1">
+            <div className="space-y-6 p-6">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
+            <FormField id="ecu_name" label="ECU name" required>
+              <Input
+                id="ecu_name"
+                value={formData.ecu_name}
+                onChange={(e) => onChange("ecu_name", e.target.value)}
+                required
+                placeholder="e.g., Gateway ECU"
+              />
+            </FormField>
+            <FormField id="part_number" label="Part number" required>
+              <Input
+                id="part_number"
+                value={formData.part_number}
+                onChange={(e) => onChange("part_number", e.target.value)}
+                required
+                placeholder="e.g., PN-123456"
+              />
+            </FormField>
+            <FormField id="ecu_risk_rating" label="ECU risk rating" required>
+              <Input
+                id="ecu_risk_rating"
+                value={formData.ecu_risk_rating}
+                onChange={(e) => onChange("ecu_risk_rating", e.target.value)}
+                required
+                placeholder="e.g., High"
+              />
+            </FormField>
+            <FormField id="architecture" label="Architecture" required>
+              <Input
+                id="architecture"
+                value={formData.architecture}
+                onChange={(e) => onChange("architecture", e.target.value)}
+                required
+                placeholder="e.g., ARM Cortex-M4"
+              />
+            </FormField>
+            <FormField id="vehicle_line" label="Vehicle line" required>
+              <Input
+                id="vehicle_line"
+                value={formData.vehicle_line}
+                onChange={(e) => onChange("vehicle_line", e.target.value)}
+                required
+                placeholder="e.g., Sedan Series X"
+              />
+            </FormField>
+            <FormField id="year" label="Year" required>
+              <Input
+                id="year"
+                type="number"
+                value={formData.year}
+                onChange={(e) => onChange("year", parseInt(e.target.value))}
+                required
+                min={1900}
+                max={2100}
+              />
+            </FormField>
+            <FormField
+              id="microcontroller_cpu_provider"
+              label="Microcontroller / CPU provider"
+              required
+            >
+              <Input
+                id="microcontroller_cpu_provider"
+                value={formData.microcontroller_cpu_provider}
+                onChange={(e) =>
+                  onChange("microcontroller_cpu_provider", e.target.value)
+                }
+                required
+                placeholder="e.g., STMicroelectronics"
+              />
+            </FormField>
+            <FormField
+              id="export_control_classification"
+              label="Export control classification"
+              required
+            >
+              <Input
+                id="export_control_classification"
+                value={formData.export_control_classification}
+                onChange={(e) =>
+                  onChange("export_control_classification", e.target.value)
+                }
+                required
+                placeholder="e.g., EAR99"
+              />
+            </FormField>
+            <FormField
+              id="pentest_provider_name"
+              label="Pentest provider name"
+              required
+            >
+              <Input
+                id="pentest_provider_name"
+                value={formData.pentest_provider_name}
+                onChange={(e) =>
+                  onChange("pentest_provider_name", e.target.value)
+                }
+                required
+                placeholder="e.g., Security Firm XYZ"
+              />
+            </FormField>
+          </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              {/* ECU Name */}
-              <div className="space-y-2">
-                <Label htmlFor="ecu_name">ECU Name *</Label>
-                <Input
-                  id="ecu_name"
-                  value={formData.ecu_name}
-                  onChange={(e) => handleChange("ecu_name", e.target.value)}
-                  required
-                  placeholder="e.g., Gateway ECU"
-                />
-              </div>
-
-              {/* Part Number */}
-              <div className="space-y-2">
-                <Label htmlFor="part_number">Part Number *</Label>
-                <Input
-                  id="part_number"
-                  value={formData.part_number}
-                  onChange={(e) => handleChange("part_number", e.target.value)}
-                  required
-                  placeholder="e.g., PN-123456"
-                />
-              </div>
-
-              {/* ECU Risk Rating */}
-              <div className="space-y-2">
-                <Label htmlFor="ecu_risk_rating">ECU Risk Rating *</Label>
-                <Input
-                  id="ecu_risk_rating"
-                  value={formData.ecu_risk_rating}
-                  onChange={(e) =>
-                    handleChange("ecu_risk_rating", e.target.value)
-                  }
-                  required
-                  placeholder="e.g., High"
-                />
-              </div>
-
-              {/* Architecture */}
-              <div className="space-y-2">
-                <Label htmlFor="architecture">Architecture *</Label>
-                <Input
-                  id="architecture"
-                  value={formData.architecture}
-                  onChange={(e) => handleChange("architecture", e.target.value)}
-                  required
-                  placeholder="e.g., ARM Cortex-M4"
-                />
-              </div>
-
-              {/* Vehicle Line */}
-              <div className="space-y-2">
-                <Label htmlFor="vehicle_line">Vehicle Line *</Label>
-                <Input
-                  id="vehicle_line"
-                  value={formData.vehicle_line}
-                  onChange={(e) => handleChange("vehicle_line", e.target.value)}
-                  required
-                  placeholder="e.g., Sedan Series X"
-                />
-              </div>
-
-              {/* Year */}
-              <div className="space-y-2">
-                <Label htmlFor="year">Year *</Label>
-                <Input
-                  id="year"
-                  type="number"
-                  value={formData.year}
-                  onChange={(e) =>
-                    handleChange("year", parseInt(e.target.value))
-                  }
-                  required
-                  min={1900}
-                  max={2100}
-                />
-              </div>
-
-              {/* Microcontroller/CPU Provider */}
-              <div className="space-y-2">
-                <Label htmlFor="microcontroller_cpu_provider">
-                  Microcontroller/CPU Provider *
-                </Label>
-                <Input
-                  id="microcontroller_cpu_provider"
-                  value={formData.microcontroller_cpu_provider}
-                  onChange={(e) =>
-                    handleChange("microcontroller_cpu_provider", e.target.value)
-                  }
-                  required
-                  placeholder="e.g., STMicroelectronics"
-                />
-              </div>
-
-              {/* Export Control Classification */}
-              <div className="space-y-2">
-                <Label htmlFor="export_control_classification">
-                  Export Control Classification *
-                </Label>
-                <Input
-                  id="export_control_classification"
-                  value={formData.export_control_classification}
-                  onChange={(e) =>
-                    handleChange(
-                      "export_control_classification",
-                      e.target.value,
-                    )
-                  }
-                  required
-                  placeholder="e.g., EAR99"
-                />
-              </div>
-
-              {/* Pentest Provider Name */}
-              <div className="space-y-2">
-                <Label htmlFor="pentest_provider_name">
-                  Pentest Provider Name *
-                </Label>
-                <Input
-                  id="pentest_provider_name"
-                  value={formData.pentest_provider_name}
-                  onChange={(e) =>
-                    handleChange("pentest_provider_name", e.target.value)
-                  }
-                  required
-                  placeholder="e.g., Security Firm XYZ"
-                />
-              </div>
-
-              {/* Date Hardware B-Sample Available */}
-              <div className="space-y-2">
-                <Label htmlFor="date_hardware_b_sample_available">
-                  Date Hardware B-Sample Available
-                </Label>
+          <div>
+            <h4 className="mb-3 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              <Calendar className="size-3.5" />
+              Availability dates
+            </h4>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <FormField id="date_hardware_b_sample_available" label="Hardware B-sample">
                 <Input
                   id="date_hardware_b_sample_available"
                   type="date"
                   value={formData.date_hardware_b_sample_available}
                   onChange={(e) =>
-                    handleChange(
-                      "date_hardware_b_sample_available",
-                      e.target.value,
-                    )
+                    onChange("date_hardware_b_sample_available", e.target.value)
                   }
                 />
-              </div>
-
-              {/* Date Harness Available */}
-              <div className="space-y-2">
-                <Label htmlFor="date_harness_available">
-                  Date Harness Available
-                </Label>
+              </FormField>
+              <FormField id="date_harness_available" label="Harness available">
                 <Input
                   id="date_harness_available"
                   type="date"
                   value={formData.date_harness_available}
                   onChange={(e) =>
-                    handleChange("date_harness_available", e.target.value)
+                    onChange("date_harness_available", e.target.value)
                   }
                 />
-              </div>
-
-              {/* Date Production-Intent Software Available */}
-              <div className="space-y-2">
-                <Label htmlFor="date_production_intent_software_available">
-                  Date Production-Intent Software Available
-                </Label>
+              </FormField>
+              <FormField
+                id="date_production_intent_software_available"
+                label="Production software"
+              >
                 <Input
                   id="date_production_intent_software_available"
                   type="date"
                   value={formData.date_production_intent_software_available}
                   onChange={(e) =>
-                    handleChange(
+                    onChange(
                       "date_production_intent_software_available",
                       e.target.value,
                     )
                   }
                 />
-              </div>
+              </FormField>
             </div>
+          </div>
+            </div>
+          </ScrollArea>
 
+          <div className="shrink-0 space-y-3 border-t border-border/60 bg-card/50 p-6">
             {isError && (
-              <div className="flex items-center gap-2 rounded-md bg-destructive/10 p-3 text-destructive">
-                <AlertCircle className="h-4 w-4 flex-shrink-0" />
-                <p className="text-sm">
-                  {createMutation.error?.message ||
-                    updateMutation.error?.message}
-                </p>
+              <div className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
+                <AlertCircle className="mt-0.5 size-4 shrink-0" />
+                <p>{error || "Something went wrong. Please try again."}</p>
               </div>
             )}
 
-            <div className="flex justify-end gap-2">
+            <DialogFooter>
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setIsOpen(false)}
+                onClick={() => onOpenChange(false)}
                 disabled={isLoading}
               >
                 Cancel
               </Button>
               <Button type="submit" disabled={isLoading}>
-                {isLoading
-                  ? "Saving..."
-                  : existingDetail
-                    ? "Update Details"
-                    : "Add Details"}
+                {isLoading ? (
+                  <>Saving…</>
+                ) : isEditing ? (
+                  <>
+                    <Save />
+                    Save changes
+                  </>
+                ) : (
+                  <>
+                    <Check />
+                    Add details
+                  </>
+                )}
               </Button>
-            </div>
-          </form>
-        </AlertDialogContent>
-      </AlertDialog>
-    </>
+            </DialogFooter>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function FormField({
+  id,
+  label,
+  required,
+  children,
+}: {
+  id: string;
+  label: string;
+  required?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <Label htmlFor={id} className="text-sm">
+        {label}
+        {required && <span className="ml-0.5 text-destructive">*</span>}
+      </Label>
+      {children}
+    </div>
   );
 }

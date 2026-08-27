@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { Plus } from "lucide-react";
 
 import { createProject } from "@/lib/api";
 import type { Project } from "@/lib/types";
@@ -62,36 +63,46 @@ export function CreateProjectDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        if (!next) reset();
+        onOpenChange(next);
+      }}
+    >
       <DialogContent>
-        <form onSubmit={handleSubmit}>
-          <DialogHeader>
-            <DialogTitle>Create new project</DialogTitle>
-            <DialogDescription>
-              Give your project a name and optional description to begin configuring.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="project-name">Project name</Label>
-              <Input
-                id="project-name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. Smart sensor gateway"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="project-description">Description</Label>
-              <Textarea
-                id="project-description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Optional description of the project"
-              />
-            </div>
-            {error && <p className="text-sm text-destructive">{error}</p>}
+        <DialogHeader>
+          <DialogTitle>New project</DialogTitle>
+          <DialogDescription>
+            Give your project a name and an optional description. You can edit
+            both later.
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="project-name">Project name</Label>
+            <Input
+              id="project-name"
+              autoFocus
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g., Smart sensor gateway"
+            />
           </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="project-description">Description</Label>
+            <Textarea
+              id="project-description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="What is this project for? (optional)"
+            />
+          </div>
+          {error && (
+            <p className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
+              {error}
+            </p>
+          )}
           <DialogFooter>
             <Button
               type="button"
@@ -101,7 +112,14 @@ export function CreateProjectDialog({
               Cancel
             </Button>
             <Button type="submit" disabled={submitting}>
-              {submitting ? "Creating..." : "Create project"}
+              {submitting ? (
+                "Creating…"
+              ) : (
+                <>
+                  <Plus />
+                  Create project
+                </>
+              )}
             </Button>
           </DialogFooter>
         </form>

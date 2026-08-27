@@ -4,11 +4,11 @@ import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { LayoutDashboard, Layers, Settings2 } from "lucide-react";
+import { LayoutDashboard, Cpu, ShieldCheck } from "lucide-react";
 
-import { totalPages } from "@/lib/navigation";
 import { getProject } from "@/lib/api";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Sidebar,
   SidebarContent,
@@ -20,6 +20,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
+  SidebarSeparator,
 } from "@/components/ui/sidebar";
 
 function projectIdFromPath(pathname: string): number | null {
@@ -37,7 +38,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const currentProjectId = projectIdFromPath(pathname);
   const currentPage = pageNumberFromPath(pathname);
 
-  const { data: project } = useQuery({
+  const { data: project, isLoading: projectLoading } = useQuery({
     queryKey: ["project", currentProjectId],
     queryFn: () => getProject(currentProjectId as number),
     enabled: currentProjectId !== null,
@@ -48,14 +49,16 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg">
-              <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                <Settings2 className="size-4" />
-              </div>
-              <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-semibold">Embedded Config</span>
-                <span className="truncate text-xs">Setup wizard</span>
-              </div>
+            <SidebarMenuButton size="lg" asChild>
+              <Link href="/">
+                <div className="flex aspect-square size-8 items-center justify-center rounded-md bg-primary text-primary-foreground shadow-sm">
+                  <ShieldCheck className="size-4" />
+                </div>
+                <div className="grid flex-1 text-left text-sm leading-tight">
+                  <span className="truncate font-semibold tracking-tight">Embedded Config</span>
+                  <span className="truncate text-xs text-muted-foreground">Security setup</span>
+                </div>
+              </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
@@ -63,10 +66,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+          <SidebarGroupLabel>Workspace</SidebarGroupLabel>
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton asChild isActive={pathname === "/"}>
+              <SidebarMenuButton asChild isActive={pathname === "/"} tooltip="Dashboard">
                 <Link href="/">
                   <LayoutDashboard />
                   <span>Dashboard</span>
@@ -75,10 +78,53 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarGroup>
+
+        {currentProjectId !== null && (
+          <>
+            <SidebarSeparator />
+            <SidebarGroup>
+              <SidebarGroupLabel>Current project</SidebarGroupLabel>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  {projectLoading ? (
+                    <div className="flex h-8 items-center gap-2 rounded-md px-2">
+                      <Skeleton className="size-4 shrink-0 rounded-md" />
+                      <Skeleton className="h-3.5 flex-1 max-w-[70%]" />
+                    </div>
+                  ) : (
+                    <SidebarMenuButton
+                      asChild
+                      isActive={pathname.includes("/projects/") && !pathname.includes("/page/")}
+                      tooltip="ECU details"
+                    >
+                      <Link href={`/projects/${currentProjectId}/dashboard`}>
+                        <Cpu />
+                        <span className="truncate">
+                          {project?.name ?? `Project #${currentProjectId}`}
+                        </span>
+                      </Link>
+                    </SidebarMenuButton>
+                  )}
+                </SidebarMenuItem>
+                {currentPage !== null && (
+                  <SidebarMenuItem>
+                    <div className="rounded-md border border-sidebar-border/60 bg-sidebar-accent/30 px-2 py-1.5 text-xs text-sidebar-accent-foreground">
+                      <span className="text-muted-foreground">Editing step</span>
+                      <span className="ml-1 font-medium">{currentPage} of 4</span>
+                    </div>
+                  </SidebarMenuItem>
+                )}
+              </SidebarMenu>
+            </SidebarGroup>
+          </>
+        )}
       </SidebarContent>
 
       <SidebarFooter>
-        <div className="flex items-center justify-between px-2">
+        <div className="flex items-center justify-between px-1">
+          <span className="text-xs text-muted-foreground group-data-[collapsible=icon]:hidden">
+            Appearance
+          </span>
           <ThemeToggle />
         </div>
       </SidebarFooter>

@@ -134,12 +134,23 @@ export const getCategories = () =>
 
 export const getTestTypes = () => request<TestType[]>("/test-cases/types");
 
-export const listTestCases = (categoryId?: number, testTypeId?: number) => {
+export const listTestCases = (
+  categoryIds?: number[] | number,
+  testTypeIds?: number[] | number,
+) => {
   const params = new URLSearchParams();
-  if (categoryId !== undefined)
-    params.append("category_id", String(categoryId));
-  if (testTypeId !== undefined)
-    params.append("test_type_id", String(testTypeId));
+  const cats = Array.isArray(categoryIds)
+    ? categoryIds
+    : categoryIds !== undefined
+      ? [categoryIds]
+      : [];
+  const types = Array.isArray(testTypeIds)
+    ? testTypeIds
+    : testTypeIds !== undefined
+      ? [testTypeIds]
+      : [];
+  for (const id of cats) params.append("category_ids", String(id));
+  for (const id of types) params.append("test_type_ids", String(id));
   const query = params.toString();
   return request<TestCase[]>(`/test-cases${query ? `?${query}` : ""}`);
 };

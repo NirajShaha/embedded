@@ -1,9 +1,10 @@
 import Link from "next/link";
+import { ChevronLeft } from "lucide-react";
 
 import { EcuDetailForm } from "@/components/ecu-detail-form";
 import { TestCasesDashboard } from "@/components/test-cases-dashboard";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
 
 type Params = { projectId: string };
 
@@ -16,32 +17,33 @@ export default async function ProjectDashboardPage({
   const projectIdNum = Number(projectId);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-semibold tracking-tight">
-            Project Dashboard
+    <div className="flex flex-col gap-8">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="space-y-1">
+          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            Project
+          </p>
+          <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+            Dashboard
           </h1>
-          <p className="text-muted-foreground mt-2">
-            Manage ECU details and view security test cases
+          <p className="max-w-xl text-sm text-muted-foreground">
+            Manage ECU hardware details and review the security test cases that
+            apply to this configuration.
           </p>
         </div>
-        <Link href="/">
-          <Button variant="outline">
-            <ChevronLeft className="mr-2 h-4 w-4" />
-            Back to Projects
-          </Button>
-        </Link>
+        <Button asChild variant="outline" size="sm">
+          <Link href="/">
+            <ChevronLeft />
+            All projects
+          </Link>
+        </Button>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-1">
-          <EcuDetailForm projectId={projectIdNum} />
-        </div>
+      <Separator />
 
-        <div className="lg:col-span-3">
-          <TestCasesDashboard projectId={projectIdNum} />
-        </div>
+      <div className="flex flex-col gap-8">
+        <EcuDetailForm projectId={projectIdNum} />
+        <TestCasesDashboard projectId={projectIdNum} />
       </div>
     </div>
   );
