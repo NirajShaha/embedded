@@ -157,3 +157,59 @@ export const listTestCases = (
 
 export const getTestCase = (id: number) =>
   request<TestCase>(`/test-cases/${id}`);
+
+export const downloadTestCasesPDF = async (
+  categoryIds?: number[],
+  testTypeIds?: number[],
+): Promise<void> => {
+  const params = new URLSearchParams();
+
+  if (categoryIds && categoryIds.length > 0) {
+    for (const id of categoryIds) {
+      params.append("category_ids", String(id));
+    }
+  }
+
+  if (testTypeIds && testTypeIds.length > 0) {
+    for (const id of testTypeIds) {
+      params.append("test_type_ids", String(id));
+    }
+  }
+
+  const query = params.toString();
+  const url = `${API_URL}/test-cases/export/pdf${query ? `?${query}` : ""}`;
+
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`PDF generation failed (${response.status}): ${error}`);
+    }
+
+    // Get the filename from content-disposition header
+    const contentDisposition = response.headers.get("content-disposition");
+    let filename = "test_cases_report.pdf";
+    if (contentDisposition) {
+      const match = contentDisposition.match(/filename=([^;]+)/);
+      if (match) {
+        filename = match[1].replace(/"/g, "");
+      }
+    }
+
+    // Create blob and download
+    const blob = await response.blob();
+    const blobUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = blobUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(blobUrl);
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(`Failed to download PDF: ${error.message}`);
+    }
+    throw error;
+  }
+};

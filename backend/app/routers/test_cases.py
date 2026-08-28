@@ -1,4 +1,7 @@
+from datetime import datetime
+
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import StreamingResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -6,6 +9,7 @@ from sqlalchemy.orm import selectinload
 from app.database import get_db
 from app.models import Category, TestCase, TestType
 from app.schemas import TestCaseRead
+from app.pdf_generator import generate_pdf_report
 
 router = APIRouter(prefix="/test-cases", tags=["test-cases"])
 
@@ -111,3 +115,106 @@ async def get_test_case(
     if test_case is None:
         raise HTTPException(status_code=404, detail="Test case not found")
     return test_case
+
+
+@router.get("/export/pdf")
+async def export_test_cases_to_pdf(
+    category_ids: list[int] | None = Query(default=None),
+    test_type_ids: list[int] | None = Query(default=None),
+    category_id: int | None = Query(default=None, deprecated=True),
+    test_type_id: int | None = Query(default=None, deprecated=True),
+    db: AsyncSession = Depends(get_db),
+) -> StreamingResponse:
+    """
+    Generate and export test cases as a PDF report.
+
+    Accepts the same filter parameters as the list_test_cases endpoint.
+    Returns a PDF file with all matching test cases formatted in an
+    enterprise-standard report layout.
+    """
+    from app.models import TestCaseTool, TestCaseReference
+
+    # Process filter parameters (same logic as list_test_cases)
+    effective_category_ids: list[int] = []
+    if category_ids:
+        effective_category_ids.extend(category_ids)
+    if category_id is not None and category_id not in effective_category_ids:
+        effective_category_ids.append(category_id)
+
+    effective_test_type_ids: list[int] = []
+    if test_type_ids:
+        effective_test_type_ids.extend(test_type_ids)
+    if test_type_id is not None and test_type_id not in effective_test_type_ids:
+        effective_test_type_ids.append(test_type_id)
+
+    # Treat "Both" as a wildcard for the test_type filter
+    if effective_test_type_ids:
+        both_row = await db.scalar(
+            select(TestType).where(TestType.name.ilike("Both"))
+        )
+        if both_row is not None and both_row.id in effective_test_type_ids:
+            effective_test_type_ids = []
+
+    # Build query
+    query = select(TestCase).options(
+        selectinload(TestCase.category),
+        selectinload(TestCase.objective),
+        selectinload(TestCase.protocol),
+        selectinload(TestCase.attack_vector),
+        selectinload(TestCase.test_type),
+        selectinload(TestCase.severity),
+        selectinload(TestCase.threat),
+        selectinload(TestCase.asset),
+        selectinload(TestCase.test_case_tools).selectinload(TestCaseTool.tool),
+        selectinload(TestCase.test_case_references).selectinload(TestCaseReference.reference),
+    )
+
+    if effective_category_ids:
+        query = query.where(TestCase.category_id.in_(effective_category_ids))
+
+    if effective_test_type_ids:
+        query = query.where(TestCase.test_type_id.in_(effective_test_type_ids))
+
+    # Fetch test cases
+    result = await db.scalars(query.order_by(TestCase.id))
+    test_cases = list(result)
+
+    if not test_cases:
+        raise HTTPException(
+            status_code=404,
+            detail="No test cases found matching the specified filters"
+        )
+
+    # Get filter names for the report
+    category_names: list[str] = []
+    if effective_category_ids:
+        categories = await db.scalars(
+            select(Category).where(Category.id.in_(effective_category_ids))
+        )
+        category_names = [cat.name for cat in categories]
+
+    test_type_names: list[str] = []
+    if effective_test_type_ids:
+        test_types = await db.scalars(
+            select(TestType).where(TestType.id.in_(effective_test_type_ids))
+        )
+        test_type_names = [tt.name for tt in test_types]
+
+    # Generate PDF
+    pdf_buffer = generate_pdf_report(
+        test_cases,
+        category_names if category_names else None,
+        test_type_names if test_type_names else None,
+    )
+
+    # Create filename with timestamp
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"test_cases_report_{timestamp}.pdf"
+
+    # Return as streaming response
+    return StreamingResponse(
+        iter([pdf_buffer.getvalue()]),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+

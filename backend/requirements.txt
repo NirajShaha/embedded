@@ -8,3 +8,5 @@ python-dotenv
 pandas
 cryptography
 openpyxl
+reportlab
+pillow
