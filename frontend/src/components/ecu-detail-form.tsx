@@ -18,7 +18,12 @@ import {
   Save,
 } from "lucide-react";
 
-import { createEcuDetail, getEcuDetail, updateEcuDetail, type EcuDetail } from "@/lib/api";
+import {
+  createEcuDetail,
+  getEcuDetail,
+  updateEcuDetail,
+  type EcuDetail,
+} from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -86,38 +91,32 @@ export function EcuDetailForm({ projectId, onSuccess }: EcuDetailFormProps) {
     retry: false,
   });
 
-  // Sync form data when the server returns a different ECU detail.
-  const lastSeededDetailRef = React.useRef<EcuDetail | null>(null);
-  React.useEffect(() => {
-    if (!existingDetail) return;
-    if (lastSeededDetailRef.current === existingDetail) return;
-    lastSeededDetailRef.current = existingDetail;
-    setFormData({
-      ecu_name: existingDetail.ecu_name,
-      part_number: existingDetail.part_number,
-      ecu_risk_rating: existingDetail.ecu_risk_rating,
-      architecture: existingDetail.architecture,
-      vehicle_line: existingDetail.vehicle_line,
-      year: existingDetail.year,
-      microcontroller_cpu_provider:
-        existingDetail.microcontroller_cpu_provider,
-      date_hardware_b_sample_available:
-        existingDetail.date_hardware_b_sample_available || "",
-      date_harness_available: existingDetail.date_harness_available || "",
-      date_production_intent_software_available:
-        existingDetail.date_production_intent_software_available || "",
-      export_control_classification:
-        existingDetail.export_control_classification,
-      pentest_provider_name: existingDetail.pentest_provider_name,
-    });
+  const toFormState = (detail: EcuDetail): FormState => ({
+    ecu_name: detail.ecu_name,
+    part_number: detail.part_number,
+    ecu_risk_rating: detail.ecu_risk_rating,
+    architecture: detail.architecture,
+    vehicle_line: detail.vehicle_line,
+    year: detail.year,
+    microcontroller_cpu_provider: detail.microcontroller_cpu_provider,
+    date_hardware_b_sample_available:
+      detail.date_hardware_b_sample_available || "",
+    date_harness_available: detail.date_harness_available || "",
+    date_production_intent_software_available:
+      detail.date_production_intent_software_available || "",
+    export_control_classification: detail.export_control_classification,
+    pentest_provider_name: detail.pentest_provider_name,
+  });
+
+  // Seed the form when opening, instead of syncing via an effect, so the
+  // dialog always reflects the latest saved values without re-render loops.
+  const openDialog = React.useCallback(() => {
+    setFormData(existingDetail ? toFormState(existingDetail) : emptyForm);
+    setIsOpen(true);
   }, [existingDetail]);
 
-  // Reset form whenever the dialog closes (handled in the open-state wrapper below).
   const handleOpenChange = React.useCallback((next: boolean) => {
-    if (!next) {
-      lastSeededDetailRef.current = null;
-      setFormData(emptyForm);
-    }
+    if (!next) setFormData(emptyForm);
     setIsOpen(next);
   }, []);
 
@@ -173,9 +172,7 @@ export function EcuDetailForm({ projectId, onSuccess }: EcuDetailFormProps) {
           onSubmit={handleSubmit}
           isLoading={isLoading}
           isError={isError}
-          error={
-            createMutation.error?.message || updateMutation.error?.message
-          }
+          error={createMutation.error?.message || updateMutation.error?.message}
           isEditing={!!existingDetail}
         />
       </>
@@ -200,7 +197,7 @@ export function EcuDetailForm({ projectId, onSuccess }: EcuDetailFormProps) {
             </div>
           </CardHeader>
           <CardContent>
-            <Button onClick={() => setIsOpen(true)} className="w-full">
+            <Button onClick={openDialog} className="w-full">
               <Plus />
               Add ECU details
             </Button>
@@ -214,9 +211,7 @@ export function EcuDetailForm({ projectId, onSuccess }: EcuDetailFormProps) {
           onSubmit={handleSubmit}
           isLoading={isLoading}
           isError={isError}
-          error={
-            createMutation.error?.message || updateMutation.error?.message
-          }
+          error={createMutation.error?.message || updateMutation.error?.message}
           isEditing={!!existingDetail}
         />
       </>
@@ -239,11 +234,7 @@ export function EcuDetailForm({ projectId, onSuccess }: EcuDetailFormProps) {
                 <CardDescription>ECU configuration</CardDescription>
               </div>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsOpen(true)}
-            >
+            <Button variant="outline" size="sm" onClick={openDialog}>
               <Pencil className="size-3.5" />
               Edit
             </Button>
@@ -326,9 +317,7 @@ export function EcuDetailForm({ projectId, onSuccess }: EcuDetailFormProps) {
         onSubmit={handleSubmit}
         isLoading={isLoading}
         isError={isError}
-        error={
-          createMutation.error?.message || updateMutation.error?.message
-        }
+        error={createMutation.error?.message || updateMutation.error?.message}
         isEditing={!!existingDetail}
       />
     </>
@@ -418,154 +407,169 @@ function EcuFormDialog({
         >
           <ScrollArea className="min-h-0 flex-1">
             <div className="space-y-6 p-6">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
-            <FormField id="ecu_name" label="ECU name" required>
-              <Input
-                id="ecu_name"
-                value={formData.ecu_name}
-                onChange={(e) => onChange("ecu_name", e.target.value)}
-                required
-                placeholder="e.g., Gateway ECU"
-              />
-            </FormField>
-            <FormField id="part_number" label="Part number" required>
-              <Input
-                id="part_number"
-                value={formData.part_number}
-                onChange={(e) => onChange("part_number", e.target.value)}
-                required
-                placeholder="e.g., PN-123456"
-              />
-            </FormField>
-            <FormField id="ecu_risk_rating" label="ECU risk rating" required>
-              <Input
-                id="ecu_risk_rating"
-                value={formData.ecu_risk_rating}
-                onChange={(e) => onChange("ecu_risk_rating", e.target.value)}
-                required
-                placeholder="e.g., High"
-              />
-            </FormField>
-            <FormField id="architecture" label="Architecture" required>
-              <Input
-                id="architecture"
-                value={formData.architecture}
-                onChange={(e) => onChange("architecture", e.target.value)}
-                required
-                placeholder="e.g., ARM Cortex-M4"
-              />
-            </FormField>
-            <FormField id="vehicle_line" label="Vehicle line" required>
-              <Input
-                id="vehicle_line"
-                value={formData.vehicle_line}
-                onChange={(e) => onChange("vehicle_line", e.target.value)}
-                required
-                placeholder="e.g., Sedan Series X"
-              />
-            </FormField>
-            <FormField id="year" label="Year" required>
-              <Input
-                id="year"
-                type="number"
-                value={formData.year}
-                onChange={(e) => onChange("year", parseInt(e.target.value))}
-                required
-                min={1900}
-                max={2100}
-              />
-            </FormField>
-            <FormField
-              id="microcontroller_cpu_provider"
-              label="Microcontroller / CPU provider"
-              required
-            >
-              <Input
-                id="microcontroller_cpu_provider"
-                value={formData.microcontroller_cpu_provider}
-                onChange={(e) =>
-                  onChange("microcontroller_cpu_provider", e.target.value)
-                }
-                required
-                placeholder="e.g., STMicroelectronics"
-              />
-            </FormField>
-            <FormField
-              id="export_control_classification"
-              label="Export control classification"
-              required
-            >
-              <Input
-                id="export_control_classification"
-                value={formData.export_control_classification}
-                onChange={(e) =>
-                  onChange("export_control_classification", e.target.value)
-                }
-                required
-                placeholder="e.g., EAR99"
-              />
-            </FormField>
-            <FormField
-              id="pentest_provider_name"
-              label="Pentest provider name"
-              required
-            >
-              <Input
-                id="pentest_provider_name"
-                value={formData.pentest_provider_name}
-                onChange={(e) =>
-                  onChange("pentest_provider_name", e.target.value)
-                }
-                required
-                placeholder="e.g., Security Firm XYZ"
-              />
-            </FormField>
-          </div>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
+                <FormField id="ecu_name" label="ECU name" required>
+                  <Input
+                    id="ecu_name"
+                    value={formData.ecu_name}
+                    onChange={(e) => onChange("ecu_name", e.target.value)}
+                    required
+                    placeholder="e.g., Gateway ECU"
+                  />
+                </FormField>
+                <FormField id="part_number" label="Part number" required>
+                  <Input
+                    id="part_number"
+                    value={formData.part_number}
+                    onChange={(e) => onChange("part_number", e.target.value)}
+                    required
+                    placeholder="e.g., PN-123456"
+                  />
+                </FormField>
+                <FormField
+                  id="ecu_risk_rating"
+                  label="ECU risk rating"
+                  required
+                >
+                  <Input
+                    id="ecu_risk_rating"
+                    value={formData.ecu_risk_rating}
+                    onChange={(e) =>
+                      onChange("ecu_risk_rating", e.target.value)
+                    }
+                    required
+                    placeholder="e.g., High"
+                  />
+                </FormField>
+                <FormField id="architecture" label="Architecture" required>
+                  <Input
+                    id="architecture"
+                    value={formData.architecture}
+                    onChange={(e) => onChange("architecture", e.target.value)}
+                    required
+                    placeholder="e.g., ARM Cortex-M4"
+                  />
+                </FormField>
+                <FormField id="vehicle_line" label="Vehicle line" required>
+                  <Input
+                    id="vehicle_line"
+                    value={formData.vehicle_line}
+                    onChange={(e) => onChange("vehicle_line", e.target.value)}
+                    required
+                    placeholder="e.g., Sedan Series X"
+                  />
+                </FormField>
+                <FormField id="year" label="Year" required>
+                  <Input
+                    id="year"
+                    type="number"
+                    value={formData.year}
+                    onChange={(e) => onChange("year", parseInt(e.target.value))}
+                    required
+                    min={1900}
+                    max={2100}
+                  />
+                </FormField>
+                <FormField
+                  id="microcontroller_cpu_provider"
+                  label="Microcontroller / CPU provider"
+                  required
+                >
+                  <Input
+                    id="microcontroller_cpu_provider"
+                    value={formData.microcontroller_cpu_provider}
+                    onChange={(e) =>
+                      onChange("microcontroller_cpu_provider", e.target.value)
+                    }
+                    required
+                    placeholder="e.g., STMicroelectronics"
+                  />
+                </FormField>
+                <FormField
+                  id="export_control_classification"
+                  label="Export control classification"
+                  required
+                >
+                  <Input
+                    id="export_control_classification"
+                    value={formData.export_control_classification}
+                    onChange={(e) =>
+                      onChange("export_control_classification", e.target.value)
+                    }
+                    required
+                    placeholder="e.g., EAR99"
+                  />
+                </FormField>
+                <FormField
+                  id="pentest_provider_name"
+                  label="Pentest provider name"
+                  required
+                >
+                  <Input
+                    id="pentest_provider_name"
+                    value={formData.pentest_provider_name}
+                    onChange={(e) =>
+                      onChange("pentest_provider_name", e.target.value)
+                    }
+                    required
+                    placeholder="e.g., Security Firm XYZ"
+                  />
+                </FormField>
+              </div>
 
-          <div>
-            <h4 className="mb-3 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              <Calendar className="size-3.5" />
-              Availability dates
-            </h4>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-              <FormField id="date_hardware_b_sample_available" label="Hardware B-sample">
-                <Input
-                  id="date_hardware_b_sample_available"
-                  type="date"
-                  value={formData.date_hardware_b_sample_available}
-                  onChange={(e) =>
-                    onChange("date_hardware_b_sample_available", e.target.value)
-                  }
-                />
-              </FormField>
-              <FormField id="date_harness_available" label="Harness available">
-                <Input
-                  id="date_harness_available"
-                  type="date"
-                  value={formData.date_harness_available}
-                  onChange={(e) =>
-                    onChange("date_harness_available", e.target.value)
-                  }
-                />
-              </FormField>
-              <FormField
-                id="date_production_intent_software_available"
-                label="Production software"
-              >
-                <Input
-                  id="date_production_intent_software_available"
-                  type="date"
-                  value={formData.date_production_intent_software_available}
-                  onChange={(e) =>
-                    onChange(
-                      "date_production_intent_software_available",
-                      e.target.value,
-                    )
-                  }
-                />
-              </FormField>
-            </div>
-          </div>
+              <div>
+                <h4 className="mb-3 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  <Calendar className="size-3.5" />
+                  Availability dates
+                </h4>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                  <FormField
+                    id="date_hardware_b_sample_available"
+                    label="Hardware B-sample"
+                  >
+                    <Input
+                      id="date_hardware_b_sample_available"
+                      type="date"
+                      value={formData.date_hardware_b_sample_available}
+                      onChange={(e) =>
+                        onChange(
+                          "date_hardware_b_sample_available",
+                          e.target.value,
+                        )
+                      }
+                    />
+                  </FormField>
+                  <FormField
+                    id="date_harness_available"
+                    label="Harness available"
+                  >
+                    <Input
+                      id="date_harness_available"
+                      type="date"
+                      value={formData.date_harness_available}
+                      onChange={(e) =>
+                        onChange("date_harness_available", e.target.value)
+                      }
+                    />
+                  </FormField>
+                  <FormField
+                    id="date_production_intent_software_available"
+                    label="Production software"
+                  >
+                    <Input
+                      id="date_production_intent_software_available"
+                      type="date"
+                      value={formData.date_production_intent_software_available}
+                      onChange={(e) =>
+                        onChange(
+                          "date_production_intent_software_available",
+                          e.target.value,
+                        )
+                      }
+                    />
+                  </FormField>
+                </div>
+              </div>
             </div>
           </ScrollArea>
 

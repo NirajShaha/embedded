@@ -1,4 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+import asyncio
+from datetime import datetime
+
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -6,6 +9,7 @@ from sqlalchemy.orm import selectinload
 from app.database import get_db
 from app.models import Category, TestCase, TestType
 from app.schemas import TestCaseRead
+from app.pdf_generator import build_pdf
 
 router = APIRouter(prefix="/test-cases", tags=["test-cases"])
 
@@ -111,3 +115,128 @@ async def get_test_case(
     if test_case is None:
         raise HTTPException(status_code=404, detail="Test case not found")
     return test_case
+
+
+@router.get("/export/pdf")
+async def export_test_cases_to_pdf(
+    project_id: int = Query(...),
+    category_ids: list[int] | None = Query(default=None),
+    test_type_ids: list[int] | None = Query(default=None),
+    category_id: int | None = Query(default=None, deprecated=True),
+    test_type_id: int | None = Query(default=None, deprecated=True),
+    db: AsyncSession = Depends(get_db),
+) -> Response:
+    """
+    Generate and export the ECU Penetration Testing Test Plan as a PDF.
+
+    Accepts the same filter parameters as the list_test_cases endpoint,
+    plus a required ``project_id`` used to source the ECU details table
+    (section 1) and the report's cover page.
+    """
+    from app.models import TestCaseTool, TestCaseReference, Project, ProjectEcuDetail
+
+    project = await db.get(Project, project_id)
+    if project is None:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    ecu_detail_result = await db.scalars(
+        select(ProjectEcuDetail).where(ProjectEcuDetail.project_id == project_id)
+    )
+    ecu_detail = ecu_detail_result.first()
+    if ecu_detail is None:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "ECU details have not been added for this project yet. "
+                "Please add ECU details before generating the test plan PDF."
+            ),
+        )
+
+    # Process filter parameters (same logic as list_test_cases)
+    effective_category_ids: list[int] = []
+    if category_ids:
+        effective_category_ids.extend(category_ids)
+    if category_id is not None and category_id not in effective_category_ids:
+        effective_category_ids.append(category_id)
+
+    raw_test_type_ids: list[int] = []
+    if test_type_ids:
+        raw_test_type_ids.extend(test_type_ids)
+    if test_type_id is not None and test_type_id not in raw_test_type_ids:
+        raw_test_type_ids.append(test_type_id)
+
+    effective_test_type_ids = list(raw_test_type_ids)
+
+    # Treat "Both" as a wildcard for the underlying test-case filter, while
+    # keeping the raw selection (below) for the "Type of testing" table.
+    if effective_test_type_ids:
+        both_row = await db.scalar(
+            select(TestType).where(TestType.name.ilike("Both"))
+        )
+        if both_row is not None and both_row.id in effective_test_type_ids:
+            effective_test_type_ids = []
+
+    # Build query
+    query = select(TestCase).options(
+        selectinload(TestCase.category),
+        selectinload(TestCase.objective),
+        selectinload(TestCase.protocol),
+        selectinload(TestCase.attack_vector),
+        selectinload(TestCase.test_type),
+        selectinload(TestCase.severity),
+        selectinload(TestCase.threat),
+        selectinload(TestCase.asset),
+        selectinload(TestCase.test_case_tools).selectinload(TestCaseTool.tool),
+        selectinload(TestCase.test_case_references).selectinload(TestCaseReference.reference),
+    )
+
+    if effective_category_ids:
+        query = query.where(TestCase.category_id.in_(effective_category_ids))
+
+    if effective_test_type_ids:
+        query = query.where(TestCase.test_type_id.in_(effective_test_type_ids))
+
+    # Fetch test cases
+    result = await db.scalars(query.order_by(TestCase.id))
+    test_cases = list(result)
+
+    if not test_cases:
+        raise HTTPException(
+            status_code=404,
+            detail="No test cases found matching the specified filters"
+        )
+
+    # Get filter names for the report
+    category_names: list[str] = []
+    if effective_category_ids:
+        categories = await db.scalars(
+            select(Category).where(Category.id.in_(effective_category_ids))
+        )
+        category_names = [cat.name for cat in categories]
+
+    test_type_names: list[str] = []
+    if raw_test_type_ids:
+        test_types = await db.scalars(
+            select(TestType).where(TestType.id.in_(raw_test_type_ids))
+        )
+        test_type_names = [tt.name for tt in test_types]
+
+    # Build the PDF on a worker thread so the synchronous ReportLab work
+    # does not block the FastAPI event loop. This keeps the rest of the
+    # dashboard responsive while a report is being generated.
+    pdf_bytes = await asyncio.to_thread(
+        build_pdf,
+        test_cases,
+        ecu_detail,
+        category_names if category_names else None,
+        test_type_names if test_type_names else None,
+    )
+
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"test_plan_{timestamp}.pdf"
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+

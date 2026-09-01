@@ -157,3 +157,68 @@ export const listTestCases = (
 
 export const getTestCase = (id: number) =>
   request<TestCase>(`/test-cases/${id}`);
+
+export const downloadTestCasesPDF = async (
+  projectId: number,
+  categoryIds?: number[],
+  testTypeIds?: number[],
+): Promise<void> => {
+  const params = new URLSearchParams();
+  params.append("project_id", String(projectId));
+
+  if (categoryIds && categoryIds.length > 0) {
+    for (const id of categoryIds) {
+      params.append("category_ids", String(id));
+    }
+  }
+
+  if (testTypeIds && testTypeIds.length > 0) {
+    for (const id of testTypeIds) {
+      params.append("test_type_ids", String(id));
+    }
+  }
+
+  const query = params.toString();
+  const url = `${API_URL}/test-cases/export/pdf${query ? `?${query}` : ""}`;
+
+  // Cap the wait so a stalled backend can't leave the UI stuck forever.
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), 60_000);
+
+  let response: Response;
+  try {
+    response = await fetch(url, { signal: controller.signal });
+  } catch (err) {
+    if (err instanceof DOMException && err.name === "AbortError") {
+      throw new Error("PDF generation timed out. Please try again.");
+    }
+    throw err;
+  } finally {
+    window.clearTimeout(timeoutId);
+  }
+
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(`PDF generation failed (${response.status}): ${error}`);
+  }
+
+  const contentDisposition = response.headers.get("content-disposition");
+  let filename = "test_plan.pdf";
+  if (contentDisposition) {
+    const match = contentDisposition.match(/filename=([^;]+)/);
+    if (match) {
+      filename = match[1].replace(/"/g, "").trim();
+    }
+  }
+
+  const blob = await response.blob();
+  const blobUrl = window.URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = blobUrl;
+  link.download = filename;
+  link.rel = "noopener";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  window.setTimeout(() => window.URL.revokeObjectURL(blobUrl), 60_000);
+};
