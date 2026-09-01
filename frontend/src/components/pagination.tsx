@@ -87,7 +87,7 @@ export function Pagination({
             <span>Rows per page</span>
             <Select
               value={String(pageSize)}
-              onValueChange={(v) => onPageSizeChange(Number(v))}
+              onValueChange={(v: string) => onPageSizeChange(Number(v))}
             >
               <SelectTrigger size="sm" className="h-7 w-[68px]">
                 <SelectValue />

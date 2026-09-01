@@ -38,8 +38,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
-  DropdownMenuCheckboxItem,
   DropdownMenuContent,
+  DropdownMenuCheckboxItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
@@ -126,7 +126,7 @@ function MultiFilterDropdown<T extends { id: number; name: string }>({
           <Button
             variant="outline"
             className={cn(
-              "justify-between font-normal",
+              "w-full justify-between font-normal",
               selectedItems.length > 0 &&
                 "border-primary/40 bg-primary/5 text-foreground",
             )}
@@ -155,15 +155,19 @@ function MultiFilterDropdown<T extends { id: number; name: string }>({
             )}
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
-          {items?.map((item) => (
-            <DropdownMenuCheckboxItem
-              key={item.id}
-              checked={selected.includes(item.id)}
-              onCheckedChange={() => onToggle(item.id)}
-            >
-              {item.name}
-            </DropdownMenuCheckboxItem>
-          ))}
+          {items?.map((item) => {
+            const isChecked = selected.includes(item.id);
+            return (
+              <DropdownMenuCheckboxItem
+                key={item.id}
+                checked={isChecked}
+                onCheckedChange={() => onToggle(item.id)}
+                className="justify-between"
+              >
+                <span className="truncate">{item.name}</span>
+              </DropdownMenuCheckboxItem>
+            );
+          })}
         </DropdownMenuContent>
       </DropdownMenu>
     </div>
@@ -172,10 +176,7 @@ function MultiFilterDropdown<T extends { id: number; name: string }>({
 
 const PAGE_SIZE_DEFAULT = 10;
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function TestCasesDashboard({
-  projectId: _projectId,
-}: TestCasesDashboardProps) {
+export function TestCasesDashboard({ projectId }: TestCasesDashboardProps) {
   const [selectedCategories, setSelectedCategories] = React.useState<number[]>(
     [],
   );
@@ -207,8 +208,14 @@ export function TestCasesDashboard({
   const { data: testCases, isLoading: casesLoading } = useQuery({
     queryKey: [
       "test-cases",
-      [...selectedCategories].sort((a, b) => a - b),
-      [...selectedTestTypes].sort((a, b) => a - b),
+      selectedCategories
+        .slice()
+        .sort((a, b) => a - b)
+        .join(","),
+      selectedTestTypes
+        .slice()
+        .sort((a, b) => a - b)
+        .join(","),
     ],
     queryFn: () =>
       listTestCases(
@@ -266,6 +273,7 @@ export function TestCasesDashboard({
     setIsPdfLoading(true);
     try {
       await downloadTestCasesPDF(
+        projectId,
         selectedCategories.length > 0 ? selectedCategories : undefined,
         selectedTestTypes.length > 0 ? selectedTestTypes : undefined,
       );
@@ -276,7 +284,7 @@ export function TestCasesDashboard({
     } finally {
       setIsPdfLoading(false);
     }
-  }, [selectedCategories, selectedTestTypes]);
+  }, [projectId, selectedCategories, selectedTestTypes]);
 
   const severityOptions = React.useMemo(() => {
     const seen = new Map<number, { id: number; name: string; rank: number }>();
@@ -332,8 +340,19 @@ export function TestCasesDashboard({
   }, [testCases, selectedSeverities, search]);
 
   const totalItems = filteredTestCases.length;
+  console.log("Pagination Debug", {
+    page,
+    pageSize,
+    totalItems,
+    filteredCount: filteredTestCases.length,
+  });
   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
-  const safePage = Math.min(page, totalPages);
+  React.useEffect(() => {
+    if (page > totalPages) {
+      setPage(totalPages);
+    }
+  }, [page, totalPages]);
+  const safePage = Math.max(1, Math.min(page, totalPages));
   const pageStart = (safePage - 1) * pageSize;
   const visible = filteredTestCases.slice(pageStart, pageStart + pageSize);
 
@@ -455,6 +474,8 @@ export function TestCasesDashboard({
     data: visible,
     columns,
     getCoreRowModel: getCoreRowModel(),
+    autoResetPageIndex: false,
+    getRowId: (row) => String(row.id),
   });
 
   return (

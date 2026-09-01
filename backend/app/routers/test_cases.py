@@ -1,7 +1,7 @@
+import asyncio
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException, Query
-from fastapi.responses import StreamingResponse
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -9,7 +9,7 @@ from sqlalchemy.orm import selectinload
 from app.database import get_db
 from app.models import Category, TestCase, TestType
 from app.schemas import TestCaseRead
-from app.pdf_generator import generate_pdf_report
+from app.pdf_generator import build_pdf
 
 router = APIRouter(prefix="/test-cases", tags=["test-cases"])
 
@@ -119,20 +119,38 @@ async def get_test_case(
 
 @router.get("/export/pdf")
 async def export_test_cases_to_pdf(
+    project_id: int = Query(...),
     category_ids: list[int] | None = Query(default=None),
     test_type_ids: list[int] | None = Query(default=None),
     category_id: int | None = Query(default=None, deprecated=True),
     test_type_id: int | None = Query(default=None, deprecated=True),
     db: AsyncSession = Depends(get_db),
-) -> StreamingResponse:
+) -> Response:
     """
-    Generate and export test cases as a PDF report.
+    Generate and export the ECU Penetration Testing Test Plan as a PDF.
 
-    Accepts the same filter parameters as the list_test_cases endpoint.
-    Returns a PDF file with all matching test cases formatted in an
-    enterprise-standard report layout.
+    Accepts the same filter parameters as the list_test_cases endpoint,
+    plus a required ``project_id`` used to source the ECU details table
+    (section 1) and the report's cover page.
     """
-    from app.models import TestCaseTool, TestCaseReference
+    from app.models import TestCaseTool, TestCaseReference, Project, ProjectEcuDetail
+
+    project = await db.get(Project, project_id)
+    if project is None:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    ecu_detail_result = await db.scalars(
+        select(ProjectEcuDetail).where(ProjectEcuDetail.project_id == project_id)
+    )
+    ecu_detail = ecu_detail_result.first()
+    if ecu_detail is None:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "ECU details have not been added for this project yet. "
+                "Please add ECU details before generating the test plan PDF."
+            ),
+        )
 
     # Process filter parameters (same logic as list_test_cases)
     effective_category_ids: list[int] = []
@@ -141,13 +159,16 @@ async def export_test_cases_to_pdf(
     if category_id is not None and category_id not in effective_category_ids:
         effective_category_ids.append(category_id)
 
-    effective_test_type_ids: list[int] = []
+    raw_test_type_ids: list[int] = []
     if test_type_ids:
-        effective_test_type_ids.extend(test_type_ids)
-    if test_type_id is not None and test_type_id not in effective_test_type_ids:
-        effective_test_type_ids.append(test_type_id)
+        raw_test_type_ids.extend(test_type_ids)
+    if test_type_id is not None and test_type_id not in raw_test_type_ids:
+        raw_test_type_ids.append(test_type_id)
 
-    # Treat "Both" as a wildcard for the test_type filter
+    effective_test_type_ids = list(raw_test_type_ids)
+
+    # Treat "Both" as a wildcard for the underlying test-case filter, while
+    # keeping the raw selection (below) for the "Type of testing" table.
     if effective_test_type_ids:
         both_row = await db.scalar(
             select(TestType).where(TestType.name.ilike("Both"))
@@ -194,27 +215,28 @@ async def export_test_cases_to_pdf(
         category_names = [cat.name for cat in categories]
 
     test_type_names: list[str] = []
-    if effective_test_type_ids:
+    if raw_test_type_ids:
         test_types = await db.scalars(
-            select(TestType).where(TestType.id.in_(effective_test_type_ids))
+            select(TestType).where(TestType.id.in_(raw_test_type_ids))
         )
         test_type_names = [tt.name for tt in test_types]
 
-    # Generate PDF
-    pdf_buffer = generate_pdf_report(
+    # Build the PDF on a worker thread so the synchronous ReportLab work
+    # does not block the FastAPI event loop. This keeps the rest of the
+    # dashboard responsive while a report is being generated.
+    pdf_bytes = await asyncio.to_thread(
+        build_pdf,
         test_cases,
+        ecu_detail,
         category_names if category_names else None,
         test_type_names if test_type_names else None,
     )
 
-    # Create filename with timestamp
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = f"test_cases_report_{timestamp}.pdf"
-
-    # Return as streaming response
-    return StreamingResponse(
-        iter([pdf_buffer.getvalue()]),
+    filename = f"test_plan_{timestamp}.pdf"
+    return Response(
+        content=pdf_bytes,
         media_type="application/pdf",
-        headers={"Content-Disposition": f"attachment; filename={filename}"}
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
     )
 

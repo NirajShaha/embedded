@@ -1,0 +1,6157 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+public/
+  file.svg
+  globe.svg
+  next.svg
+  vercel.svg
+  window.svg
+src/
+  app/
+    projects/
+      [projectId]/
+        dashboard/
+          page.tsx
+        page/
+          [pageNumber]/
+            page.tsx
+    dashboard-debug.tsx
+    favicon.ico
+    globals.css
+    layout.tsx
+    page.tsx
+    providers.tsx
+  components/
+    ui/
+      alert-dialog.tsx
+      badge.tsx
+      button.tsx
+      card.tsx
+      data-table.tsx
+      dialog.tsx
+      dropdown-menu.tsx
+      input.tsx
+      label.tsx
+      progress.tsx
+      scroll-area.tsx
+      select.tsx
+      separator.tsx
+      sheet.tsx
+      sidebar.tsx
+      skeleton.tsx
+      table.tsx
+      textarea.tsx
+      tooltip.tsx
+    app-sidebar.tsx
+    create-project-dialog.tsx
+    ecu-detail-form.tsx
+    page-selection-form.tsx
+    pagination.tsx
+    project-card.tsx
+    test-case-detail-dialog.tsx
+    test-cases-dashboard.tsx
+    theme-provider.tsx
+    theme-toggle.tsx
+  hooks/
+    use-mobile.ts
+  lib/
+    api.ts
+    navigation.ts
+    types.ts
+    utils.ts
+  config.ts
+.gitignore
+AGENTS.md
+CLAUDE.md
+components.json
+eslint.config.mjs
+next.config.ts
+package.json
+postcss.config.mjs
+README.md
+tsconfig.json
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="public/file.svg">
+<svg fill="none" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><path d="M14.5 13.5V5.41a1 1 0 0 0-.3-.7L9.8.29A1 1 0 0 0 9.08 0H1.5v13.5A2.5 2.5 0 0 0 4 16h8a2.5 2.5 0 0 0 2.5-2.5m-1.5 0v-7H8v-5H3v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1M9.5 5V2.12L12.38 5zM5.13 5h-.62v1.25h2.12V5zm-.62 3h7.12v1.25H4.5zm.62 3h-.62v1.25h7.12V11z" clip-rule="evenodd" fill="#666" fill-rule="evenodd"/></svg>
+</file>
+
+<file path="public/globe.svg">
+<svg fill="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><g clip-path="url(#a)"><path fill-rule="evenodd" clip-rule="evenodd" d="M10.27 14.1a6.5 6.5 0 0 0 3.67-3.45q-1.24.21-2.7.34-.31 1.83-.97 3.1M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16m.48-1.52a7 7 0 0 1-.96 0H7.5a4 4 0 0 1-.84-1.32q-.38-.89-.63-2.08a40 40 0 0 0 3.92 0q-.25 1.2-.63 2.08a4 4 0 0 1-.84 1.31zm2.94-4.76q1.66-.15 2.95-.43a7 7 0 0 0 0-2.58q-1.3-.27-2.95-.43a18 18 0 0 1 0 3.44m-1.27-3.54a17 17 0 0 1 0 3.64 39 39 0 0 1-4.3 0 17 17 0 0 1 0-3.64 39 39 0 0 1 4.3 0m1.1-1.17q1.45.13 2.69.34a6.5 6.5 0 0 0-3.67-3.44q.65 1.26.98 3.1M8.48 1.5l.01.02q.41.37.84 1.31.38.89.63 2.08a40 40 0 0 0-3.92 0q.25-1.2.63-2.08a4 4 0 0 1 .85-1.32 7 7 0 0 1 .96 0m-2.75.4a6.5 6.5 0 0 0-3.67 3.44 29 29 0 0 1 2.7-.34q.31-1.83.97-3.1M4.58 6.28q-1.66.16-2.95.43a7 7 0 0 0 0 2.58q1.3.27 2.95.43a18 18 0 0 1 0-3.44m.17 4.71q-1.45-.12-2.69-.34a6.5 6.5 0 0 0 3.67 3.44q-.65-1.27-.98-3.1" fill="#666"/></g><defs><clipPath id="a"><path fill="#fff" d="M0 0h16v16H0z"/></clipPath></defs></svg>
+</file>
+
+<file path="public/next.svg">
+<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 394 80"><path fill="#000" d="M262 0h68.5v12.7h-27.2v66.6h-13.6V12.7H262V0ZM149 0v12.7H94v20.4h44.3v12.6H94v21h55v12.6H80.5V0h68.7zm34.3 0h-17.8l63.8 79.4h17.9l-32-39.7 32-39.6h-17.9l-23 28.6-23-28.6zm18.3 56.7-9-11-27.1 33.7h17.8l18.3-22.7z"/><path fill="#000" d="M81 79.3 17 0H0v79.3h13.6V17l50.2 62.3H81Zm252.6-.4c-1 0-1.8-.4-2.5-1s-1.1-1.6-1.1-2.6.3-1.8 1-2.5 1.6-1 2.6-1 1.8.3 2.5 1a3.4 3.4 0 0 1 .6 4.3 3.7 3.7 0 0 1-3 1.8zm23.2-33.5h6v23.3c0 2.1-.4 4-1.3 5.5a9.1 9.1 0 0 1-3.8 3.5c-1.6.8-3.5 1.3-5.7 1.3-2 0-3.7-.4-5.3-1s-2.8-1.8-3.7-3.2c-.9-1.3-1.4-3-1.4-5h6c.1.8.3 1.6.7 2.2s1 1.2 1.6 1.5c.7.4 1.5.5 2.4.5 1 0 1.8-.2 2.4-.6a4 4 0 0 0 1.6-1.8c.3-.8.5-1.8.5-3V45.5zm30.9 9.1a4.4 4.4 0 0 0-2-3.3 7.5 7.5 0 0 0-4.3-1.1c-1.3 0-2.4.2-3.3.5-.9.4-1.6 1-2 1.6a3.5 3.5 0 0 0-.3 4c.3.5.7.9 1.3 1.2l1.8 1 2 .5 3.2.8c1.3.3 2.5.7 3.7 1.2a13 13 0 0 1 3.2 1.8 8.1 8.1 0 0 1 3 6.5c0 2-.5 3.7-1.5 5.1a10 10 0 0 1-4.4 3.5c-1.8.8-4.1 1.2-6.8 1.2-2.6 0-4.9-.4-6.8-1.2-2-.8-3.4-2-4.5-3.5a10 10 0 0 1-1.7-5.6h6a5 5 0 0 0 3.5 4.6c1 .4 2.2.6 3.4.6 1.3 0 2.5-.2 3.5-.6 1-.4 1.8-1 2.4-1.7a4 4 0 0 0 .8-2.4c0-.9-.2-1.6-.7-2.2a11 11 0 0 0-2.1-1.4l-3.2-1-3.8-1c-2.8-.7-5-1.7-6.6-3.2a7.2 7.2 0 0 1-2.4-5.7 8 8 0 0 1 1.7-5 10 10 0 0 1 4.3-3.5c2-.8 4-1.2 6.4-1.2 2.3 0 4.4.4 6.2 1.2 1.8.8 3.2 2 4.3 3.4 1 1.4 1.5 3 1.5 5h-5.8z"/></svg>
+</file>
+
+<file path="public/vercel.svg">
+<svg fill="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1155 1000"><path d="m577.3 0 577.4 1000H0z" fill="#fff"/></svg>
+</file>
+
+<file path="public/window.svg">
+<svg fill="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill-rule="evenodd" clip-rule="evenodd" d="M1.5 2.5h13v10a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1zM0 1h16v11.5a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 0 12.5zm3.75 4.5a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5M7 4.75a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0m1.75.75a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5" fill="#666"/></svg>
+</file>
+
+<file path="src/app/projects/[projectId]/dashboard/page.tsx">
+import Link from "next/link";
+import { ChevronLeft } from "lucide-react";
+
+import { EcuDetailForm } from "@/components/ecu-detail-form";
+import { TestCasesDashboard } from "@/components/test-cases-dashboard";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+
+type Params = { projectId: string };
+
+export default async function ProjectDashboardPage({
+  params,
+}: {
+  params: Promise<Params>;
+}) {
+  const { projectId } = await params;
+  const projectIdNum = Number(projectId);
+
+  return (
+    <div className="flex flex-col gap-8">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="space-y-1">
+          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            Project
+          </p>
+          <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+            Dashboard
+          </h1>
+          <p className="max-w-xl text-sm text-muted-foreground">
+            Manage ECU hardware details and review the security test cases that
+            apply to this configuration.
+          </p>
+        </div>
+        <Button asChild variant="outline" size="sm">
+          <Link href="/">
+            <ChevronLeft />
+            All projects
+          </Link>
+        </Button>
+      </div>
+
+      <Separator />
+
+      <div className="flex flex-col gap-8">
+        <EcuDetailForm projectId={projectIdNum} />
+        <TestCasesDashboard projectId={projectIdNum} />
+      </div>
+    </div>
+  );
+}
+</file>
+
+<file path="src/app/projects/[projectId]/page/[pageNumber]/page.tsx">
+import { PageSelectionForm } from "@/components/page-selection-form";
+
+type Params = { projectId: string; pageNumber: string };
+
+export default async function SelectionStepPage({
+  params,
+}: {
+  params: Promise<Params>;
+}) {
+  const { projectId, pageNumber } = await params;
+  return (
+    <PageSelectionForm
+      projectId={Number(projectId)}
+      pageNumber={Number(pageNumber)}
+    />
+  );
+}
+</file>
+
+<file path="src/app/dashboard-debug.tsx">
+"use client";
+
+import * as React from "react";
+
+interface State {
+  error: Error | null;
+}
+
+interface Props {
+  children: React.ReactNode;
+  label: string;
+}
+
+export class ErrorBoundary extends React.Component<Props, State> {
+  state: State = { error: null };
+
+  static getDerivedStateFromError(error: Error): State {
+    return { error };
+  }
+
+  componentDidCatch(error: Error, info: React.ErrorInfo) {
+    // eslint-disable-next-line no-console
+    console.error(
+      "[ErrorBoundary:" + this.props.label + "] caught:",
+      error,
+      info.componentStack,
+    );
+  }
+
+  render() {
+    if (this.state.error) {
+      return (
+        <div style={{ padding: 16, border: "2px solid red", margin: 8 }}>
+          <strong>Error in {this.props.label}</strong>
+          <pre style={{ whiteSpace: "pre-wrap" }}>
+            {this.state.error.message}
+            {"\n"}
+            {this.state.error.stack}
+          </pre>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+</file>
+
+<file path="src/app/globals.css">
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ---------- Brand direction ----------
+ * Embedded security tooling for automotive ECUs.
+ * Domain cue: signal/wire, oscilloscope, terminal cyan, fault-flag amber.
+ * We pick a deep ink canvas with a single saturated cyan as the protagonist.
+ * The chart palette uses severity-coded hues with deliberate lightness gaps
+ * so the eye can rank them in a glance, not decode them.
+ * ----------------------------------- */
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-heading: var(--font-geist-sans);
+
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+
+  --color-destructive: var(--destructive);
+
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+
+  /* Severity tokens — used by badges, row accents, and chart roles. */
+  --color-severity-critical: var(--severity-critical);
+  --color-severity-high: var(--severity-high);
+  --color-severity-medium: var(--severity-medium);
+  --color-severity-low: var(--severity-low);
+  --color-severity-info: var(--severity-info);
+
+  /* Domain accent (cyan) — used sparingly to mean "live signal". */
+  --color-signal: var(--signal);
+  --color-signal-foreground: var(--signal-foreground);
+
+  --radius-sm: calc(var(--radius) * 0.5);
+  --radius-md: calc(var(--radius) * 0.75);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.5);
+  --radius-2xl: calc(var(--radius) * 2);
+  --radius-3xl: calc(var(--radius) * 2.6);
+  --radius-4xl: calc(var(--radius) * 3.2);
+
+  /* Type scale (Major Third tuned, 1.250). */
+  --text-xs: 0.75rem;
+  --text-xs--line-height: 1.4;
+  --text-sm: 0.875rem;
+  --text-sm--line-height: 1.5;
+  --text-base: 0.9375rem;
+  --text-base--line-height: 1.6;
+  --text-md: 1.0625rem;
+  --text-md--line-height: 1.55;
+  --text-lg: 1.1875rem;
+  --text-lg--line-height: 1.5;
+  --text-xl: 1.375rem;
+  --text-xl--line-height: 1.4;
+  --text-2xl: 1.625rem;
+  --text-2xl--line-height: 1.3;
+  --text-3xl: 2rem;
+  --text-3xl--line-height: 1.2;
+}
+
+/* ============================================================
+ * LIGHT MODE — ink-tinted neutrals, cyan protagonist.
+ * Neutrals carry a tiny blue chroma so they read as authored.
+ * ============================================================ */
+:root {
+  --background: oklch(0.985 0.003 240);
+  --foreground: oklch(0.18 0.012 250);
+
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.18 0.012 250);
+
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.18 0.012 250);
+
+  --primary: oklch(0.32 0.045 250);
+  --primary-foreground: oklch(0.985 0.003 240);
+
+  --secondary: oklch(0.965 0.005 240);
+  --secondary-foreground: oklch(0.24 0.015 250);
+
+  --muted: oklch(0.965 0.005 240);
+  --muted-foreground: oklch(0.5 0.015 250);
+
+  --accent: oklch(0.96 0.012 230);
+  --accent-foreground: oklch(0.24 0.015 250);
+
+  --destructive: oklch(0.55 0.21 27);
+  --destructive-foreground: oklch(0.99 0.005 27);
+
+  --border: oklch(0.92 0.005 240);
+  --input: oklch(0.92 0.005 240);
+  --ring: oklch(0.62 0.13 215);
+
+  /* Charts ordered by semantic severity rank. */
+  --chart-1: oklch(0.62 0.18 215);   /* signal cyan — primary */
+  --chart-2: oklch(0.58 0.15 250);   /* ink blue */
+  --chart-3: oklch(0.65 0.14 175);   /* teal */
+  --chart-4: oklch(0.7 0.14 75);     /* amber */
+  --chart-5: oklch(0.58 0.2 30);     /* fault red */
+
+  --severity-critical: oklch(0.55 0.21 27);
+  --severity-high:     oklch(0.65 0.18 45);
+  --severity-medium:   oklch(0.7 0.16 75);
+  --severity-low:      oklch(0.62 0.13 165);
+  --severity-info:     oklch(0.6 0.08 250);
+
+  --signal: oklch(0.62 0.13 215);
+  --signal-foreground: oklch(0.985 0.003 240);
+
+  --radius: 0.625rem;
+
+  --sidebar: oklch(0.99 0.003 240);
+  --sidebar-foreground: oklch(0.22 0.015 250);
+  --sidebar-primary: oklch(0.32 0.045 250);
+  --sidebar-primary-foreground: oklch(0.985 0.003 240);
+  --sidebar-accent: oklch(0.95 0.012 230);
+  --sidebar-accent-foreground: oklch(0.22 0.015 250);
+  --sidebar-border: oklch(0.92 0.005 240);
+  --sidebar-ring: oklch(0.62 0.13 215);
+}
+
+/* ============================================================
+ * DARK MODE — the home register. Deep ink with cyan glow.
+ * Designed to feel like a security operations console.
+ * ============================================================ */
+.dark {
+  --background: oklch(0.16 0.012 250);
+  --foreground: oklch(0.96 0.005 240);
+
+  --card: oklch(0.2 0.012 250);
+  --card-foreground: oklch(0.96 0.005 240);
+
+  --popover: oklch(0.21 0.012 250);
+  --popover-foreground: oklch(0.96 0.005 240);
+
+  --primary: oklch(0.78 0.14 215);
+  --primary-foreground: oklch(0.16 0.012 250);
+
+  --secondary: oklch(0.25 0.012 250);
+  --secondary-foreground: oklch(0.96 0.005 240);
+
+  --muted: oklch(0.24 0.012 250);
+  --muted-foreground: oklch(0.66 0.015 240);
+
+  --accent: oklch(0.27 0.02 220);
+  --accent-foreground: oklch(0.96 0.005 240);
+
+  --destructive: oklch(0.68 0.2 27);
+  --destructive-foreground: oklch(0.16 0.012 250);
+
+  --border: oklch(0.28 0.01 250);
+  --input: oklch(0.28 0.01 250);
+  --ring: oklch(0.72 0.14 215);
+
+  --chart-1: oklch(0.78 0.15 215);
+  --chart-2: oklch(0.7 0.13 250);
+  --chart-3: oklch(0.75 0.12 175);
+  --chart-4: oklch(0.78 0.15 75);
+  --chart-5: oklch(0.7 0.19 30);
+
+  --severity-critical: oklch(0.7 0.2 27);
+  --severity-high:     oklch(0.78 0.17 45);
+  --severity-medium:   oklch(0.82 0.15 75);
+  --severity-low:      oklch(0.78 0.12 165);
+  --severity-info:     oklch(0.7 0.08 250);
+
+  --signal: oklch(0.78 0.14 215);
+  --signal-foreground: oklch(0.16 0.012 250);
+
+  --sidebar: oklch(0.18 0.012 250);
+  --sidebar-foreground: oklch(0.94 0.005 240);
+  --sidebar-primary: oklch(0.78 0.14 215);
+  --sidebar-primary-foreground: oklch(0.16 0.012 250);
+  --sidebar-accent: oklch(0.24 0.015 220);
+  --sidebar-accent-foreground: oklch(0.96 0.005 240);
+  --sidebar-border: oklch(0.26 0.01 250);
+  --sidebar-ring: oklch(0.72 0.14 215);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply font-sans;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "ss01", "cv11";
+  }
+  /* Heading lockup — every heading uses the same family with optical sizing. */
+  h1, h2, h3, h4 {
+    @apply font-heading tracking-tight text-foreground;
+  }
+  /* Mono numerals in tables keep numbers aligned across rows. */
+  .font-tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@layer utilities {
+  /* Subtle scanline-inspired grain for surfaces. */
+  .surface-grain {
+    background-image:
+      radial-gradient(ellipse at top, oklch(0.62 0.13 215 / 0.04), transparent 60%),
+      linear-gradient(180deg, oklch(0.16 0.012 250 / 0), oklch(0.16 0.012 250 / 0.02));
+  }
+  .dark .surface-grain {
+    background-image:
+      radial-gradient(ellipse at top, oklch(0.78 0.14 215 / 0.07), transparent 60%),
+      linear-gradient(180deg, oklch(0.16 0.012 250 / 0), oklch(0.16 0.012 250 / 0.4));
+  }
+  /* Focus ring tuned to brand and visible on both registers. */
+  .ring-focus {
+    @apply outline-none ring-2 ring-ring/70 ring-offset-2 ring-offset-background;
+  }
+  /* Staggered fade-in for grouped items. */
+  .stagger-in > * {
+    animation: stagger-in 0.4s ease-out both;
+  }
+  .stagger-in > *:nth-child(1) { animation-delay: 30ms; }
+  .stagger-in > *:nth-child(2) { animation-delay: 70ms; }
+  .stagger-in > *:nth-child(3) { animation-delay: 110ms; }
+  .stagger-in > *:nth-child(4) { animation-delay: 150ms; }
+  .stagger-in > *:nth-child(5) { animation-delay: 190ms; }
+  .stagger-in > *:nth-child(6) { animation-delay: 230ms; }
+  .stagger-in > *:nth-child(7) { animation-delay: 270ms; }
+  .stagger-in > *:nth-child(8) { animation-delay: 310ms; }
+
+  @keyframes stagger-in {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .stagger-in > * {
+      animation: none !important;
+    }
+  }
+}
+</file>
+
+<file path="src/app/layout.tsx">
+import type { Metadata } from "next";
+import { Geist, Geist_Mono } from "next/font/google";
+import { AppSidebar } from "@/components/app-sidebar";
+import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { Providers } from "@/app/providers";
+import { APP_USER_NAME } from "@/config";
+import "./globals.css";
+
+const geistSans = Geist({
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
+});
+
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
+
+export const metadata: Metadata = {
+  title: "Embedded Config — Security Setup",
+  description: "Configure automotive ECU projects and run security test coverage.",
+};
+
+export default function RootLayout({ children }: LayoutProps<"/">) {
+  return (
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+    >
+      <body className="min-h-full bg-background text-foreground">
+        <Providers>
+          <SidebarProvider>
+            <AppSidebar />
+            <SidebarInset className="surface-grain">
+              <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-3 border-b border-border/60 bg-background/80 px-5 backdrop-blur-md">
+                <SidebarTrigger className="-ml-1 text-muted-foreground hover:text-foreground" />
+                <div className="h-5 w-px bg-border" />
+                <div className="flex flex-1 items-center gap-2 text-sm">
+                  <span className="text-muted-foreground">Signed in as</span>
+                  <span className="font-medium text-foreground">{APP_USER_NAME}</span>
+                  <span className="ml-2 inline-flex h-1.5 w-1.5 rounded-full bg-[var(--signal)] shadow-[0_0_0_3px_oklch(0.62_0.13_215/0.18)]" />
+                </div>
+                <div className="hidden items-center gap-1.5 rounded-full border border-border/60 bg-card/60 px-2.5 py-1 text-xs text-muted-foreground sm:flex">
+                  <kbd className="rounded border border-border/80 bg-background px-1 font-mono text-[10px]">⌘</kbd>
+                  <kbd className="rounded border border-border/80 bg-background px-1 font-mono text-[10px]">B</kbd>
+                  <span className="ml-1">Toggle sidebar</span>
+                </div>
+              </header>
+              <main className="flex-1 overflow-auto">
+                <div className="mx-auto w-full max-w-6xl px-6 py-8 sm:px-8 sm:py-10">
+                  {children}
+                </div>
+              </main>
+            </SidebarInset>
+          </SidebarProvider>
+        </Providers>
+      </body>
+    </html>
+  );
+}
+</file>
+
+<file path="src/app/page.tsx">
+"use client";
+
+import * as React from "react";
+import { useRouter } from "next/navigation";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { FolderPlus, Plus } from "lucide-react";
+
+import { APP_USER_NAME } from "@/config";
+import { listProjects } from "@/lib/api";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { CreateProjectDialog } from "@/components/create-project-dialog";
+import { ProjectCard } from "@/components/project-card";
+
+export default function DashboardPage() {
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const [dialogOpen, setDialogOpen] = React.useState(false);
+
+  const {
+    data: projects,
+    isLoading,
+    isError,
+    error,
+  } = useQuery({
+    queryKey: ["projects"],
+    queryFn: listProjects,
+  });
+
+  const handleCreated = (projectId: number) => {
+    setDialogOpen(false);
+    queryClient.invalidateQueries({ queryKey: ["projects"] });
+    router.push(`/projects/${projectId}/dashboard`);
+  };
+
+  const projectCount = projects?.length ?? 0;
+  const greeting = React.useMemo(() => {
+    const hour = new Date().getHours();
+    if (hour < 5) return "Working late";
+    if (hour < 12) return "Good morning";
+    if (hour < 18) return "Good afternoon";
+    return "Good evening";
+  }, []);
+
+  return (
+    <div className="flex flex-col gap-10">
+      <section className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+        <div className="space-y-2">
+          <p className="text-sm font-medium text-muted-foreground">{greeting},</p>
+          <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+            {APP_USER_NAME}
+          </h1>
+          <p className="max-w-xl text-sm text-muted-foreground sm:text-base">
+            Configure ECUs, walk through the four-step setup, and run security
+            test coverage. Pick up a project below or start fresh.
+          </p>
+        </div>
+        <div className="flex shrink-0 items-center gap-3 rounded-lg border border-border/60 bg-card px-4 py-3 shadow-sm">
+          <div className="flex flex-col">
+            <span className="text-xs uppercase tracking-wider text-muted-foreground">
+              Projects
+            </span>
+            <span className="text-2xl font-semibold tabular-nums text-foreground">
+              {isLoading ? "—" : projectCount}
+            </span>
+          </div>
+          <div className="h-10 w-px bg-border" />
+          <div className="flex flex-col">
+            <span className="text-xs uppercase tracking-wider text-muted-foreground">
+              Setup steps
+            </span>
+            <span className="text-2xl font-semibold tabular-nums text-foreground">4</span>
+          </div>
+        </div>
+      </section>
+
+      <section className="flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-semibold tracking-tight">Your projects</h2>
+          <p className="text-sm text-muted-foreground">
+            Open a project to view its ECU details and security test cases.
+          </p>
+        </div>
+        <Button onClick={() => setDialogOpen(true)}>
+          <Plus />
+          New project
+        </Button>
+      </section>
+
+      {isLoading ? (
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Skeleton key={i} className="h-44 rounded-xl" />
+          ))}
+        </div>
+      ) : isError ? (
+        <p className="text-sm text-destructive">
+          Failed to load projects:{" "}
+          {error instanceof Error ? error.message : "unknown error"}
+        </p>
+      ) : projects && projects.length > 0 ? (
+        <div className="stagger-in grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {projects.map((project) => (
+            <ProjectCard key={project.id} project={project} />
+          ))}
+        </div>
+      ) : (
+        <div className="flex flex-col items-center gap-4 rounded-2xl border border-dashed border-border bg-card/50 px-6 py-20 text-center">
+          <div className="flex size-12 items-center justify-center rounded-full bg-accent text-accent-foreground">
+            <FolderPlus className="size-5" />
+          </div>
+          <div className="space-y-1">
+            <p className="text-base font-semibold">No projects yet</p>
+            <p className="mx-auto max-w-sm text-sm text-muted-foreground">
+              Create your first project to start the four-step setup wizard and
+              unlock security test coverage.
+            </p>
+          </div>
+          <Button onClick={() => setDialogOpen(true)}>
+            <Plus />
+            Create your first project
+          </Button>
+        </div>
+      )}
+
+      <CreateProjectDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        onCreated={(project) => handleCreated(project.id)}
+      />
+    </div>
+  );
+}
+</file>
+
+<file path="src/app/providers.tsx">
+"use client";
+
+import * as React from "react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ThemeProvider } from "@/components/theme-provider";
+import { TooltipProvider } from "@/components/ui/tooltip";
+
+export function Providers({ children }: { children: React.ReactNode }) {
+  const [queryClient] = React.useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: { retry: 1, refetchOnWindowFocus: false },
+        },
+      })
+  );
+
+  return (
+    <ThemeProvider
+      attribute="class"
+      defaultTheme="system"
+      enableSystem
+      disableTransitionOnChange
+    >
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider delayDuration={200}>{children}</TooltipProvider>
+      </QueryClientProvider>
+    </ThemeProvider>
+  );
+}
+</file>
+
+<file path="src/components/ui/alert-dialog.tsx">
+"use client"
+
+import * as React from "react"
+import { AlertDialog as AlertDialogPrimitive } from "radix-ui"
+
+import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
+
+function AlertDialog({
+  ...props
+}: React.ComponentProps<typeof AlertDialogPrimitive.Root>) {
+  return <AlertDialogPrimitive.Root data-slot="alert-dialog" {...props} />
+}
+
+function AlertDialogTrigger({
+  ...props
+}: React.ComponentProps<typeof AlertDialogPrimitive.Trigger>) {
+  return (
+    <AlertDialogPrimitive.Trigger data-slot="alert-dialog-trigger" {...props} />
+  )
+}
+
+function AlertDialogPortal({
+  ...props
+}: React.ComponentProps<typeof AlertDialogPrimitive.Portal>) {
+  return (
+    <AlertDialogPrimitive.Portal data-slot="alert-dialog-portal" {...props} />
+  )
+}
+
+function AlertDialogOverlay({
+  className,
+  ...props
+}: React.ComponentProps<typeof AlertDialogPrimitive.Overlay>) {
+  return (
+    <AlertDialogPrimitive.Overlay
+      data-slot="alert-dialog-overlay"
+      className={cn(
+        "fixed inset-0 z-50 bg-black/10 duration-100 supports-backdrop-filter:backdrop-blur-xs data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function AlertDialogContent({
+  className,
+  size = "default",
+  ...props
+}: React.ComponentProps<typeof AlertDialogPrimitive.Content> & {
+  size?: "default" | "sm"
+}) {
+  return (
+    <AlertDialogPortal>
+      <AlertDialogOverlay />
+      <AlertDialogPrimitive.Content
+        data-slot="alert-dialog-content"
+        data-size={size}
+        className={cn(
+          "group/alert-dialog-content fixed top-1/2 left-1/2 z-50 grid w-full -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl bg-popover p-4 text-popover-foreground ring-1 ring-foreground/10 duration-100 outline-none data-[size=default]:max-w-xs data-[size=sm]:max-w-xs data-[size=default]:sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
+          className
+        )}
+        {...props}
+      />
+    </AlertDialogPortal>
+  )
+}
+
+function AlertDialogHeader({
+  className,
+  ...props
+}: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="alert-dialog-header"
+      className={cn(
+        "grid grid-rows-[auto_1fr] place-items-center gap-1.5 text-center has-data-[slot=alert-dialog-media]:grid-rows-[auto_auto_1fr] has-data-[slot=alert-dialog-media]:gap-x-4 sm:group-data-[size=default]/alert-dialog-content:place-items-start sm:group-data-[size=default]/alert-dialog-content:text-left sm:group-data-[size=default]/alert-dialog-content:has-data-[slot=alert-dialog-media]:grid-rows-[auto_1fr]",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function AlertDialogFooter({
+  className,
+  ...props
+}: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="alert-dialog-footer"
+      className={cn(
+        "-mx-4 -mb-4 flex flex-col-reverse gap-2 rounded-b-xl border-t bg-muted/50 p-4 group-data-[size=sm]/alert-dialog-content:grid group-data-[size=sm]/alert-dialog-content:grid-cols-2 sm:flex-row sm:justify-end",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function AlertDialogMedia({
+  className,
+  ...props
+}: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="alert-dialog-media"
+      className={cn(
+        "mb-2 inline-flex size-10 items-center justify-center rounded-md bg-muted sm:group-data-[size=default]/alert-dialog-content:row-span-2 *:[svg:not([class*='size-'])]:size-6",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function AlertDialogTitle({
+  className,
+  ...props
+}: React.ComponentProps<typeof AlertDialogPrimitive.Title>) {
+  return (
+    <AlertDialogPrimitive.Title
+      data-slot="alert-dialog-title"
+      className={cn(
+        "font-heading text-base font-medium sm:group-data-[size=default]/alert-dialog-content:group-has-data-[slot=alert-dialog-media]/alert-dialog-content:col-start-2",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function AlertDialogDescription({
+  className,
+  ...props
+}: React.ComponentProps<typeof AlertDialogPrimitive.Description>) {
+  return (
+    <AlertDialogPrimitive.Description
+      data-slot="alert-dialog-description"
+      className={cn(
+        "text-sm text-balance text-muted-foreground md:text-pretty *:[a]:underline *:[a]:underline-offset-3 *:[a]:hover:text-foreground",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function AlertDialogAction({
+  className,
+  variant = "default",
+  size = "default",
+  ...props
+}: React.ComponentProps<typeof AlertDialogPrimitive.Action> &
+  Pick<React.ComponentProps<typeof Button>, "variant" | "size">) {
+  return (
+    <Button variant={variant} size={size} asChild>
+      <AlertDialogPrimitive.Action
+        data-slot="alert-dialog-action"
+        className={cn(className)}
+        {...props}
+      />
+    </Button>
+  )
+}
+
+function AlertDialogCancel({
+  className,
+  variant = "outline",
+  size = "default",
+  ...props
+}: React.ComponentProps<typeof AlertDialogPrimitive.Cancel> &
+  Pick<React.ComponentProps<typeof Button>, "variant" | "size">) {
+  return (
+    <Button variant={variant} size={size} asChild>
+      <AlertDialogPrimitive.Cancel
+        data-slot="alert-dialog-cancel"
+        className={cn(className)}
+        {...props}
+      />
+    </Button>
+  )
+}
+
+export {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogMedia,
+  AlertDialogOverlay,
+  AlertDialogPortal,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+}
+</file>
+
+<file path="src/components/ui/badge.tsx">
+import * as React from "react"
+import { cva, type VariantProps } from "class-variance-authority"
+import { Slot } from "radix-ui"
+
+import { cn } from "@/lib/utils"
+
+const badgeVariants = cva(
+  "group/badge inline-flex h-5 w-fit shrink-0 items-center justify-center gap-1 overflow-hidden rounded-4xl border border-transparent px-2 py-0.5 text-xs font-medium whitespace-nowrap transition-all focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&>svg]:pointer-events-none [&>svg]:size-3!",
+  {
+    variants: {
+      variant: {
+        default: "bg-primary text-primary-foreground [a]:hover:bg-primary/80",
+        secondary:
+          "bg-secondary text-secondary-foreground [a]:hover:bg-secondary/80",
+        destructive:
+          "bg-destructive/10 text-destructive focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:focus-visible:ring-destructive/40 [a]:hover:bg-destructive/20",
+        outline:
+          "border-border text-foreground [a]:hover:bg-muted [a]:hover:text-muted-foreground",
+        ghost:
+          "hover:bg-muted hover:text-muted-foreground dark:hover:bg-muted/50",
+        link: "text-primary underline-offset-4 hover:underline",
+      },
+    },
+    defaultVariants: {
+      variant: "default",
+    },
+  }
+)
+
+function Badge({
+  className,
+  variant = "default",
+  asChild = false,
+  ...props
+}: React.ComponentProps<"span"> &
+  VariantProps<typeof badgeVariants> & { asChild?: boolean }) {
+  const Comp = asChild ? Slot.Root : "span"
+
+  return (
+    <Comp
+      data-slot="badge"
+      data-variant={variant}
+      className={cn(badgeVariants({ variant }), className)}
+      {...props}
+    />
+  )
+}
+
+export { Badge, badgeVariants }
+</file>
+
+<file path="src/components/ui/button.tsx">
+import * as React from "react"
+import { cva, type VariantProps } from "class-variance-authority"
+import { Slot } from "radix-ui"
+
+import { cn } from "@/lib/utils"
+
+const buttonVariants = cva(
+  "group/button inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  {
+    variants: {
+      variant: {
+        default: "bg-primary text-primary-foreground hover:bg-primary/80",
+        outline:
+          "border-border bg-background hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50",
+        secondary:
+          "bg-secondary text-secondary-foreground hover:bg-[color-mix(in_oklch,var(--secondary),var(--foreground)_5%)] aria-expanded:bg-secondary aria-expanded:text-secondary-foreground",
+        ghost:
+          "hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50",
+        destructive:
+          "bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40",
+        link: "text-primary underline-offset-4 hover:underline",
+      },
+      size: {
+        default:
+          "h-8 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2",
+        xs: "h-6 gap-1 rounded-[min(var(--radius-md),10px)] px-2 text-xs in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3",
+        sm: "h-7 gap-1 rounded-[min(var(--radius-md),12px)] px-2.5 text-[0.8rem] in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3.5",
+        lg: "h-9 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2",
+        icon: "size-8",
+        "icon-xs":
+          "size-6 rounded-[min(var(--radius-md),10px)] in-data-[slot=button-group]:rounded-lg [&_svg:not([class*='size-'])]:size-3",
+        "icon-sm":
+          "size-7 rounded-[min(var(--radius-md),12px)] in-data-[slot=button-group]:rounded-lg",
+        "icon-lg": "size-9",
+      },
+    },
+    defaultVariants: {
+      variant: "default",
+      size: "default",
+    },
+  }
+)
+
+function Button({
+  className,
+  variant = "default",
+  size = "default",
+  asChild = false,
+  ...props
+}: React.ComponentProps<"button"> &
+  VariantProps<typeof buttonVariants> & {
+    asChild?: boolean
+  }) {
+  const Comp = asChild ? Slot.Root : "button"
+
+  return (
+    <Comp
+      data-slot="button"
+      data-variant={variant}
+      data-size={size}
+      className={cn(buttonVariants({ variant, size, className }))}
+      {...props}
+    />
+  )
+}
+
+export { Button, buttonVariants }
+</file>
+
+<file path="src/components/ui/card.tsx">
+import * as React from "react"
+
+import { cn } from "@/lib/utils"
+
+function Card({
+  className,
+  size = "default",
+  ...props
+}: React.ComponentProps<"div"> & { size?: "default" | "sm" }) {
+  return (
+    <div
+      data-slot="card"
+      data-size={size}
+      className={cn(
+        "group/card flex flex-col gap-(--card-spacing) overflow-hidden rounded-xl bg-card py-(--card-spacing) text-sm text-card-foreground ring-1 ring-foreground/10 [--card-spacing:--spacing(4)] has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:[--card-spacing:--spacing(3)] data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-xl *:[img:last-child]:rounded-b-xl",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function CardHeader({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="card-header"
+      className={cn(
+        "group/card-header @container/card-header grid auto-rows-min items-start gap-1 rounded-t-xl px-(--card-spacing) has-data-[slot=card-action]:grid-cols-[1fr_auto] has-data-[slot=card-description]:grid-rows-[auto_auto] [.border-b]:pb-(--card-spacing)",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function CardTitle({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="card-title"
+      className={cn(
+        "font-heading text-base leading-snug font-medium group-data-[size=sm]/card:text-sm",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function CardDescription({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="card-description"
+      className={cn("text-sm text-muted-foreground", className)}
+      {...props}
+    />
+  )
+}
+
+function CardAction({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="card-action"
+      className={cn(
+        "col-start-2 row-span-2 row-start-1 self-start justify-self-end",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function CardContent({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="card-content"
+      className={cn("px-(--card-spacing)", className)}
+      {...props}
+    />
+  )
+}
+
+function CardFooter({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="card-footer"
+      className={cn(
+        "flex items-center rounded-b-xl border-t bg-muted/50 p-(--card-spacing)",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+export {
+  Card,
+  CardHeader,
+  CardFooter,
+  CardTitle,
+  CardAction,
+  CardDescription,
+  CardContent,
+}
+</file>
+
+<file path="src/components/ui/data-table.tsx">
+"use client";
+
+import * as React from "react";
+import { flexRender, type Table as ReactTable } from "@tanstack/react-table";
+
+import { cn } from "@/lib/utils";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+
+declare module "@tanstack/react-table" {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  interface ColumnMeta<TData, TValue> {
+    className?: string;
+  }
+}
+
+interface DataTableProps<TData> {
+  table: ReactTable<TData>;
+  onRowClick?: (row: TData) => void;
+  rowClassName?: (row: TData) => string | undefined;
+  emptyMessage?: React.ReactNode;
+  className?: string;
+}
+
+export function DataTable<TData>({
+  table,
+  onRowClick,
+  rowClassName,
+  emptyMessage = "No results.",
+  className,
+}: DataTableProps<TData>) {
+  const columnCount = table.getAllLeafColumns().length;
+  const rows = table.getRowModel().rows;
+
+  return (
+    <Table className={cn("table-fixed", className)}>
+      <TableHeader>
+        {table.getHeaderGroups().map((headerGroup) => (
+          <TableRow key={headerGroup.id} className="hover:bg-transparent">
+            {headerGroup.headers.map((header) => (
+              <TableHead
+                key={header.id}
+                className={cn(
+                  "font-semibold",
+                  header.column.columnDef.meta?.className,
+                )}
+              >
+                {header.isPlaceholder
+                  ? null
+                  : flexRender(
+                      header.column.columnDef.header,
+                      header.getContext(),
+                    )}
+              </TableHead>
+            ))}
+          </TableRow>
+        ))}
+      </TableHeader>
+      <TableBody>
+        {rows.length ? (
+          rows.map((row) => (
+            <TableRow
+              key={row.id}
+              className={cn(
+                onRowClick && "cursor-pointer",
+                rowClassName?.(row.original),
+              )}
+              onClick={() => onRowClick?.(row.original)}
+            >
+              {row.getVisibleCells().map((cell) => (
+                <TableCell
+                  key={cell.id}
+                  className={cn(
+                    "whitespace-normal",
+                    cell.column.columnDef.meta?.className,
+                  )}
+                >
+                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                </TableCell>
+              ))}
+            </TableRow>
+          ))
+        ) : (
+          <TableRow className="hover:bg-transparent">
+            <TableCell
+              colSpan={columnCount}
+              className="h-32 text-center text-sm text-muted-foreground"
+            >
+              {emptyMessage}
+            </TableCell>
+          </TableRow>
+        )}
+      </TableBody>
+    </Table>
+  );
+}
+</file>
+
+<file path="src/components/ui/dialog.tsx">
+"use client"
+
+import * as React from "react"
+import { Dialog as DialogPrimitive } from "radix-ui"
+
+import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
+import { XIcon } from "lucide-react"
+
+function Dialog({
+  ...props
+}: React.ComponentProps<typeof DialogPrimitive.Root>) {
+  return <DialogPrimitive.Root data-slot="dialog" {...props} />
+}
+
+function DialogTrigger({
+  ...props
+}: React.ComponentProps<typeof DialogPrimitive.Trigger>) {
+  return <DialogPrimitive.Trigger data-slot="dialog-trigger" {...props} />
+}
+
+function DialogPortal({
+  ...props
+}: React.ComponentProps<typeof DialogPrimitive.Portal>) {
+  return <DialogPrimitive.Portal data-slot="dialog-portal" {...props} />
+}
+
+function DialogClose({
+  ...props
+}: React.ComponentProps<typeof DialogPrimitive.Close>) {
+  return <DialogPrimitive.Close data-slot="dialog-close" {...props} />
+}
+
+function DialogOverlay({
+  className,
+  ...props
+}: React.ComponentProps<typeof DialogPrimitive.Overlay>) {
+  return (
+    <DialogPrimitive.Overlay
+      data-slot="dialog-overlay"
+      className={cn(
+        "fixed inset-0 isolate z-50 bg-black/10 duration-100 supports-backdrop-filter:backdrop-blur-xs data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function DialogContent({
+  className,
+  children,
+  showCloseButton = true,
+  ...props
+}: React.ComponentProps<typeof DialogPrimitive.Content> & {
+  showCloseButton?: boolean
+}) {
+  return (
+    <DialogPortal>
+      <DialogOverlay />
+      <DialogPrimitive.Content
+        data-slot="dialog-content"
+        className={cn(
+          "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 duration-100 outline-none sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
+          className
+        )}
+        {...props}
+      >
+        {children}
+        {showCloseButton && (
+          <DialogPrimitive.Close data-slot="dialog-close" asChild>
+            <Button
+              variant="ghost"
+              className="absolute top-2 right-2"
+              size="icon-sm"
+            >
+              <XIcon
+              />
+              <span className="sr-only">Close</span>
+            </Button>
+          </DialogPrimitive.Close>
+        )}
+      </DialogPrimitive.Content>
+    </DialogPortal>
+  )
+}
+
+function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="dialog-header"
+      className={cn("flex flex-col gap-2", className)}
+      {...props}
+    />
+  )
+}
+
+function DialogFooter({
+  className,
+  showCloseButton = false,
+  children,
+  ...props
+}: React.ComponentProps<"div"> & {
+  showCloseButton?: boolean
+}) {
+  return (
+    <div
+      data-slot="dialog-footer"
+      className={cn(
+        "-mx-4 -mb-4 flex flex-col-reverse gap-2 rounded-b-xl border-t bg-muted/50 p-4 sm:flex-row sm:justify-end",
+        className
+      )}
+      {...props}
+    >
+      {children}
+      {showCloseButton && (
+        <DialogPrimitive.Close asChild>
+          <Button variant="outline">Close</Button>
+        </DialogPrimitive.Close>
+      )}
+    </div>
+  )
+}
+
+function DialogTitle({
+  className,
+  ...props
+}: React.ComponentProps<typeof DialogPrimitive.Title>) {
+  return (
+    <DialogPrimitive.Title
+      data-slot="dialog-title"
+      className={cn(
+        "font-heading text-base leading-none font-medium",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function DialogDescription({
+  className,
+  ...props
+}: React.ComponentProps<typeof DialogPrimitive.Description>) {
+  return (
+    <DialogPrimitive.Description
+      data-slot="dialog-description"
+      className={cn(
+        "text-sm text-muted-foreground *:[a]:underline *:[a]:underline-offset-3 *:[a]:hover:text-foreground",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+export {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogOverlay,
+  DialogPortal,
+  DialogTitle,
+  DialogTrigger,
+}
+</file>
+
+<file path="src/components/ui/dropdown-menu.tsx">
+"use client"
+
+import * as React from "react"
+import { DropdownMenu as DropdownMenuPrimitive } from "radix-ui"
+
+import { cn } from "@/lib/utils"
+import { CheckIcon, ChevronRightIcon } from "lucide-react"
+
+function DropdownMenu({
+  ...props
+}: React.ComponentProps<typeof DropdownMenuPrimitive.Root>) {
+  return <DropdownMenuPrimitive.Root data-slot="dropdown-menu" {...props} />
+}
+
+function DropdownMenuPortal({
+  ...props
+}: React.ComponentProps<typeof DropdownMenuPrimitive.Portal>) {
+  return (
+    <DropdownMenuPrimitive.Portal data-slot="dropdown-menu-portal" {...props} />
+  )
+}
+
+function DropdownMenuTrigger({
+  ...props
+}: React.ComponentProps<typeof DropdownMenuPrimitive.Trigger>) {
+  return (
+    <DropdownMenuPrimitive.Trigger
+      data-slot="dropdown-menu-trigger"
+      {...props}
+    />
+  )
+}
+
+function DropdownMenuContent({
+  className,
+  align = "start",
+  sideOffset = 4,
+  ...props
+}: React.ComponentProps<typeof DropdownMenuPrimitive.Content>) {
+  return (
+    <DropdownMenuPrimitive.Portal>
+      <DropdownMenuPrimitive.Content
+        data-slot="dropdown-menu-content"
+        sideOffset={sideOffset}
+        align={align}
+        className={cn("z-50 max-h-(--radix-dropdown-menu-content-available-height) w-(--radix-dropdown-menu-trigger-width) min-w-32 origin-(--radix-dropdown-menu-content-transform-origin) overflow-x-hidden overflow-y-auto rounded-lg bg-popover p-1 text-popover-foreground shadow-md ring-1 ring-foreground/10 duration-100 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-[state=closed]:overflow-hidden data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95", className )}
+        {...props}
+      />
+    </DropdownMenuPrimitive.Portal>
+  )
+}
+
+function DropdownMenuGroup({
+  ...props
+}: React.ComponentProps<typeof DropdownMenuPrimitive.Group>) {
+  return (
+    <DropdownMenuPrimitive.Group data-slot="dropdown-menu-group" {...props} />
+  )
+}
+
+function DropdownMenuItem({
+  className,
+  inset,
+  variant = "default",
+  ...props
+}: React.ComponentProps<typeof DropdownMenuPrimitive.Item> & {
+  inset?: boolean
+  variant?: "default" | "destructive"
+}) {
+  return (
+    <DropdownMenuPrimitive.Item
+      data-slot="dropdown-menu-item"
+      data-inset={inset}
+      data-variant={variant}
+      className={cn(
+        "group/dropdown-menu-item relative flex cursor-default items-center gap-1.5 rounded-md px-1.5 py-1 text-sm outline-hidden select-none focus:bg-accent focus:text-accent-foreground not-data-[variant=destructive]:focus:**:text-accent-foreground data-inset:pl-7 data-[variant=destructive]:text-destructive data-[variant=destructive]:focus:bg-destructive/10 data-[variant=destructive]:focus:text-destructive dark:data-[variant=destructive]:focus:bg-destructive/20 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 data-[variant=destructive]:*:[svg]:text-destructive",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function DropdownMenuCheckboxItem({
+  className,
+  children,
+  checked,
+  inset,
+  ...props
+}: React.ComponentProps<typeof DropdownMenuPrimitive.CheckboxItem> & {
+  inset?: boolean
+}) {
+  return (
+    <DropdownMenuPrimitive.CheckboxItem
+      data-slot="dropdown-menu-checkbox-item"
+      data-inset={inset}
+      className={cn(
+        "relative flex cursor-default items-center gap-1.5 rounded-md py-1 pr-8 pl-1.5 text-sm outline-hidden select-none focus:bg-accent focus:text-accent-foreground focus:**:text-accent-foreground data-inset:pl-7 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+        className
+      )}
+      checked={checked}
+      {...props}
+    >
+      <span
+        className="pointer-events-none absolute right-2 flex items-center justify-center"
+        data-slot="dropdown-menu-checkbox-item-indicator"
+      >
+        <DropdownMenuPrimitive.ItemIndicator>
+          <CheckIcon
+          />
+        </DropdownMenuPrimitive.ItemIndicator>
+      </span>
+      {children}
+    </DropdownMenuPrimitive.CheckboxItem>
+  )
+}
+
+function DropdownMenuRadioGroup({
+  ...props
+}: React.ComponentProps<typeof DropdownMenuPrimitive.RadioGroup>) {
+  return (
+    <DropdownMenuPrimitive.RadioGroup
+      data-slot="dropdown-menu-radio-group"
+      {...props}
+    />
+  )
+}
+
+function DropdownMenuRadioItem({
+  className,
+  children,
+  inset,
+  ...props
+}: React.ComponentProps<typeof DropdownMenuPrimitive.RadioItem> & {
+  inset?: boolean
+}) {
+  return (
+    <DropdownMenuPrimitive.RadioItem
+      data-slot="dropdown-menu-radio-item"
+      data-inset={inset}
+      className={cn(
+        "relative flex cursor-default items-center gap-1.5 rounded-md py-1 pr-8 pl-1.5 text-sm outline-hidden select-none focus:bg-accent focus:text-accent-foreground focus:**:text-accent-foreground data-inset:pl-7 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+        className
+      )}
+      {...props}
+    >
+      <span
+        className="pointer-events-none absolute right-2 flex items-center justify-center"
+        data-slot="dropdown-menu-radio-item-indicator"
+      >
+        <DropdownMenuPrimitive.ItemIndicator>
+          <CheckIcon
+          />
+        </DropdownMenuPrimitive.ItemIndicator>
+      </span>
+      {children}
+    </DropdownMenuPrimitive.RadioItem>
+  )
+}
+
+function DropdownMenuLabel({
+  className,
+  inset,
+  ...props
+}: React.ComponentProps<typeof DropdownMenuPrimitive.Label> & {
+  inset?: boolean
+}) {
+  return (
+    <DropdownMenuPrimitive.Label
+      data-slot="dropdown-menu-label"
+      data-inset={inset}
+      className={cn(
+        "px-1.5 py-1 text-xs font-medium text-muted-foreground data-inset:pl-7",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function DropdownMenuSeparator({
+  className,
+  ...props
+}: React.ComponentProps<typeof DropdownMenuPrimitive.Separator>) {
+  return (
+    <DropdownMenuPrimitive.Separator
+      data-slot="dropdown-menu-separator"
+      className={cn("-mx-1 my-1 h-px bg-border", className)}
+      {...props}
+    />
+  )
+}
+
+function DropdownMenuShortcut({
+  className,
+  ...props
+}: React.ComponentProps<"span">) {
+  return (
+    <span
+      data-slot="dropdown-menu-shortcut"
+      className={cn(
+        "ml-auto text-xs tracking-widest text-muted-foreground group-focus/dropdown-menu-item:text-accent-foreground",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function DropdownMenuSub({
+  ...props
+}: React.ComponentProps<typeof DropdownMenuPrimitive.Sub>) {
+  return <DropdownMenuPrimitive.Sub data-slot="dropdown-menu-sub" {...props} />
+}
+
+function DropdownMenuSubTrigger({
+  className,
+  inset,
+  children,
+  ...props
+}: React.ComponentProps<typeof DropdownMenuPrimitive.SubTrigger> & {
+  inset?: boolean
+}) {
+  return (
+    <DropdownMenuPrimitive.SubTrigger
+      data-slot="dropdown-menu-sub-trigger"
+      data-inset={inset}
+      className={cn(
+        "flex cursor-default items-center gap-1.5 rounded-md px-1.5 py-1 text-sm outline-hidden select-none focus:bg-accent focus:text-accent-foreground not-data-[variant=destructive]:focus:**:text-accent-foreground data-inset:pl-7 data-open:bg-accent data-open:text-accent-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+        className
+      )}
+      {...props}
+    >
+      {children}
+      <ChevronRightIcon className="ml-auto" />
+    </DropdownMenuPrimitive.SubTrigger>
+  )
+}
+
+function DropdownMenuSubContent({
+  className,
+  ...props
+}: React.ComponentProps<typeof DropdownMenuPrimitive.SubContent>) {
+  return (
+    <DropdownMenuPrimitive.SubContent
+      data-slot="dropdown-menu-sub-content"
+      className={cn("z-50 min-w-[96px] origin-(--radix-dropdown-menu-content-transform-origin) overflow-hidden rounded-lg bg-popover p-1 text-popover-foreground shadow-lg ring-1 ring-foreground/10 duration-100 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95", className )}
+      {...props}
+    />
+  )
+}
+
+export {
+  DropdownMenu,
+  DropdownMenuPortal,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuLabel,
+  DropdownMenuItem,
+  DropdownMenuCheckboxItem,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuShortcut,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+}
+</file>
+
+<file path="src/components/ui/input.tsx">
+import * as React from "react"
+
+import { cn } from "@/lib/utils"
+
+function Input({ className, type, ...props }: React.ComponentProps<"input">) {
+  return (
+    <input
+      type={type}
+      data-slot="input"
+      className={cn(
+        "h-8 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base transition-colors outline-none file:inline-flex file:h-6 file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 md:text-sm dark:bg-input/30 dark:disabled:bg-input/80 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+export { Input }
+</file>
+
+<file path="src/components/ui/label.tsx">
+"use client"
+
+import * as React from "react"
+import { Label as LabelPrimitive } from "radix-ui"
+
+import { cn } from "@/lib/utils"
+
+function Label({
+  className,
+  ...props
+}: React.ComponentProps<typeof LabelPrimitive.Root>) {
+  return (
+    <LabelPrimitive.Root
+      data-slot="label"
+      className={cn(
+        "flex items-center gap-2 text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+export { Label }
+</file>
+
+<file path="src/components/ui/progress.tsx">
+"use client"
+
+import * as React from "react"
+import { Progress as ProgressPrimitive } from "radix-ui"
+
+import { cn } from "@/lib/utils"
+
+function Progress({
+  className,
+  value,
+  ...props
+}: React.ComponentProps<typeof ProgressPrimitive.Root>) {
+  return (
+    <ProgressPrimitive.Root
+      data-slot="progress"
+      className={cn(
+        "relative flex h-1 w-full items-center overflow-x-hidden rounded-full bg-muted",
+        className
+      )}
+      {...props}
+    >
+      <ProgressPrimitive.Indicator
+        data-slot="progress-indicator"
+        className="size-full flex-1 bg-primary transition-all"
+        style={{ transform: `translateX(-${100 - (value || 0)}%)` }}
+      />
+    </ProgressPrimitive.Root>
+  )
+}
+
+export { Progress }
+</file>
+
+<file path="src/components/ui/scroll-area.tsx">
+"use client"
+
+import * as React from "react"
+import { ScrollArea as ScrollAreaPrimitive } from "radix-ui"
+
+import { cn } from "@/lib/utils"
+
+function ScrollArea({
+  className,
+  children,
+  ...props
+}: React.ComponentProps<typeof ScrollAreaPrimitive.Root>) {
+  return (
+    <ScrollAreaPrimitive.Root
+      data-slot="scroll-area"
+      className={cn("relative", className)}
+      {...props}
+    >
+      <ScrollAreaPrimitive.Viewport
+        data-slot="scroll-area-viewport"
+        className="focus-visible:ring-ring/50 size-full rounded-[inherit] transition-[color,box-shadow] outline-none focus-visible:ring-[3px] focus-visible:outline-1"
+      >
+        {children}
+      </ScrollAreaPrimitive.Viewport>
+      <ScrollBar />
+      <ScrollAreaPrimitive.Corner />
+    </ScrollAreaPrimitive.Root>
+  )
+}
+
+function ScrollBar({
+  className,
+  orientation = "vertical",
+  ...props
+}: React.ComponentProps<typeof ScrollAreaPrimitive.ScrollAreaScrollbar>) {
+  return (
+    <ScrollAreaPrimitive.ScrollAreaScrollbar
+      data-slot="scroll-area-scrollbar"
+      data-orientation={orientation}
+      orientation={orientation}
+      className={cn(
+        "flex touch-none p-px transition-colors select-none",
+        orientation === "vertical" &&
+          "h-full w-2.5 border-l border-l-transparent",
+        orientation === "horizontal" &&
+          "h-2.5 flex-col border-t border-t-transparent",
+        className
+      )}
+      {...props}
+    >
+      <ScrollAreaPrimitive.ScrollAreaThumb
+        data-slot="scroll-area-thumb"
+        className="bg-border relative flex-1 rounded-full"
+      />
+    </ScrollAreaPrimitive.ScrollAreaScrollbar>
+  )
+}
+
+export { ScrollArea, ScrollBar }
+</file>
+
+<file path="src/components/ui/select.tsx">
+"use client"
+
+import * as React from "react"
+import { Select as SelectPrimitive } from "radix-ui"
+
+import { cn } from "@/lib/utils"
+import { ChevronDownIcon, CheckIcon, ChevronUpIcon } from "lucide-react"
+
+function Select({
+  ...props
+}: React.ComponentProps<typeof SelectPrimitive.Root>) {
+  return <SelectPrimitive.Root data-slot="select" {...props} />
+}
+
+function SelectGroup({
+  className,
+  ...props
+}: React.ComponentProps<typeof SelectPrimitive.Group>) {
+  return (
+    <SelectPrimitive.Group
+      data-slot="select-group"
+      className={cn("scroll-my-1 p-1", className)}
+      {...props}
+    />
+  )
+}
+
+function SelectValue({
+  ...props
+}: React.ComponentProps<typeof SelectPrimitive.Value>) {
+  return <SelectPrimitive.Value data-slot="select-value" {...props} />
+}
+
+function SelectTrigger({
+  className,
+  size = "default",
+  children,
+  ...props
+}: React.ComponentProps<typeof SelectPrimitive.Trigger> & {
+  size?: "sm" | "default"
+}) {
+  return (
+    <SelectPrimitive.Trigger
+      data-slot="select-trigger"
+      data-size={size}
+      className={cn(
+        "flex w-fit items-center justify-between gap-1.5 rounded-lg border border-input bg-transparent py-2 pr-2 pl-2.5 text-sm whitespace-nowrap transition-colors outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 data-placeholder:text-muted-foreground data-[size=default]:h-8 data-[size=sm]:h-7 data-[size=sm]:rounded-[min(var(--radius-md),10px)] *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-1.5 dark:bg-input/30 dark:hover:bg-input/50 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+        className
+      )}
+      {...props}
+    >
+      {children}
+      <SelectPrimitive.Icon asChild>
+        <ChevronDownIcon className="pointer-events-none size-4 text-muted-foreground" />
+      </SelectPrimitive.Icon>
+    </SelectPrimitive.Trigger>
+  )
+}
+
+function SelectContent({
+  className,
+  children,
+  position = "item-aligned",
+  align = "center",
+  ...props
+}: React.ComponentProps<typeof SelectPrimitive.Content>) {
+  return (
+    <SelectPrimitive.Portal>
+      <SelectPrimitive.Content
+        data-slot="select-content"
+        data-align-trigger={position === "item-aligned"}
+        className={cn("relative z-50 max-h-(--radix-select-content-available-height) min-w-36 origin-(--radix-select-content-transform-origin) overflow-x-hidden overflow-y-auto rounded-lg bg-popover text-popover-foreground shadow-md ring-1 ring-foreground/10 duration-100 data-[align-trigger=true]:animate-none data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95", position ==="popper"&&"data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1", className )}
+        position={position}
+        align={align}
+        {...props}
+      >
+        <SelectScrollUpButton />
+        <SelectPrimitive.Viewport
+          data-position={position}
+          className={cn(
+            "data-[position=popper]:h-(--radix-select-trigger-height) data-[position=popper]:w-full data-[position=popper]:min-w-(--radix-select-trigger-width)",
+            position === "popper" && ""
+          )}
+        >
+          {children}
+        </SelectPrimitive.Viewport>
+        <SelectScrollDownButton />
+      </SelectPrimitive.Content>
+    </SelectPrimitive.Portal>
+  )
+}
+
+function SelectLabel({
+  className,
+  ...props
+}: React.ComponentProps<typeof SelectPrimitive.Label>) {
+  return (
+    <SelectPrimitive.Label
+      data-slot="select-label"
+      className={cn("px-1.5 py-1 text-xs text-muted-foreground", className)}
+      {...props}
+    />
+  )
+}
+
+function SelectItem({
+  className,
+  children,
+  ...props
+}: React.ComponentProps<typeof SelectPrimitive.Item>) {
+  return (
+    <SelectPrimitive.Item
+      data-slot="select-item"
+      className={cn(
+        "relative flex w-full cursor-default items-center gap-1.5 rounded-md py-1 pr-8 pl-1.5 text-sm outline-hidden select-none focus:bg-accent focus:text-accent-foreground not-data-[variant=destructive]:focus:**:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2",
+        className
+      )}
+      {...props}
+    >
+      <span className="pointer-events-none absolute right-2 flex size-4 items-center justify-center">
+        <SelectPrimitive.ItemIndicator>
+          <CheckIcon className="pointer-events-none" />
+        </SelectPrimitive.ItemIndicator>
+      </span>
+      <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
+    </SelectPrimitive.Item>
+  )
+}
+
+function SelectSeparator({
+  className,
+  ...props
+}: React.ComponentProps<typeof SelectPrimitive.Separator>) {
+  return (
+    <SelectPrimitive.Separator
+      data-slot="select-separator"
+      className={cn("pointer-events-none -mx-1 my-1 h-px bg-border", className)}
+      {...props}
+    />
+  )
+}
+
+function SelectScrollUpButton({
+  className,
+  ...props
+}: React.ComponentProps<typeof SelectPrimitive.ScrollUpButton>) {
+  return (
+    <SelectPrimitive.ScrollUpButton
+      data-slot="select-scroll-up-button"
+      className={cn(
+        "z-10 flex cursor-default items-center justify-center bg-popover py-1 [&_svg:not([class*='size-'])]:size-4",
+        className
+      )}
+      {...props}
+    >
+      <ChevronUpIcon
+      />
+    </SelectPrimitive.ScrollUpButton>
+  )
+}
+
+function SelectScrollDownButton({
+  className,
+  ...props
+}: React.ComponentProps<typeof SelectPrimitive.ScrollDownButton>) {
+  return (
+    <SelectPrimitive.ScrollDownButton
+      data-slot="select-scroll-down-button"
+      className={cn(
+        "z-10 flex cursor-default items-center justify-center bg-popover py-1 [&_svg:not([class*='size-'])]:size-4",
+        className
+      )}
+      {...props}
+    >
+      <ChevronDownIcon
+      />
+    </SelectPrimitive.ScrollDownButton>
+  )
+}
+
+export {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectScrollDownButton,
+  SelectScrollUpButton,
+  SelectSeparator,
+  SelectTrigger,
+  SelectValue,
+}
+</file>
+
+<file path="src/components/ui/separator.tsx">
+"use client"
+
+import * as React from "react"
+import { Separator as SeparatorPrimitive } from "radix-ui"
+
+import { cn } from "@/lib/utils"
+
+function Separator({
+  className,
+  orientation = "horizontal",
+  decorative = true,
+  ...props
+}: React.ComponentProps<typeof SeparatorPrimitive.Root>) {
+  return (
+    <SeparatorPrimitive.Root
+      data-slot="separator"
+      decorative={decorative}
+      orientation={orientation}
+      className={cn(
+        "shrink-0 bg-border data-horizontal:h-px data-horizontal:w-full data-vertical:w-px data-vertical:self-stretch",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+export { Separator }
+</file>
+
+<file path="src/components/ui/sheet.tsx">
+"use client"
+
+import * as React from "react"
+import { Dialog as SheetPrimitive } from "radix-ui"
+
+import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
+import { XIcon } from "lucide-react"
+
+function Sheet({ ...props }: React.ComponentProps<typeof SheetPrimitive.Root>) {
+  return <SheetPrimitive.Root data-slot="sheet" {...props} />
+}
+
+function SheetTrigger({
+  ...props
+}: React.ComponentProps<typeof SheetPrimitive.Trigger>) {
+  return <SheetPrimitive.Trigger data-slot="sheet-trigger" {...props} />
+}
+
+function SheetClose({
+  ...props
+}: React.ComponentProps<typeof SheetPrimitive.Close>) {
+  return <SheetPrimitive.Close data-slot="sheet-close" {...props} />
+}
+
+function SheetPortal({
+  ...props
+}: React.ComponentProps<typeof SheetPrimitive.Portal>) {
+  return <SheetPrimitive.Portal data-slot="sheet-portal" {...props} />
+}
+
+function SheetOverlay({
+  className,
+  ...props
+}: React.ComponentProps<typeof SheetPrimitive.Overlay>) {
+  return (
+    <SheetPrimitive.Overlay
+      data-slot="sheet-overlay"
+      className={cn(
+        "fixed inset-0 z-50 bg-black/10 duration-100 supports-backdrop-filter:backdrop-blur-xs data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function SheetContent({
+  className,
+  children,
+  side = "right",
+  showCloseButton = true,
+  ...props
+}: React.ComponentProps<typeof SheetPrimitive.Content> & {
+  side?: "top" | "right" | "bottom" | "left"
+  showCloseButton?: boolean
+}) {
+  return (
+    <SheetPortal>
+      <SheetOverlay />
+      <SheetPrimitive.Content
+        data-slot="sheet-content"
+        data-side={side}
+        className={cn(
+          "fixed z-50 flex flex-col gap-4 bg-popover bg-clip-padding text-sm text-popover-foreground shadow-lg transition duration-200 ease-in-out data-[side=bottom]:inset-x-0 data-[side=bottom]:bottom-0 data-[side=bottom]:h-auto data-[side=bottom]:border-t data-[side=left]:inset-y-0 data-[side=left]:left-0 data-[side=left]:h-full data-[side=left]:w-3/4 data-[side=left]:border-r data-[side=right]:inset-y-0 data-[side=right]:right-0 data-[side=right]:h-full data-[side=right]:w-3/4 data-[side=right]:border-l data-[side=top]:inset-x-0 data-[side=top]:top-0 data-[side=top]:h-auto data-[side=top]:border-b data-[side=left]:sm:max-w-sm data-[side=right]:sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-[side=bottom]:data-open:slide-in-from-bottom-10 data-[side=left]:data-open:slide-in-from-left-10 data-[side=right]:data-open:slide-in-from-right-10 data-[side=top]:data-open:slide-in-from-top-10 data-closed:animate-out data-closed:fade-out-0 data-[side=bottom]:data-closed:slide-out-to-bottom-10 data-[side=left]:data-closed:slide-out-to-left-10 data-[side=right]:data-closed:slide-out-to-right-10 data-[side=top]:data-closed:slide-out-to-top-10",
+          className
+        )}
+        {...props}
+      >
+        {children}
+        {showCloseButton && (
+          <SheetPrimitive.Close data-slot="sheet-close" asChild>
+            <Button
+              variant="ghost"
+              className="absolute top-3 right-3"
+              size="icon-sm"
+            >
+              <XIcon
+              />
+              <span className="sr-only">Close</span>
+            </Button>
+          </SheetPrimitive.Close>
+        )}
+      </SheetPrimitive.Content>
+    </SheetPortal>
+  )
+}
+
+function SheetHeader({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="sheet-header"
+      className={cn("flex flex-col gap-0.5 p-4", className)}
+      {...props}
+    />
+  )
+}
+
+function SheetFooter({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="sheet-footer"
+      className={cn("mt-auto flex flex-col gap-2 p-4", className)}
+      {...props}
+    />
+  )
+}
+
+function SheetTitle({
+  className,
+  ...props
+}: React.ComponentProps<typeof SheetPrimitive.Title>) {
+  return (
+    <SheetPrimitive.Title
+      data-slot="sheet-title"
+      className={cn(
+        "font-heading text-base font-medium text-foreground",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function SheetDescription({
+  className,
+  ...props
+}: React.ComponentProps<typeof SheetPrimitive.Description>) {
+  return (
+    <SheetPrimitive.Description
+      data-slot="sheet-description"
+      className={cn("text-sm text-muted-foreground", className)}
+      {...props}
+    />
+  )
+}
+
+export {
+  Sheet,
+  SheetTrigger,
+  SheetClose,
+  SheetContent,
+  SheetHeader,
+  SheetFooter,
+  SheetTitle,
+  SheetDescription,
+}
+</file>
+
+<file path="src/components/ui/sidebar.tsx">
+"use client"
+
+import * as React from "react"
+import { cva, type VariantProps } from "class-variance-authority"
+import { Slot } from "radix-ui"
+
+import { useIsMobile } from "@/hooks/use-mobile"
+import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Separator } from "@/components/ui/separator"
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet"
+import { Skeleton } from "@/components/ui/skeleton"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
+import { PanelLeftIcon } from "lucide-react"
+
+const SIDEBAR_COOKIE_NAME = "sidebar_state"
+const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
+const SIDEBAR_WIDTH = "16rem"
+const SIDEBAR_WIDTH_MOBILE = "18rem"
+const SIDEBAR_WIDTH_ICON = "3rem"
+const SIDEBAR_KEYBOARD_SHORTCUT = "b"
+
+type SidebarContextProps = {
+  state: "expanded" | "collapsed"
+  open: boolean
+  setOpen: (open: boolean) => void
+  openMobile: boolean
+  setOpenMobile: (open: boolean) => void
+  isMobile: boolean
+  toggleSidebar: () => void
+}
+
+const SidebarContext = React.createContext<SidebarContextProps | null>(null)
+
+function useSidebar() {
+  const context = React.useContext(SidebarContext)
+  if (!context) {
+    throw new Error("useSidebar must be used within a SidebarProvider.")
+  }
+
+  return context
+}
+
+function SidebarProvider({
+  defaultOpen = true,
+  open: openProp,
+  onOpenChange: setOpenProp,
+  className,
+  style,
+  children,
+  ...props
+}: React.ComponentProps<"div"> & {
+  defaultOpen?: boolean
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+}) {
+  const isMobile = useIsMobile()
+  const [openMobile, setOpenMobile] = React.useState(false)
+
+  // This is the internal state of the sidebar.
+  // We use openProp and setOpenProp for control from outside the component.
+  const [_open, _setOpen] = React.useState(defaultOpen)
+  const open = openProp ?? _open
+  const setOpen = React.useCallback(
+    (value: boolean | ((value: boolean) => boolean)) => {
+      const openState = typeof value === "function" ? value(open) : value
+      if (setOpenProp) {
+        setOpenProp(openState)
+      } else {
+        _setOpen(openState)
+      }
+
+      // This sets the cookie to keep the sidebar state.
+      document.cookie = `${SIDEBAR_COOKIE_NAME}=${openState}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`
+    },
+    [setOpenProp, open]
+  )
+
+  // Helper to toggle the sidebar.
+  const toggleSidebar = React.useCallback(() => {
+    return isMobile ? setOpenMobile((open) => !open) : setOpen((open) => !open)
+  }, [isMobile, setOpen, setOpenMobile])
+
+  // Adds a keyboard shortcut to toggle the sidebar.
+  React.useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (
+        event.key === SIDEBAR_KEYBOARD_SHORTCUT &&
+        (event.metaKey || event.ctrlKey)
+      ) {
+        event.preventDefault()
+        toggleSidebar()
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
+  }, [toggleSidebar])
+
+  // We add a state so that we can do data-state="expanded" or "collapsed".
+  // This makes it easier to style the sidebar with Tailwind classes.
+  const state = open ? "expanded" : "collapsed"
+
+  const contextValue = React.useMemo<SidebarContextProps>(
+    () => ({
+      state,
+      open,
+      setOpen,
+      isMobile,
+      openMobile,
+      setOpenMobile,
+      toggleSidebar,
+    }),
+    [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar]
+  )
+
+  return (
+    <SidebarContext.Provider value={contextValue}>
+      <div
+        data-slot="sidebar-wrapper"
+        style={
+          {
+            "--sidebar-width": SIDEBAR_WIDTH,
+            "--sidebar-width-icon": SIDEBAR_WIDTH_ICON,
+            ...style,
+          } as React.CSSProperties
+        }
+        className={cn(
+          "group/sidebar-wrapper flex min-h-svh w-full has-data-[variant=inset]:bg-sidebar",
+          className
+        )}
+        {...props}
+      >
+        {children}
+      </div>
+    </SidebarContext.Provider>
+  )
+}
+
+function Sidebar({
+  side = "left",
+  variant = "sidebar",
+  collapsible = "offcanvas",
+  className,
+  children,
+  dir,
+  ...props
+}: React.ComponentProps<"div"> & {
+  side?: "left" | "right"
+  variant?: "sidebar" | "floating" | "inset"
+  collapsible?: "offcanvas" | "icon" | "none"
+}) {
+  const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
+
+  if (collapsible === "none") {
+    return (
+      <div
+        data-slot="sidebar"
+        className={cn(
+          "flex h-full w-(--sidebar-width) flex-col bg-sidebar text-sidebar-foreground",
+          className
+        )}
+        {...props}
+      >
+        {children}
+      </div>
+    )
+  }
+
+  if (isMobile) {
+    return (
+      <Sheet open={openMobile} onOpenChange={setOpenMobile} {...props}>
+        <SheetContent
+          dir={dir}
+          data-sidebar="sidebar"
+          data-slot="sidebar"
+          data-mobile="true"
+          className="w-(--sidebar-width) bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden"
+          style={
+            {
+              "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
+            } as React.CSSProperties
+          }
+          side={side}
+        >
+          <SheetHeader className="sr-only">
+            <SheetTitle>Sidebar</SheetTitle>
+            <SheetDescription>Displays the mobile sidebar.</SheetDescription>
+          </SheetHeader>
+          <div className="flex h-full w-full flex-col">{children}</div>
+        </SheetContent>
+      </Sheet>
+    )
+  }
+
+  return (
+    <div
+      className="group peer hidden text-sidebar-foreground md:block"
+      data-state={state}
+      data-collapsible={state === "collapsed" ? collapsible : ""}
+      data-variant={variant}
+      data-side={side}
+      data-slot="sidebar"
+    >
+      {/* This is what handles the sidebar gap on desktop */}
+      <div
+        data-slot="sidebar-gap"
+        className={cn(
+          "relative w-(--sidebar-width) bg-transparent transition-[width] duration-200 ease-linear",
+          "group-data-[collapsible=offcanvas]:w-0",
+          "group-data-[side=right]:rotate-180",
+          variant === "floating" || variant === "inset"
+            ? "group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)+(--spacing(4)))]"
+            : "group-data-[collapsible=icon]:w-(--sidebar-width-icon)"
+        )}
+      />
+      <div
+        data-slot="sidebar-container"
+        data-side={side}
+        className={cn(
+          "fixed inset-y-0 z-10 hidden h-svh w-(--sidebar-width) transition-[left,right,width] duration-200 ease-linear data-[side=left]:left-0 data-[side=left]:group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)] data-[side=right]:right-0 data-[side=right]:group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)] md:flex",
+          // Adjust the padding for floating and inset variants.
+          variant === "floating" || variant === "inset"
+            ? "p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)+(--spacing(4))+2px)]"
+            : "group-data-[collapsible=icon]:w-(--sidebar-width-icon) group-data-[side=left]:border-r group-data-[side=right]:border-l",
+          className
+        )}
+        {...props}
+      >
+        <div
+          data-sidebar="sidebar"
+          data-slot="sidebar-inner"
+          className="flex size-full flex-col bg-sidebar group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:shadow-sm group-data-[variant=floating]:ring-1 group-data-[variant=floating]:ring-sidebar-border"
+        >
+          {children}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function SidebarTrigger({
+  className,
+  onClick,
+  ...props
+}: React.ComponentProps<typeof Button>) {
+  const { toggleSidebar } = useSidebar()
+
+  return (
+    <Button
+      data-sidebar="trigger"
+      data-slot="sidebar-trigger"
+      variant="ghost"
+      size="icon-sm"
+      className={cn(className)}
+      onClick={(event) => {
+        onClick?.(event)
+        toggleSidebar()
+      }}
+      {...props}
+    >
+      <PanelLeftIcon />
+      <span className="sr-only">Toggle Sidebar</span>
+    </Button>
+  )
+}
+
+function SidebarRail({ className, ...props }: React.ComponentProps<"button">) {
+  const { toggleSidebar } = useSidebar()
+
+  return (
+    <button
+      data-sidebar="rail"
+      data-slot="sidebar-rail"
+      aria-label="Toggle Sidebar"
+      tabIndex={-1}
+      onClick={toggleSidebar}
+      title="Toggle Sidebar"
+      className={cn(
+        "absolute inset-y-0 z-20 hidden w-4 transition-all ease-linear group-data-[side=left]:-right-4 group-data-[side=right]:left-0 after:absolute after:inset-y-0 after:start-1/2 after:w-[2px] hover:after:bg-sidebar-border sm:flex ltr:-translate-x-1/2 rtl:-translate-x-1/2",
+        "in-data-[side=left]:cursor-w-resize in-data-[side=right]:cursor-e-resize",
+        "[[data-side=left][data-state=collapsed]_&]:cursor-e-resize [[data-side=right][data-state=collapsed]_&]:cursor-w-resize",
+        "group-data-[collapsible=offcanvas]:translate-x-0 group-data-[collapsible=offcanvas]:after:left-full hover:group-data-[collapsible=offcanvas]:bg-sidebar",
+        "[[data-side=left][data-collapsible=offcanvas]_&]:-right-2",
+        "[[data-side=right][data-collapsible=offcanvas]_&]:-left-2",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function SidebarInset({ className, ...props }: React.ComponentProps<"main">) {
+  return (
+    <main
+      data-slot="sidebar-inset"
+      className={cn(
+        "relative flex w-full flex-1 flex-col bg-background md:peer-data-[variant=inset]:m-2 md:peer-data-[variant=inset]:ml-0 md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:shadow-sm md:peer-data-[variant=inset]:peer-data-[state=collapsed]:ml-2",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function SidebarInput({
+  className,
+  ...props
+}: React.ComponentProps<typeof Input>) {
+  return (
+    <Input
+      data-slot="sidebar-input"
+      data-sidebar="input"
+      className={cn("h-8 w-full bg-background shadow-none", className)}
+      {...props}
+    />
+  )
+}
+
+function SidebarHeader({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="sidebar-header"
+      data-sidebar="header"
+      className={cn("flex flex-col gap-2 p-2", className)}
+      {...props}
+    />
+  )
+}
+
+function SidebarFooter({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="sidebar-footer"
+      data-sidebar="footer"
+      className={cn("flex flex-col gap-2 p-2", className)}
+      {...props}
+    />
+  )
+}
+
+function SidebarSeparator({
+  className,
+  ...props
+}: React.ComponentProps<typeof Separator>) {
+  return (
+    <Separator
+      data-slot="sidebar-separator"
+      data-sidebar="separator"
+      className={cn("mx-2 w-auto bg-sidebar-border", className)}
+      {...props}
+    />
+  )
+}
+
+function SidebarContent({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="sidebar-content"
+      data-sidebar="content"
+      className={cn(
+        "no-scrollbar flex min-h-0 flex-1 flex-col gap-0 overflow-auto group-data-[collapsible=icon]:overflow-hidden",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function SidebarGroup({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="sidebar-group"
+      data-sidebar="group"
+      className={cn("relative flex w-full min-w-0 flex-col p-2", className)}
+      {...props}
+    />
+  )
+}
+
+function SidebarGroupLabel({
+  className,
+  asChild = false,
+  ...props
+}: React.ComponentProps<"div"> & { asChild?: boolean }) {
+  const Comp = asChild ? Slot.Root : "div"
+
+  return (
+    <Comp
+      data-slot="sidebar-group-label"
+      data-sidebar="group-label"
+      className={cn(
+        "flex h-8 shrink-0 items-center rounded-md px-2 text-xs font-medium text-sidebar-foreground/70 ring-sidebar-ring outline-hidden transition-[margin,opacity] duration-200 ease-linear group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0 focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function SidebarGroupAction({
+  className,
+  asChild = false,
+  ...props
+}: React.ComponentProps<"button"> & { asChild?: boolean }) {
+  const Comp = asChild ? Slot.Root : "button"
+
+  return (
+    <Comp
+      data-slot="sidebar-group-action"
+      data-sidebar="group-action"
+      className={cn(
+        "absolute top-3.5 right-3 flex aspect-square w-5 items-center justify-center rounded-md p-0 text-sidebar-foreground ring-sidebar-ring outline-hidden transition-transform group-data-[collapsible=icon]:hidden after:absolute after:-inset-2 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 md:after:hidden [&>svg]:size-4 [&>svg]:shrink-0",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function SidebarGroupContent({
+  className,
+  ...props
+}: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="sidebar-group-content"
+      data-sidebar="group-content"
+      className={cn("w-full text-sm", className)}
+      {...props}
+    />
+  )
+}
+
+function SidebarMenu({ className, ...props }: React.ComponentProps<"ul">) {
+  return (
+    <ul
+      data-slot="sidebar-menu"
+      data-sidebar="menu"
+      className={cn("flex w-full min-w-0 flex-col gap-0", className)}
+      {...props}
+    />
+  )
+}
+
+function SidebarMenuItem({ className, ...props }: React.ComponentProps<"li">) {
+  return (
+    <li
+      data-slot="sidebar-menu-item"
+      data-sidebar="menu-item"
+      className={cn("group/menu-item relative", className)}
+      {...props}
+    />
+  )
+}
+
+const sidebarMenuButtonVariants = cva(
+  "peer/menu-button group/menu-button flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left text-sm ring-sidebar-ring outline-hidden transition-[width,height,padding] group-has-data-[sidebar=menu-action]/menu-item:pr-8 group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:p-2! hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-open:hover:bg-sidebar-accent data-open:hover:text-sidebar-accent-foreground data-active:bg-sidebar-accent data-active:font-medium data-active:text-sidebar-accent-foreground [&_svg]:size-4 [&_svg]:shrink-0 [&>span:last-child]:truncate",
+  {
+    variants: {
+      variant: {
+        default: "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+        outline:
+          "bg-background shadow-[0_0_0_1px_var(--sidebar-border)] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:shadow-[0_0_0_1px_var(--sidebar-accent)]",
+      },
+      size: {
+        default: "h-8 text-sm",
+        sm: "h-7 text-xs",
+        lg: "h-12 text-sm group-data-[collapsible=icon]:p-0!",
+      },
+    },
+    defaultVariants: {
+      variant: "default",
+      size: "default",
+    },
+  }
+)
+
+function SidebarMenuButton({
+  asChild = false,
+  isActive = false,
+  variant = "default",
+  size = "default",
+  tooltip,
+  className,
+  ...props
+}: React.ComponentProps<"button"> & {
+  asChild?: boolean
+  isActive?: boolean
+  tooltip?: string | React.ComponentProps<typeof TooltipContent>
+} & VariantProps<typeof sidebarMenuButtonVariants>) {
+  const Comp = asChild ? Slot.Root : "button"
+  const { isMobile, state } = useSidebar()
+
+  const button = (
+    <Comp
+      data-slot="sidebar-menu-button"
+      data-sidebar="menu-button"
+      data-size={size}
+      data-active={isActive}
+      className={cn(sidebarMenuButtonVariants({ variant, size }), className)}
+      {...props}
+    />
+  )
+
+  if (!tooltip) {
+    return button
+  }
+
+  if (typeof tooltip === "string") {
+    tooltip = {
+      children: tooltip,
+    }
+  }
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{button}</TooltipTrigger>
+      <TooltipContent
+        side="right"
+        align="center"
+        hidden={state !== "collapsed" || isMobile}
+        {...tooltip}
+      />
+    </Tooltip>
+  )
+}
+
+function SidebarMenuAction({
+  className,
+  asChild = false,
+  showOnHover = false,
+  ...props
+}: React.ComponentProps<"button"> & {
+  asChild?: boolean
+  showOnHover?: boolean
+}) {
+  const Comp = asChild ? Slot.Root : "button"
+
+  return (
+    <Comp
+      data-slot="sidebar-menu-action"
+      data-sidebar="menu-action"
+      className={cn(
+        "absolute top-1.5 right-1 flex aspect-square w-5 items-center justify-center rounded-md p-0 text-sidebar-foreground ring-sidebar-ring outline-hidden transition-transform group-data-[collapsible=icon]:hidden peer-hover/menu-button:text-sidebar-accent-foreground peer-data-[size=default]/menu-button:top-1.5 peer-data-[size=lg]/menu-button:top-2.5 peer-data-[size=sm]/menu-button:top-1 after:absolute after:-inset-2 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 md:after:hidden [&>svg]:size-4 [&>svg]:shrink-0",
+        showOnHover &&
+          "group-focus-within/menu-item:opacity-100 group-hover/menu-item:opacity-100 peer-data-active/menu-button:text-sidebar-accent-foreground aria-expanded:opacity-100 md:opacity-0",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function SidebarMenuBadge({
+  className,
+  ...props
+}: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="sidebar-menu-badge"
+      data-sidebar="menu-badge"
+      className={cn(
+        "pointer-events-none absolute right-1 flex h-5 min-w-5 items-center justify-center rounded-md px-1 text-xs font-medium text-sidebar-foreground tabular-nums select-none group-data-[collapsible=icon]:hidden peer-hover/menu-button:text-sidebar-accent-foreground peer-data-[size=default]/menu-button:top-1.5 peer-data-[size=lg]/menu-button:top-2.5 peer-data-[size=sm]/menu-button:top-1 peer-data-active/menu-button:text-sidebar-accent-foreground",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function SidebarMenuSkeleton({
+  className,
+  showIcon = false,
+  ...props
+}: React.ComponentProps<"div"> & {
+  showIcon?: boolean
+}) {
+  // Random width between 50 to 90%.
+  const [width] = React.useState(() => {
+    return `${Math.floor(Math.random() * 40) + 50}%`
+  })
+
+  return (
+    <div
+      data-slot="sidebar-menu-skeleton"
+      data-sidebar="menu-skeleton"
+      className={cn("flex h-8 items-center gap-2 rounded-md px-2", className)}
+      {...props}
+    >
+      {showIcon && (
+        <Skeleton
+          className="size-4 rounded-md"
+          data-sidebar="menu-skeleton-icon"
+        />
+      )}
+      <Skeleton
+        className="h-4 max-w-(--skeleton-width) flex-1"
+        data-sidebar="menu-skeleton-text"
+        style={
+          {
+            "--skeleton-width": width,
+          } as React.CSSProperties
+        }
+      />
+    </div>
+  )
+}
+
+function SidebarMenuSub({ className, ...props }: React.ComponentProps<"ul">) {
+  return (
+    <ul
+      data-slot="sidebar-menu-sub"
+      data-sidebar="menu-sub"
+      className={cn(
+        "mx-3.5 flex min-w-0 translate-x-px flex-col gap-1 border-l border-sidebar-border px-2.5 py-0.5 group-data-[collapsible=icon]:hidden",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function SidebarMenuSubItem({
+  className,
+  ...props
+}: React.ComponentProps<"li">) {
+  return (
+    <li
+      data-slot="sidebar-menu-sub-item"
+      data-sidebar="menu-sub-item"
+      className={cn("group/menu-sub-item relative", className)}
+      {...props}
+    />
+  )
+}
+
+function SidebarMenuSubButton({
+  asChild = false,
+  size = "md",
+  isActive = false,
+  className,
+  ...props
+}: React.ComponentProps<"a"> & {
+  asChild?: boolean
+  size?: "sm" | "md"
+  isActive?: boolean
+}) {
+  const Comp = asChild ? Slot.Root : "a"
+
+  return (
+    <Comp
+      data-slot="sidebar-menu-sub-button"
+      data-sidebar="menu-sub-button"
+      data-size={size}
+      data-active={isActive}
+      className={cn(
+        "flex h-7 min-w-0 -translate-x-px items-center gap-2 overflow-hidden rounded-md px-2 text-sidebar-foreground ring-sidebar-ring outline-hidden group-data-[collapsible=icon]:hidden hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[size=md]:text-sm data-[size=sm]:text-xs data-active:bg-sidebar-accent data-active:text-sidebar-accent-foreground [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:text-sidebar-accent-foreground",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+export {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupAction,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarInput,
+  SidebarInset,
+  SidebarMenu,
+  SidebarMenuAction,
+  SidebarMenuBadge,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarMenuSkeleton,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
+  SidebarProvider,
+  SidebarRail,
+  SidebarSeparator,
+  SidebarTrigger,
+  useSidebar,
+}
+</file>
+
+<file path="src/components/ui/skeleton.tsx">
+import { cn } from "@/lib/utils"
+
+function Skeleton({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="skeleton"
+      className={cn("animate-pulse rounded-md bg-muted", className)}
+      {...props}
+    />
+  )
+}
+
+export { Skeleton }
+</file>
+
+<file path="src/components/ui/table.tsx">
+"use client"
+
+import * as React from "react"
+
+import { cn } from "@/lib/utils"
+
+function Table({ className, ...props }: React.ComponentProps<"table">) {
+  return (
+    <div
+      data-slot="table-container"
+      className="relative w-full overflow-x-auto"
+    >
+      <table
+        data-slot="table"
+        className={cn("w-full caption-bottom text-sm", className)}
+        {...props}
+      />
+    </div>
+  )
+}
+
+function TableHeader({ className, ...props }: React.ComponentProps<"thead">) {
+  return (
+    <thead
+      data-slot="table-header"
+      className={cn("[&_tr]:border-b", className)}
+      {...props}
+    />
+  )
+}
+
+function TableBody({ className, ...props }: React.ComponentProps<"tbody">) {
+  return (
+    <tbody
+      data-slot="table-body"
+      className={cn("[&_tr:last-child]:border-0", className)}
+      {...props}
+    />
+  )
+}
+
+function TableFooter({ className, ...props }: React.ComponentProps<"tfoot">) {
+  return (
+    <tfoot
+      data-slot="table-footer"
+      className={cn(
+        "border-t bg-muted/50 font-medium [&>tr]:last:border-b-0",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
+  return (
+    <tr
+      data-slot="table-row"
+      className={cn(
+        "border-b transition-colors hover:bg-muted/50 has-aria-expanded:bg-muted/50 data-[state=selected]:bg-muted",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function TableHead({ className, ...props }: React.ComponentProps<"th">) {
+  return (
+    <th
+      data-slot="table-head"
+      className={cn(
+        "h-10 px-2 text-left align-middle font-medium whitespace-nowrap text-foreground [&:has([role=checkbox])]:pr-0",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function TableCell({ className, ...props }: React.ComponentProps<"td">) {
+  return (
+    <td
+      data-slot="table-cell"
+      className={cn(
+        "p-2 align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function TableCaption({
+  className,
+  ...props
+}: React.ComponentProps<"caption">) {
+  return (
+    <caption
+      data-slot="table-caption"
+      className={cn("mt-4 text-sm text-muted-foreground", className)}
+      {...props}
+    />
+  )
+}
+
+export {
+  Table,
+  TableHeader,
+  TableBody,
+  TableFooter,
+  TableHead,
+  TableRow,
+  TableCell,
+  TableCaption,
+}
+</file>
+
+<file path="src/components/ui/textarea.tsx">
+import * as React from "react"
+
+import { cn } from "@/lib/utils"
+
+function Textarea({ className, ...props }: React.ComponentProps<"textarea">) {
+  return (
+    <textarea
+      data-slot="textarea"
+      className={cn(
+        "flex field-sizing-content min-h-16 w-full rounded-lg border border-input bg-transparent px-2.5 py-2 text-base transition-colors outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 md:text-sm dark:bg-input/30 dark:disabled:bg-input/80 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+export { Textarea }
+</file>
+
+<file path="src/components/ui/tooltip.tsx">
+"use client"
+
+import * as React from "react"
+import { Tooltip as TooltipPrimitive } from "radix-ui"
+
+import { cn } from "@/lib/utils"
+
+function TooltipProvider({
+  delayDuration = 0,
+  ...props
+}: React.ComponentProps<typeof TooltipPrimitive.Provider>) {
+  return (
+    <TooltipPrimitive.Provider
+      data-slot="tooltip-provider"
+      delayDuration={delayDuration}
+      {...props}
+    />
+  )
+}
+
+function Tooltip({
+  ...props
+}: React.ComponentProps<typeof TooltipPrimitive.Root>) {
+  return <TooltipPrimitive.Root data-slot="tooltip" {...props} />
+}
+
+function TooltipTrigger({
+  ...props
+}: React.ComponentProps<typeof TooltipPrimitive.Trigger>) {
+  return <TooltipPrimitive.Trigger data-slot="tooltip-trigger" {...props} />
+}
+
+function TooltipContent({
+  className,
+  sideOffset = 0,
+  children,
+  ...props
+}: React.ComponentProps<typeof TooltipPrimitive.Content>) {
+  return (
+    <TooltipPrimitive.Portal>
+      <TooltipPrimitive.Content
+        data-slot="tooltip-content"
+        sideOffset={sideOffset}
+        className={cn(
+          "z-50 inline-flex w-fit max-w-xs origin-(--radix-tooltip-content-transform-origin) items-center gap-1.5 rounded-md bg-foreground px-3 py-1.5 text-xs text-background has-data-[slot=kbd]:pr-1.5 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 **:data-[slot=kbd]:relative **:data-[slot=kbd]:isolate **:data-[slot=kbd]:z-50 **:data-[slot=kbd]:rounded-sm data-[state=delayed-open]:animate-in data-[state=delayed-open]:fade-in-0 data-[state=delayed-open]:zoom-in-95 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
+          className
+        )}
+        {...props}
+      >
+        {children}
+        <TooltipPrimitive.Arrow className="z-50 size-2.5 translate-y-[calc(-50%_-_2px)] rotate-45 rounded-[2px] bg-foreground fill-foreground" />
+      </TooltipPrimitive.Content>
+    </TooltipPrimitive.Portal>
+  )
+}
+
+export { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger }
+</file>
+
+<file path="src/components/app-sidebar.tsx">
+"use client";
+
+import * as React from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
+import { LayoutDashboard, Cpu, ShieldCheck } from "lucide-react";
+
+import { getProject } from "@/lib/api";
+import { ThemeToggle } from "@/components/theme-toggle";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarRail,
+  SidebarSeparator,
+} from "@/components/ui/sidebar";
+
+function projectIdFromPath(pathname: string): number | null {
+  const match = pathname.match(/^\/projects\/(\d+)/);
+  return match ? Number(match[1]) : null;
+}
+
+function pageNumberFromPath(pathname: string): number | null {
+  const match = pathname.match(/\/page\/(\d+)$/);
+  return match ? Number(match[1]) : null;
+}
+
+export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const pathname = usePathname();
+  const currentProjectId = projectIdFromPath(pathname);
+  const currentPage = pageNumberFromPath(pathname);
+
+  const { data: project, isLoading: projectLoading } = useQuery({
+    queryKey: ["project", currentProjectId],
+    queryFn: () => getProject(currentProjectId as number),
+    enabled: currentProjectId !== null,
+  });
+
+  return (
+    <Sidebar collapsible="icon" {...props}>
+      <SidebarHeader>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton size="lg" asChild>
+              <Link href="/">
+                <div className="flex aspect-square size-8 items-center justify-center rounded-md bg-primary text-primary-foreground shadow-sm">
+                  <ShieldCheck className="size-4" />
+                </div>
+                <div className="grid flex-1 text-left text-sm leading-tight">
+                  <span className="truncate font-semibold tracking-tight">Embedded Config</span>
+                  <span className="truncate text-xs text-muted-foreground">Security setup</span>
+                </div>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarHeader>
+
+      <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupLabel>Workspace</SidebarGroupLabel>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild isActive={pathname === "/"} tooltip="Dashboard">
+                <Link href="/">
+                  <LayoutDashboard />
+                  <span>Dashboard</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarGroup>
+
+        {currentProjectId !== null && (
+          <>
+            <SidebarSeparator />
+            <SidebarGroup>
+              <SidebarGroupLabel>Current project</SidebarGroupLabel>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  {projectLoading ? (
+                    <div className="flex h-8 items-center gap-2 rounded-md px-2">
+                      <Skeleton className="size-4 shrink-0 rounded-md" />
+                      <Skeleton className="h-3.5 flex-1 max-w-[70%]" />
+                    </div>
+                  ) : (
+                    <SidebarMenuButton
+                      asChild
+                      isActive={pathname.includes("/projects/") && !pathname.includes("/page/")}
+                      tooltip="ECU details"
+                    >
+                      <Link href={`/projects/${currentProjectId}/dashboard`}>
+                        <Cpu />
+                        <span className="truncate">
+                          {project?.name ?? `Project #${currentProjectId}`}
+                        </span>
+                      </Link>
+                    </SidebarMenuButton>
+                  )}
+                </SidebarMenuItem>
+                {currentPage !== null && (
+                  <SidebarMenuItem>
+                    <div className="rounded-md border border-sidebar-border/60 bg-sidebar-accent/30 px-2 py-1.5 text-xs text-sidebar-accent-foreground">
+                      <span className="text-muted-foreground">Editing step</span>
+                      <span className="ml-1 font-medium">{currentPage} of 4</span>
+                    </div>
+                  </SidebarMenuItem>
+                )}
+              </SidebarMenu>
+            </SidebarGroup>
+          </>
+        )}
+      </SidebarContent>
+
+      <SidebarFooter>
+        <div className="flex items-center justify-between px-1">
+          <span className="text-xs text-muted-foreground group-data-[collapsible=icon]:hidden">
+            Appearance
+          </span>
+          <ThemeToggle />
+        </div>
+      </SidebarFooter>
+      <SidebarRail />
+    </Sidebar>
+  );
+}
+</file>
+
+<file path="src/components/create-project-dialog.tsx">
+"use client";
+
+import * as React from "react";
+import { Plus } from "lucide-react";
+
+import { createProject } from "@/lib/api";
+import type { Project } from "@/lib/types";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+
+interface CreateProjectDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onCreated: (project: Project) => void;
+}
+
+export function CreateProjectDialog({
+  open,
+  onOpenChange,
+  onCreated,
+}: CreateProjectDialogProps) {
+  const [name, setName] = React.useState("");
+  const [description, setDescription] = React.useState("");
+  const [error, setError] = React.useState<string | null>(null);
+  const [submitting, setSubmitting] = React.useState(false);
+
+  const reset = () => {
+    setName("");
+    setDescription("");
+    setError(null);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim()) {
+      setError("Project name is required.");
+      return;
+    }
+    setSubmitting(true);
+    setError(null);
+    try {
+      const project = await createProject({
+        name: name.trim(),
+        description: description.trim() || undefined,
+      });
+      reset();
+      onCreated(project);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not create project.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        if (!next) reset();
+        onOpenChange(next);
+      }}
+    >
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>New project</DialogTitle>
+          <DialogDescription>
+            Give your project a name and an optional description. You can edit
+            both later.
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="project-name">Project name</Label>
+            <Input
+              id="project-name"
+              autoFocus
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g., Smart sensor gateway"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="project-description">Description</Label>
+            <Textarea
+              id="project-description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="What is this project for? (optional)"
+            />
+          </div>
+          {error && (
+            <p className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
+              {error}
+            </p>
+          )}
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" disabled={submitting}>
+              {submitting ? (
+                "Creating…"
+              ) : (
+                <>
+                  <Plus />
+                  Create project
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+</file>
+
+<file path="src/components/ecu-detail-form.tsx">
+"use client";
+
+import * as React from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  AlertCircle,
+  Cpu,
+  Hash,
+  AlertTriangle,
+  Layers,
+  Truck,
+  Calendar,
+  Shield,
+  Lock,
+  Plus,
+  Pencil,
+  Check,
+  Save,
+} from "lucide-react";
+
+import {
+  createEcuDetail,
+  getEcuDetail,
+  updateEcuDetail,
+  type EcuDetail,
+} from "@/lib/api";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+
+interface EcuDetailFormProps {
+  projectId: number;
+  onSuccess?: () => void;
+}
+
+type FormState = {
+  ecu_name: string;
+  part_number: string;
+  ecu_risk_rating: string;
+  architecture: string;
+  vehicle_line: string;
+  year: number;
+  microcontroller_cpu_provider: string;
+  date_hardware_b_sample_available: string;
+  date_harness_available: string;
+  date_production_intent_software_available: string;
+  export_control_classification: string;
+  pentest_provider_name: string;
+};
+
+const emptyForm: FormState = {
+  ecu_name: "",
+  part_number: "",
+  ecu_risk_rating: "",
+  architecture: "",
+  vehicle_line: "",
+  year: new Date().getFullYear(),
+  microcontroller_cpu_provider: "",
+  date_hardware_b_sample_available: "",
+  date_harness_available: "",
+  date_production_intent_software_available: "",
+  export_control_classification: "",
+  pentest_provider_name: "",
+};
+
+export function EcuDetailForm({ projectId, onSuccess }: EcuDetailFormProps) {
+  const queryClient = useQueryClient();
+  const [isOpen, setIsOpen] = React.useState(false);
+  const [formData, setFormData] = React.useState<FormState>(emptyForm);
+
+  const { data: existingDetail, isLoading: isLoadingDetail } = useQuery({
+    queryKey: ["ecu-detail", projectId],
+    queryFn: () => getEcuDetail(projectId),
+    retry: false,
+  });
+
+  const toFormState = (detail: EcuDetail): FormState => ({
+    ecu_name: detail.ecu_name,
+    part_number: detail.part_number,
+    ecu_risk_rating: detail.ecu_risk_rating,
+    architecture: detail.architecture,
+    vehicle_line: detail.vehicle_line,
+    year: detail.year,
+    microcontroller_cpu_provider: detail.microcontroller_cpu_provider,
+    date_hardware_b_sample_available:
+      detail.date_hardware_b_sample_available || "",
+    date_harness_available: detail.date_harness_available || "",
+    date_production_intent_software_available:
+      detail.date_production_intent_software_available || "",
+    export_control_classification: detail.export_control_classification,
+    pentest_provider_name: detail.pentest_provider_name,
+  });
+
+  // Seed the form when opening, instead of syncing via an effect, so the
+  // dialog always reflects the latest saved values without re-render loops.
+  const openDialog = React.useCallback(() => {
+    setFormData(existingDetail ? toFormState(existingDetail) : emptyForm);
+    setIsOpen(true);
+  }, [existingDetail]);
+
+  const handleOpenChange = React.useCallback((next: boolean) => {
+    if (!next) setFormData(emptyForm);
+    setIsOpen(next);
+  }, []);
+
+  const createMutation = useMutation({
+    mutationFn: () => createEcuDetail(projectId, formData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["ecu-detail", projectId] });
+      setIsOpen(false);
+      onSuccess?.();
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: () => updateEcuDetail(projectId, formData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["ecu-detail", projectId] });
+      setIsOpen(false);
+      onSuccess?.();
+    },
+  });
+
+  const isLoading =
+    createMutation.isPending || updateMutation.isPending || isLoadingDetail;
+  const isError = createMutation.isError || updateMutation.isError;
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (existingDetail) await updateMutation.mutateAsync();
+    else await createMutation.mutateAsync();
+  };
+
+  const handleChange = (field: keyof FormState, value: string | number) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  if (isLoadingDetail) {
+    return (
+      <>
+        <Card>
+          <CardContent className="p-6">
+            <div className="space-y-3">
+              <div className="h-4 w-32 animate-pulse rounded bg-muted" />
+              <div className="h-8 w-full animate-pulse rounded bg-muted" />
+              <div className="h-8 w-2/3 animate-pulse rounded bg-muted" />
+            </div>
+          </CardContent>
+        </Card>
+        <EcuFormDialog
+          open={isOpen}
+          onOpenChange={handleOpenChange}
+          formData={formData}
+          onChange={handleChange}
+          onSubmit={handleSubmit}
+          isLoading={isLoading}
+          isError={isError}
+          error={createMutation.error?.message || updateMutation.error?.message}
+          isEditing={!!existingDetail}
+        />
+      </>
+    );
+  }
+
+  if (!existingDetail) {
+    return (
+      <>
+        <Card className="border-dashed bg-card/60">
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <div className="flex size-9 items-center justify-center rounded-md bg-accent text-accent-foreground">
+                <Shield className="size-4" />
+              </div>
+              <div>
+                <CardTitle className="text-base">ECU details</CardTitle>
+                <CardDescription>
+                  Add ECU specifications to start running security tests.
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <Button onClick={openDialog} className="w-full">
+              <Plus />
+              Add ECU details
+            </Button>
+          </CardContent>
+        </Card>
+        <EcuFormDialog
+          open={isOpen}
+          onOpenChange={handleOpenChange}
+          formData={formData}
+          onChange={handleChange}
+          onSubmit={handleSubmit}
+          isLoading={isLoading}
+          isError={isError}
+          error={createMutation.error?.message || updateMutation.error?.message}
+          isEditing={!!existingDetail}
+        />
+      </>
+    );
+  }
+
+  return (
+    <>
+      <Card>
+        <CardHeader>
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="flex size-9 items-center justify-center rounded-md bg-[var(--signal)]/15 text-[var(--signal)]">
+                <Cpu className="size-4" />
+              </div>
+              <div>
+                <CardTitle className="text-base font-semibold">
+                  {existingDetail.ecu_name}
+                </CardTitle>
+                <CardDescription>ECU configuration</CardDescription>
+              </div>
+            </div>
+            <Button variant="outline" size="sm" onClick={openDialog}>
+              <Pencil className="size-3.5" />
+              Edit
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-5">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            <Field
+              label="Part number"
+              value={existingDetail.part_number}
+              icon={Hash}
+            />
+            <Field
+              label="Risk rating"
+              value={existingDetail.ecu_risk_rating}
+              icon={AlertTriangle}
+            />
+            <Field
+              label="Architecture"
+              value={existingDetail.architecture}
+              icon={Layers}
+            />
+            <Field
+              label="Vehicle line"
+              value={existingDetail.vehicle_line}
+              icon={Truck}
+            />
+            <Field
+              label="Year"
+              value={String(existingDetail.year)}
+              icon={Calendar}
+            />
+            <Field
+              label="CPU provider"
+              value={existingDetail.microcontroller_cpu_provider}
+              icon={Cpu}
+            />
+            <Field
+              label="Export control"
+              value={existingDetail.export_control_classification}
+              icon={Lock}
+            />
+            <Field
+              label="Pentest provider"
+              value={existingDetail.pentest_provider_name}
+              icon={Shield}
+            />
+          </div>
+
+          <Separator />
+
+          <div>
+            <h4 className="mb-3 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              <Calendar className="size-3.5" />
+              Availability dates
+            </h4>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <DateField
+                label="Hardware B-sample"
+                value={existingDetail.date_hardware_b_sample_available}
+              />
+              <DateField
+                label="Harness"
+                value={existingDetail.date_harness_available}
+              />
+              <DateField
+                label="Production software"
+                value={existingDetail.date_production_intent_software_available}
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <EcuFormDialog
+        open={isOpen}
+        onOpenChange={handleOpenChange}
+        formData={formData}
+        onChange={handleChange}
+        onSubmit={handleSubmit}
+        isLoading={isLoading}
+        isError={isError}
+        error={createMutation.error?.message || updateMutation.error?.message}
+        isEditing={!!existingDetail}
+      />
+    </>
+  );
+}
+
+function Field({
+  label,
+  value,
+  icon: Icon,
+}: {
+  label: string;
+  value: string;
+  icon: React.ElementType;
+}) {
+  return (
+    <div className="rounded-md border border-border/60 bg-card p-3">
+      <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+        <Icon className="size-3.5" />
+        {label}
+      </div>
+      <div className="mt-1 text-sm font-medium text-foreground">{value}</div>
+    </div>
+  );
+}
+
+function DateField({ label, value }: { label: string; value?: string | null }) {
+  if (!value) {
+    return (
+      <div className="rounded-md border border-dashed border-border/60 bg-card/50 p-3">
+        <div className="text-xs font-medium text-muted-foreground">{label}</div>
+        <div className="mt-1 text-sm text-muted-foreground">Not set</div>
+      </div>
+    );
+  }
+  return (
+    <div className="rounded-md border border-border/60 bg-card p-3">
+      <div className="text-xs font-medium text-muted-foreground">{label}</div>
+      <div className="mt-1 text-sm font-medium text-foreground font-tabular">
+        {new Date(value).toLocaleDateString("en", {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+        })}
+      </div>
+    </div>
+  );
+}
+
+function EcuFormDialog({
+  open,
+  onOpenChange,
+  formData,
+  onChange,
+  onSubmit,
+  isLoading,
+  isError,
+  error,
+  isEditing,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  formData: FormState;
+  onChange: (field: keyof FormState, value: string | number) => void;
+  onSubmit: (e: React.FormEvent) => void;
+  isLoading: boolean;
+  isError: boolean;
+  error?: string;
+  isEditing: boolean;
+}) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="flex max-h-[min(85vh,820px)] w-[min(1400px,calc(100vw-2rem))] max-w-none flex-col gap-0 overflow-hidden p-0 sm:max-w-none">
+        <DialogHeader className="shrink-0 gap-2 border-b border-border/60 bg-card/50 p-6">
+          <DialogTitle className="text-xl">
+            {isEditing ? "Edit ECU details" : "Add ECU details"}
+          </DialogTitle>
+          <DialogDescription>
+            Enter the hardware and program details for this project&apos;s ECU.
+          </DialogDescription>
+        </DialogHeader>
+
+        <form
+          onSubmit={onSubmit}
+          className="flex min-h-0 flex-1 flex-col"
+          id="ecu-form"
+        >
+          <ScrollArea className="min-h-0 flex-1">
+            <div className="space-y-6 p-6">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
+                <FormField id="ecu_name" label="ECU name" required>
+                  <Input
+                    id="ecu_name"
+                    value={formData.ecu_name}
+                    onChange={(e) => onChange("ecu_name", e.target.value)}
+                    required
+                    placeholder="e.g., Gateway ECU"
+                  />
+                </FormField>
+                <FormField id="part_number" label="Part number" required>
+                  <Input
+                    id="part_number"
+                    value={formData.part_number}
+                    onChange={(e) => onChange("part_number", e.target.value)}
+                    required
+                    placeholder="e.g., PN-123456"
+                  />
+                </FormField>
+                <FormField
+                  id="ecu_risk_rating"
+                  label="ECU risk rating"
+                  required
+                >
+                  <Input
+                    id="ecu_risk_rating"
+                    value={formData.ecu_risk_rating}
+                    onChange={(e) =>
+                      onChange("ecu_risk_rating", e.target.value)
+                    }
+                    required
+                    placeholder="e.g., High"
+                  />
+                </FormField>
+                <FormField id="architecture" label="Architecture" required>
+                  <Input
+                    id="architecture"
+                    value={formData.architecture}
+                    onChange={(e) => onChange("architecture", e.target.value)}
+                    required
+                    placeholder="e.g., ARM Cortex-M4"
+                  />
+                </FormField>
+                <FormField id="vehicle_line" label="Vehicle line" required>
+                  <Input
+                    id="vehicle_line"
+                    value={formData.vehicle_line}
+                    onChange={(e) => onChange("vehicle_line", e.target.value)}
+                    required
+                    placeholder="e.g., Sedan Series X"
+                  />
+                </FormField>
+                <FormField id="year" label="Year" required>
+                  <Input
+                    id="year"
+                    type="number"
+                    value={formData.year}
+                    onChange={(e) => onChange("year", parseInt(e.target.value))}
+                    required
+                    min={1900}
+                    max={2100}
+                  />
+                </FormField>
+                <FormField
+                  id="microcontroller_cpu_provider"
+                  label="Microcontroller / CPU provider"
+                  required
+                >
+                  <Input
+                    id="microcontroller_cpu_provider"
+                    value={formData.microcontroller_cpu_provider}
+                    onChange={(e) =>
+                      onChange("microcontroller_cpu_provider", e.target.value)
+                    }
+                    required
+                    placeholder="e.g., STMicroelectronics"
+                  />
+                </FormField>
+                <FormField
+                  id="export_control_classification"
+                  label="Export control classification"
+                  required
+                >
+                  <Input
+                    id="export_control_classification"
+                    value={formData.export_control_classification}
+                    onChange={(e) =>
+                      onChange("export_control_classification", e.target.value)
+                    }
+                    required
+                    placeholder="e.g., EAR99"
+                  />
+                </FormField>
+                <FormField
+                  id="pentest_provider_name"
+                  label="Pentest provider name"
+                  required
+                >
+                  <Input
+                    id="pentest_provider_name"
+                    value={formData.pentest_provider_name}
+                    onChange={(e) =>
+                      onChange("pentest_provider_name", e.target.value)
+                    }
+                    required
+                    placeholder="e.g., Security Firm XYZ"
+                  />
+                </FormField>
+              </div>
+
+              <div>
+                <h4 className="mb-3 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  <Calendar className="size-3.5" />
+                  Availability dates
+                </h4>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                  <FormField
+                    id="date_hardware_b_sample_available"
+                    label="Hardware B-sample"
+                  >
+                    <Input
+                      id="date_hardware_b_sample_available"
+                      type="date"
+                      value={formData.date_hardware_b_sample_available}
+                      onChange={(e) =>
+                        onChange(
+                          "date_hardware_b_sample_available",
+                          e.target.value,
+                        )
+                      }
+                    />
+                  </FormField>
+                  <FormField
+                    id="date_harness_available"
+                    label="Harness available"
+                  >
+                    <Input
+                      id="date_harness_available"
+                      type="date"
+                      value={formData.date_harness_available}
+                      onChange={(e) =>
+                        onChange("date_harness_available", e.target.value)
+                      }
+                    />
+                  </FormField>
+                  <FormField
+                    id="date_production_intent_software_available"
+                    label="Production software"
+                  >
+                    <Input
+                      id="date_production_intent_software_available"
+                      type="date"
+                      value={formData.date_production_intent_software_available}
+                      onChange={(e) =>
+                        onChange(
+                          "date_production_intent_software_available",
+                          e.target.value,
+                        )
+                      }
+                    />
+                  </FormField>
+                </div>
+              </div>
+            </div>
+          </ScrollArea>
+
+          <div className="shrink-0 space-y-3 border-t border-border/60 bg-card/50 p-6">
+            {isError && (
+              <div className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
+                <AlertCircle className="mt-0.5 size-4 shrink-0" />
+                <p>{error || "Something went wrong. Please try again."}</p>
+              </div>
+            )}
+
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+                disabled={isLoading}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isLoading}>
+                {isLoading ? (
+                  <>Saving…</>
+                ) : isEditing ? (
+                  <>
+                    <Save />
+                    Save changes
+                  </>
+                ) : (
+                  <>
+                    <Check />
+                    Add details
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function FormField({
+  id,
+  label,
+  required,
+  children,
+}: {
+  id: string;
+  label: string;
+  required?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <Label htmlFor={id} className="text-sm">
+        {label}
+        {required && <span className="ml-0.5 text-destructive">*</span>}
+      </Label>
+      {children}
+    </div>
+  );
+}
+</file>
+
+<file path="src/components/page-selection-form.tsx">
+"use client";
+
+import * as React from "react";
+import { useRouter } from "next/navigation";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { ArrowLeft, ArrowRight, Check, Loader2 } from "lucide-react";
+
+import { totalPages } from "@/lib/navigation";
+import { getPageAttributes, getSelections, saveSelections } from "@/lib/api";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { Skeleton } from "@/components/ui/skeleton";
+
+interface PageSelectionFormProps {
+  projectId: number;
+  pageNumber: number;
+}
+
+export function PageSelectionForm({
+  projectId,
+  pageNumber,
+}: PageSelectionFormProps) {
+  const router = useRouter();
+  const queryClient = useQueryClient();
+
+  const groupsQuery = useQuery({
+    queryKey: ["page-attributes", pageNumber],
+    queryFn: () => getPageAttributes(pageNumber),
+  });
+
+  const selectionsQuery = useQuery({
+    queryKey: ["selections", projectId, pageNumber],
+    queryFn: () => getSelections(projectId, pageNumber),
+  });
+
+  const [selected, setSelected] = React.useState<Set<number>>(
+    () => new Set(selectionsQuery.data?.attribute_ids ?? []),
+  );
+  const [saving, setSaving] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+
+  // Re-seed selection when the server returns a different selection payload.
+  const lastSeededRef = React.useRef<number[] | null>(null);
+  React.useEffect(() => {
+    const ids = selectionsQuery.data?.attribute_ids;
+    if (!ids) return;
+    if (lastSeededRef.current === ids) return;
+    lastSeededRef.current = ids;
+    setSelected(new Set(ids));
+  }, [selectionsQuery.data]);
+
+  const toggle = (id: number) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const saveAndContinue = async () => {
+    setSaving(true);
+    setError(null);
+    try {
+      await saveSelections(
+        projectId,
+        pageNumber,
+        Array.from(selected).sort((a, b) => a - b),
+      );
+      queryClient.invalidateQueries({
+        queryKey: ["selections", projectId, pageNumber],
+      });
+      const next = pageNumber >= totalPages ? null : pageNumber + 1;
+      router.push(next ? `/projects/${projectId}/page/${next}` : "/");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not save selections.");
+      setSaving(false);
+    }
+  };
+
+  const goBack = () => {
+    const prev = pageNumber > 1 ? pageNumber - 1 : null;
+    router.push(prev ? `/projects/${projectId}/page/${prev}` : "/");
+  };
+
+  const loading = groupsQuery.isLoading;
+  const progressPct = (pageNumber / totalPages) * 100;
+
+  return (
+    <div className="flex flex-col gap-8">
+      <section className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="space-y-1">
+            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              Setup step
+            </p>
+            <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+              Step {pageNumber}{" "}
+              <span className="text-muted-foreground">of {totalPages}</span>
+            </h1>
+          </div>
+          <div className="hidden items-center gap-2 rounded-full border border-border/60 bg-card px-3 py-1.5 text-xs sm:flex">
+            <span className="size-1.5 rounded-full bg-[var(--signal)] shadow-[0_0_0_3px_oklch(0.62_0.13_215/0.18)]" />
+            <span className="font-medium text-foreground">
+              {selected.size}
+            </span>
+            <span className="text-muted-foreground">selected</span>
+          </div>
+        </div>
+        <Progress value={progressPct} className="h-1.5" />
+        <p className="text-sm text-muted-foreground">
+          Select one or more sub-attributes for each group below. You can
+          change your choices at any time before continuing.
+        </p>
+      </section>
+
+      {loading ? (
+        <div className="flex flex-col gap-4">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Skeleton key={i} className="h-32 rounded-xl" />
+          ))}
+        </div>
+      ) : groupsQuery.isError ? (
+        <p className="text-sm text-destructive">
+          Failed to load attributes:{" "}
+          {groupsQuery.error instanceof Error
+            ? groupsQuery.error.message
+            : "unknown error"}
+        </p>
+      ) : (
+        <div className="flex flex-col gap-4">
+          {(groupsQuery.data ?? []).map((group) => (
+            <Card key={group.id}>
+              <CardHeader>
+                <CardTitle className="text-base font-semibold">
+                  {group.name}
+                </CardTitle>
+                <CardDescription>
+                  Multiple selections allowed
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-wrap gap-2">
+                  {group.attributes.map((attr) => {
+                    const isSelected = selected.has(attr.id);
+                    return (
+                      <button
+                        key={attr.id}
+                        type="button"
+                        onClick={() => toggle(attr.id)}
+                        aria-pressed={isSelected}
+                        className={
+                          "inline-flex h-9 items-center gap-1.5 rounded-md border px-3 text-sm font-medium transition-colors " +
+                          (isSelected
+                            ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                            : "border-border bg-card text-foreground hover:border-foreground/30 hover:bg-accent")
+                        }
+                      >
+                        {isSelected ? (
+                          <Check className="size-3.5" />
+                        ) : (
+                          <span className="size-1.5 rounded-full bg-muted-foreground/40" />
+                        )}
+                        {attr.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {error && (
+        <p className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
+          {error}
+        </p>
+      )}
+
+      <div className="sticky bottom-0 -mx-6 flex items-center justify-between gap-3 border-t border-border/60 bg-background/80 px-6 py-4 backdrop-blur sm:-mx-8 sm:px-8">
+        <Button variant="outline" onClick={goBack} disabled={saving}>
+          <ArrowLeft />
+          Back
+        </Button>
+        <Button onClick={saveAndContinue} disabled={saving}>
+          {saving ? (
+            <>
+              <Loader2 className="animate-spin" />
+              Saving…
+            </>
+          ) : pageNumber >= totalPages ? (
+            <>
+              <Check />
+              Finish
+            </>
+          ) : (
+            <>
+              Save &amp; continue
+              <ArrowRight />
+            </>
+          )}
+        </Button>
+      </div>
+    </div>
+  );
+}
+</file>
+
+<file path="src/components/pagination.tsx">
+"use client";
+
+import * as React from "react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+} from "lucide-react";
+
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+interface PaginationProps {
+  page: number;
+  pageSize: number;
+  totalItems: number;
+  onPageChange: (page: number) => void;
+  onPageSizeChange?: (size: number) => void;
+  pageSizeOptions?: number[];
+  className?: string;
+}
+
+function getPageRange(current: number, total: number): (number | "ellipsis")[] {
+  if (total <= 7) {
+    return Array.from({ length: total }, (_, i) => i + 1);
+  }
+  const pages: (number | "ellipsis")[] = [];
+  const showLeft = current > 3;
+  const showRight = current < total - 2;
+
+  pages.push(1);
+  if (showLeft) pages.push("ellipsis");
+
+  const start = Math.max(2, current - 1);
+  const end = Math.min(total - 1, current + 1);
+  for (let p = start; p <= end; p++) pages.push(p);
+
+  if (showRight) pages.push("ellipsis");
+  if (total > 1) pages.push(total);
+  return pages;
+}
+
+export function Pagination({
+  page,
+  pageSize,
+  totalItems,
+  onPageChange,
+  onPageSizeChange,
+  pageSizeOptions = [10, 20, 50, 100],
+  className,
+}: PaginationProps) {
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const safePage = Math.min(Math.max(1, page), totalPages);
+  const start = totalItems === 0 ? 0 : (safePage - 1) * pageSize + 1;
+  const end = Math.min(safePage * pageSize, totalItems);
+  const range = getPageRange(safePage, totalPages);
+
+  if (totalItems === 0) {
+    return null;
+  }
+
+  return (
+    <div
+      className={cn(
+        "flex flex-col gap-3 border-t border-border/60 bg-card/40 px-4 py-3 sm:flex-row sm:items-center sm:justify-between",
+        className,
+      )}
+    >
+      <div className="flex items-center gap-4 text-sm text-muted-foreground">
+        <span className="font-tabular">
+          <span className="font-medium text-foreground">{start}</span>
+          <span className="mx-1">–</span>
+          <span className="font-medium text-foreground">{end}</span>
+          <span className="mx-1">of</span>
+          <span className="font-medium text-foreground">{totalItems}</span>
+        </span>
+        {onPageSizeChange && (
+          <div className="hidden items-center gap-2 sm:flex">
+            <span>Rows per page</span>
+            <Select
+              value={String(pageSize)}
+              onValueChange={(v) => onPageSizeChange(Number(v))}
+            >
+              <SelectTrigger size="sm" className="h-7 w-[68px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent side="top">
+                {pageSizeOptions.map((n) => (
+                  <SelectItem key={n} value={String(n)}>
+                    {n}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+      </div>
+
+      <div className="flex items-center gap-1">
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          onClick={() => onPageChange(1)}
+          disabled={safePage <= 1}
+          aria-label="First page"
+        >
+          <ChevronsLeft />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          onClick={() => onPageChange(safePage - 1)}
+          disabled={safePage <= 1}
+          aria-label="Previous page"
+        >
+          <ChevronLeft />
+        </Button>
+        {range.map((p, i) =>
+          p === "ellipsis" ? (
+            <span
+              key={`e-${i}`}
+              className="px-1 text-xs text-muted-foreground select-none"
+              aria-hidden
+            >
+              …
+            </span>
+          ) : (
+            <Button
+              key={p}
+              variant={p === safePage ? "default" : "ghost"}
+              size="icon-sm"
+              onClick={() => onPageChange(p)}
+              aria-current={p === safePage ? "page" : undefined}
+              aria-label={`Page ${p}`}
+              className="font-tabular"
+            >
+              {p}
+            </Button>
+          ),
+        )}
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          onClick={() => onPageChange(safePage + 1)}
+          disabled={safePage >= totalPages}
+          aria-label="Next page"
+        >
+          <ChevronRight />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          onClick={() => onPageChange(totalPages)}
+          disabled={safePage >= totalPages}
+          aria-label="Last page"
+        >
+          <ChevronsRight />
+        </Button>
+      </div>
+    </div>
+  );
+}
+</file>
+
+<file path="src/components/project-card.tsx">
+"use client";
+
+import Link from "next/link";
+import { ArrowUpRight, Cpu } from "lucide-react";
+
+import type { Project } from "@/lib/types";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+
+export function ProjectCard({ project }: { project: Project }) {
+  const formatted = new Intl.DateTimeFormat("en", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  }).format(new Date(project.created_at));
+
+  return (
+    <Card className="group relative transition-all hover:-translate-y-0.5 hover:border-foreground/20 hover:shadow-md">
+      <Link
+        href={`/projects/${project.id}/dashboard`}
+        className="absolute inset-0 z-10"
+        aria-label={`Open project ${project.name}`}
+      >
+        <span className="sr-only">Open project</span>
+      </Link>
+      <CardHeader>
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-accent text-accent-foreground">
+            <Cpu className="size-4" />
+          </div>
+          <ArrowUpRight className="size-4 text-muted-foreground transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-foreground" />
+        </div>
+        <CardTitle className="mt-3 text-base font-semibold leading-snug">
+          {project.name}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="flex flex-1 flex-col justify-between gap-4">
+        <CardDescription className="line-clamp-3 text-sm leading-relaxed">
+          {project.description ?? "No description provided."}
+        </CardDescription>
+        <div className="flex items-center justify-between border-t border-border/60 pt-3 text-xs text-muted-foreground">
+          <span className="font-tabular">{formatted}</span>
+          <span>Project #{project.id}</span>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+</file>
+
+<file path="src/components/test-case-detail-dialog.tsx">
+"use client";
+
+import * as React from "react";
+import {
+  ShieldCheck,
+  ListChecks,
+  CircleCheck,
+  ShieldAlert,
+  Wrench,
+  FileText,
+  AlertTriangle,
+  Cpu,
+  Target,
+  Hash,
+  Lock,
+} from "lucide-react";
+
+import type { TestCase } from "@/lib/api";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+
+type SeverityRank = 1 | 2 | 3 | 4;
+
+const severityMeta: Record<
+  SeverityRank,
+  { label: string; color: string; ring: string; icon: React.ElementType }
+> = {
+  1: {
+    label: "Low",
+    color: "bg-[var(--severity-low)]/12 text-[var(--severity-low)]",
+    ring: "ring-[var(--severity-low)]/30",
+    icon: CircleCheck,
+  },
+  2: {
+    label: "Medium",
+    color: "bg-[var(--severity-medium)]/15 text-[var(--severity-medium)]",
+    ring: "ring-[var(--severity-medium)]/30",
+    icon: AlertTriangle,
+  },
+  3: {
+    label: "High",
+    color: "bg-[var(--severity-high)]/15 text-[var(--severity-high)]",
+    ring: "ring-[var(--severity-high)]/30",
+    icon: AlertTriangle,
+  },
+  4: {
+    label: "Critical",
+    color: "bg-[var(--severity-critical)]/15 text-[var(--severity-critical)]",
+    ring: "ring-[var(--severity-critical)]/40",
+    icon: ShieldAlert,
+  },
+};
+
+function severityFromRank(rank: number | undefined) {
+  if (!rank) return null;
+  const safe = (rank >= 4 ? 4 : rank <= 1 ? 1 : rank) as SeverityRank;
+  return severityMeta[safe];
+}
+
+interface TestCaseDetailDialogProps {
+  testCase: TestCase | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+export function TestCaseDetailDialog({
+  testCase,
+  open,
+  onOpenChange,
+}: TestCaseDetailDialogProps) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="flex max-h-[min(85vh,820px)] w-[min(1400px,calc(100vw-2rem))] max-w-none flex-col gap-0 overflow-hidden p-0 sm:max-w-none">
+        {testCase ? (
+          <TestCaseDetailBody testCase={testCase} />
+        ) : (
+          <DialogHeader className="p-6">
+            <DialogTitle>Test case</DialogTitle>
+            <DialogDescription>No test case selected.</DialogDescription>
+          </DialogHeader>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function TestCaseDetailBody({ testCase }: { testCase: TestCase }) {
+  const sev = severityFromRank(testCase.severity?.severity_rank);
+  const SevIcon = sev?.icon;
+  const objective = testCase.objective?.name;
+
+  return (
+    <>
+      <DialogHeader className="shrink-0 gap-3 border-b border-border/60 bg-card/50 p-6">
+        <div className="flex flex-wrap items-center gap-2">
+          {sev && SevIcon ? (
+            <span
+              className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset ${sev.color} ${sev.ring}`}
+            >
+              <SevIcon className="size-3" />
+              {testCase.severity?.name}
+            </span>
+          ) : null}
+          {testCase.category && (
+            <Badge variant="secondary">{testCase.category.name}</Badge>
+          )}
+          {testCase.test_type && (
+            <Badge variant="outline">{testCase.test_type.name}</Badge>
+          )}
+        </div>
+        <DialogTitle className="text-xl leading-snug font-semibold tracking-tight">
+          {testCase.action_test_case}
+        </DialogTitle>
+        {objective && (
+          <DialogDescription className="text-sm text-muted-foreground">
+            <span className="text-muted-foreground">Objective ·</span>{" "}
+            <span className="text-foreground">{objective}</span>
+          </DialogDescription>
+        )}
+      </DialogHeader>
+
+      <ScrollArea className="min-h-0 flex-1">
+        <div className="grid gap-6 p-6 md:grid-cols-[1.2fr_1fr]">
+          {/* Left column: narrative */}
+          <div className="space-y-4">
+            <DetailSection
+              title="Description"
+              icon={FileText}
+              body={testCase.description}
+            />
+            <DetailSection
+              title="Test steps"
+              icon={ListChecks}
+              body={testCase.test_steps}
+            />
+            <DetailSection
+              title="Expected output"
+              icon={CircleCheck}
+              body={testCase.expected_output}
+              tone="success"
+            />
+            {(testCase.attack_path || testCase.attack_feasibility) && (
+              <DetailSection
+                title="Attack information"
+                icon={ShieldAlert}
+                tone="danger"
+              >
+                {testCase.attack_path && (
+                  <SubItem label="Attack path" body={testCase.attack_path} />
+                )}
+                {testCase.attack_feasibility && (
+                  <SubItem
+                    label="Attack feasibility"
+                    body={testCase.attack_feasibility}
+                  />
+                )}
+              </DetailSection>
+            )}
+          </div>
+
+          {/* Right column: structured facts */}
+          <div className="space-y-5">
+            <section className="grid grid-cols-2 gap-3">
+              <SummaryItem
+                icon={Cpu}
+                label="Asset"
+                value={testCase.asset?.asset_name}
+              />
+              <SummaryItem
+                icon={Target}
+                label="Attack vector"
+                value={testCase.attack_vector?.name}
+              />
+              <SummaryItem
+                icon={Hash}
+                label="Threat"
+                value={testCase.threat?.threat_text}
+              />
+              <SummaryItem
+                icon={Lock}
+                label="Protocol"
+                value={testCase.protocol?.name}
+              />
+            </section>
+
+            <Separator />
+
+            <section>
+              <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Impact analysis
+              </h3>
+              <div className="grid grid-cols-1 gap-3">
+                <SummaryItem
+                  icon={ShieldAlert}
+                  label="CIA impact"
+                  value={testCase.cia_impact}
+                />
+                <SummaryItem
+                  icon={ShieldCheck}
+                  label="Safety impact"
+                  value={testCase.safety_impact}
+                />
+                <SummaryItem
+                  icon={Wrench}
+                  label="Automation"
+                  value={testCase.automation_possible}
+                />
+              </div>
+            </section>
+
+            {testCase.test_case_tools.length > 0 && (
+              <section>
+                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Tools used
+                </h3>
+                <div className="flex flex-wrap gap-1.5">
+                  {testCase.test_case_tools.map((tool, idx) => (
+                    <Badge key={idx} variant="secondary">
+                      {tool.tool.tool_name}
+                    </Badge>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {testCase.test_case_references.length > 0 && (
+              <section>
+                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  References
+                </h3>
+                <ul className="space-y-2">
+                  {testCase.test_case_references.map((ref, idx) => (
+                    <li
+                      key={idx}
+                      className="border-l-2 border-border pl-3 text-sm leading-relaxed text-foreground"
+                    >
+                      {ref.reference.ref_text}
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+          </div>
+        </div>
+      </ScrollArea>
+
+      <div className="flex shrink-0 items-center justify-between gap-3 border-t border-border/60 bg-card/50 px-6 py-3">
+        <span className="text-xs text-muted-foreground font-tabular">
+          Test case #{testCase.id}
+        </span>
+        <DialogClose asChild>
+          <Button variant="outline" size="sm">
+            Close
+          </Button>
+        </DialogClose>
+      </div>
+    </>
+  );
+}
+
+function SummaryItem({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: React.ElementType;
+  label: string;
+  value?: string | null;
+}) {
+  const hasValue = !!value && value.trim().length > 0;
+  return (
+    <div className="rounded-md border border-border/60 bg-card p-4">
+      <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+        <Icon className="size-3.5" />
+        {label}
+      </div>
+      <div
+        className={
+          hasValue
+            ? "mt-1 break-words text-sm text-foreground"
+            : "mt-1 text-sm text-muted-foreground"
+        }
+      >
+        {hasValue ? value : "Not specified"}
+      </div>
+    </div>
+  );
+}
+
+function DetailSection({
+  title,
+  icon: Icon,
+  body,
+  tone,
+  children,
+}: {
+  title: string;
+  icon: React.ElementType;
+  body?: string | null;
+  tone?: "success" | "danger";
+  children?: React.ReactNode;
+}) {
+  const accent =
+    tone === "success"
+      ? "border-l-[var(--severity-low)]"
+      : tone === "danger"
+        ? "border-l-[var(--severity-critical)]"
+        : "border-l-border";
+  const hasContent = !!body || !!children;
+  if (!hasContent) return null;
+  return (
+    <section
+      className={`rounded-md border border-border/60 border-l-2 ${accent} bg-card p-4`}
+    >
+      <h3 className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        <Icon className="size-3.5" />
+        {title}
+      </h3>
+      {body ? (
+        <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-foreground">
+          {body}
+        </p>
+      ) : null}
+      {children}
+    </section>
+  );
+}
+
+function SubItem({ label, body }: { label: string; body: string }) {
+  return (
+    <div className="mt-2">
+      <p className="mb-1 text-xs font-medium text-muted-foreground">
+        {label}
+      </p>
+      <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-foreground">
+        {body}
+      </p>
+    </div>
+  );
+}
+</file>
+
+<file path="src/components/test-cases-dashboard.tsx">
+"use client";
+
+import * as React from "react";
+import { useQuery } from "@tanstack/react-query";
+import {
+  useReactTable,
+  getCoreRowModel,
+  type ColumnDef,
+} from "@tanstack/react-table";
+import {
+  SlidersHorizontal,
+  Target,
+  Wrench,
+  ShieldCheck,
+  Eye,
+  ChevronDown,
+  CheckCircle,
+  Check,
+  Zap,
+  CircleAlert,
+  ShieldAlert,
+  X,
+  Download,
+  Search,
+  type LucideIcon,
+} from "lucide-react";
+
+import {
+  getCategories,
+  getTestTypes,
+  listTestCases,
+  downloadTestCasesPDF,
+  type Category,
+  type TestCase,
+  type TestType,
+} from "@/lib/api";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { DataTable } from "@/components/ui/data-table";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Pagination } from "@/components/pagination";
+import { TestCaseDetailDialog } from "@/components/test-case-detail-dialog";
+
+interface TestCasesDashboardProps {
+  projectId: number;
+}
+
+type SeverityRank = 1 | 2 | 3 | 4;
+
+const severityMeta: Record<
+  SeverityRank,
+  { label: string; color: string; ring: string; icon: LucideIcon }
+> = {
+  1: {
+    label: "Low",
+    color: "bg-[var(--severity-low)]/12 text-[var(--severity-low)]",
+    ring: "ring-[var(--severity-low)]/30",
+    icon: CheckCircle,
+  },
+  2: {
+    label: "Medium",
+    color: "bg-[var(--severity-medium)]/15 text-[var(--severity-medium)]",
+    ring: "ring-[var(--severity-medium)]/30",
+    icon: Zap,
+  },
+  3: {
+    label: "High",
+    color: "bg-[var(--severity-high)]/15 text-[var(--severity-high)]",
+    ring: "ring-[var(--severity-high)]/30",
+    icon: CircleAlert,
+  },
+  4: {
+    label: "Critical",
+    color: "bg-[var(--severity-critical)]/15 text-[var(--severity-critical)]",
+    ring: "ring-[var(--severity-critical)]/40",
+    icon: ShieldAlert,
+  },
+};
+
+function severityFromRank(rank: number | undefined) {
+  if (!rank) return null;
+  const safe = (rank >= 4 ? 4 : rank <= 1 ? 1 : rank) as SeverityRank;
+  return severityMeta[safe];
+}
+
+interface MultiFilterDropdownProps<T extends { id: number; name: string }> {
+  label: string;
+  items: T[] | undefined;
+  selected: number[];
+  onToggle: (id: number) => void;
+  onClear: () => void;
+  icon: LucideIcon;
+  allLabel: string;
+}
+
+function MultiFilterDropdown<T extends { id: number; name: string }>({
+  label,
+  items,
+  selected,
+  onToggle,
+  onClear,
+  icon: Icon,
+  allLabel,
+}: MultiFilterDropdownProps<T>) {
+  const selectedItems = items?.filter((i) => selected.includes(i.id)) ?? [];
+  const triggerLabel =
+    selectedItems.length === 0
+      ? allLabel
+      : selectedItems.length === 1
+        ? selectedItems[0].name
+        : `${selectedItems.length} selected`;
+
+  return (
+    <div className="flex min-w-[12rem] flex-col gap-1.5">
+      <span className="text-xs font-medium text-muted-foreground">{label}</span>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="outline"
+            className={cn(
+              "w-full justify-between font-normal",
+              selectedItems.length > 0 &&
+                "border-primary/40 bg-primary/5 text-foreground",
+            )}
+          >
+            <span className="flex items-center gap-2 truncate">
+              <Icon className="size-3.5 text-muted-foreground" />
+              {triggerLabel}
+            </span>
+            <ChevronDown className="size-4 text-muted-foreground" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="w-64">
+          <DropdownMenuLabel className="flex items-center justify-between">
+            <span>{label}</span>
+            {selectedItems.length > 0 && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  onClear();
+                }}
+                className="text-xs font-normal text-muted-foreground hover:text-foreground"
+              >
+                Clear
+              </button>
+            )}
+          </DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          {items?.map((item) => {
+            const isChecked = selected.includes(item.id);
+            return (
+              <DropdownMenuItem
+                key={item.id}
+                onSelect={(e) => {
+                  e.preventDefault();
+                  onToggle(item.id);
+                }}
+                className="justify-between"
+              >
+                <span className="truncate">{item.name}</span>
+                {isChecked && <Check className="size-3.5 shrink-0" />}
+              </DropdownMenuItem>
+            );
+          })}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  );
+}
+
+const PAGE_SIZE_DEFAULT = 10;
+
+export function TestCasesDashboard({ projectId }: TestCasesDashboardProps) {
+  const [selectedCategories, setSelectedCategories] = React.useState<number[]>(
+    [],
+  );
+  const [selectedTestTypes, setSelectedTestTypes] = React.useState<number[]>(
+    [],
+  );
+  const [selectedSeverities, setSelectedSeverities] = React.useState<number[]>(
+    [],
+  );
+  const [search, setSearch] = React.useState("");
+  const [page, setPage] = React.useState(1);
+  const [pageSize, setPageSize] = React.useState(PAGE_SIZE_DEFAULT);
+  const [activeTestCase, setActiveTestCase] = React.useState<TestCase | null>(
+    null,
+  );
+  const [isPdfLoading, setIsPdfLoading] = React.useState(false);
+  const [pdfError, setPdfError] = React.useState<string | null>(null);
+
+  const { data: categories, isLoading: categoriesLoading } = useQuery({
+    queryKey: ["categories"],
+    queryFn: getCategories,
+  });
+
+  const { data: testTypes, isLoading: testTypesLoading } = useQuery({
+    queryKey: ["test-types"],
+    queryFn: getTestTypes,
+  });
+
+  const { data: testCases, isLoading: casesLoading } = useQuery({
+    queryKey: [
+      "test-cases",
+      selectedCategories
+        .slice()
+        .sort((a, b) => a - b)
+        .join(","),
+      selectedTestTypes
+        .slice()
+        .sort((a, b) => a - b)
+        .join(","),
+    ],
+    queryFn: () =>
+      listTestCases(
+        selectedCategories.length > 0 ? selectedCategories : undefined,
+        selectedTestTypes.length > 0 ? selectedTestTypes : undefined,
+      ),
+  });
+
+  const toggleCategory = React.useCallback((id: number) => {
+    setSelectedCategories((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    );
+    setPage(1);
+  }, []);
+
+  const toggleTestType = React.useCallback((id: number) => {
+    setSelectedTestTypes((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    );
+    setPage(1);
+  }, []);
+
+  const toggleSeverity = React.useCallback((id: number) => {
+    setSelectedSeverities((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    );
+    setPage(1);
+  }, []);
+
+  const clearCategories = React.useCallback(() => {
+    setSelectedCategories([]);
+    setPage(1);
+  }, []);
+
+  const clearTestTypes = React.useCallback(() => {
+    setSelectedTestTypes([]);
+    setPage(1);
+  }, []);
+
+  const clearSeverities = React.useCallback(() => {
+    setSelectedSeverities([]);
+    setPage(1);
+  }, []);
+
+  const clearAllFilters = React.useCallback(() => {
+    setSelectedCategories([]);
+    setSelectedTestTypes([]);
+    setSelectedSeverities([]);
+    setSearch("");
+    setPage(1);
+  }, []);
+
+  const handleDownloadPDF = React.useCallback(async () => {
+    setPdfError(null);
+    setIsPdfLoading(true);
+    try {
+      await downloadTestCasesPDF(
+        projectId,
+        selectedCategories.length > 0 ? selectedCategories : undefined,
+        selectedTestTypes.length > 0 ? selectedTestTypes : undefined,
+      );
+    } catch (error) {
+      setPdfError(
+        error instanceof Error ? error.message : "Failed to generate PDF",
+      );
+    } finally {
+      setIsPdfLoading(false);
+    }
+  }, [projectId, selectedCategories, selectedTestTypes]);
+
+  const severityOptions = React.useMemo(() => {
+    const seen = new Map<number, { id: number; name: string; rank: number }>();
+    for (const tc of testCases ?? []) {
+      if (tc.severity && !seen.has(tc.severity.id)) {
+        seen.set(tc.severity.id, {
+          id: tc.severity.id,
+          name: tc.severity.name,
+          rank: tc.severity.severity_rank,
+        });
+      }
+    }
+    return Array.from(seen.values()).sort((a, b) => a.rank - b.rank);
+  }, [testCases]);
+
+  const filteredTestCases = React.useMemo(() => {
+    let result = testCases ?? [];
+
+    if (selectedSeverities.length > 0) {
+      result = result.filter(
+        (tc) =>
+          tc.severity_id !== null &&
+          selectedSeverities.includes(tc.severity_id),
+      );
+    }
+
+    const query = search.trim().toLowerCase();
+    if (query) {
+      result = result.filter((tc) => {
+        const haystack = [
+          tc.action_test_case,
+          tc.description,
+          tc.attack_path,
+          tc.test_steps,
+          tc.expected_output,
+          tc.category?.name,
+          tc.objective?.name,
+          tc.protocol?.name,
+          tc.attack_vector?.name,
+          tc.test_type?.name,
+          tc.severity?.name,
+          tc.asset?.asset_name,
+          tc.threat?.threat_text,
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+        return haystack.includes(query);
+      });
+    }
+
+    return result;
+  }, [testCases, selectedSeverities, search]);
+
+  const totalItems = filteredTestCases.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const safePage = Math.min(page, totalPages);
+  const pageStart = (safePage - 1) * pageSize;
+  const visible = filteredTestCases.slice(pageStart, pageStart + pageSize);
+
+  const isLoading = categoriesLoading || testTypesLoading || casesLoading;
+  const hasFilters =
+    selectedCategories.length > 0 ||
+    selectedTestTypes.length > 0 ||
+    selectedSeverities.length > 0 ||
+    search.trim().length > 0;
+
+  const categoryChips = (categories ?? [])
+    .filter((c) => selectedCategories.includes(c.id))
+    .map((c) => ({ id: c.id, name: c.name, kind: "category" as const }));
+  const testTypeChips = (testTypes ?? [])
+    .filter((t) => selectedTestTypes.includes(t.id))
+    .map((t) => ({ id: t.id, name: t.name, kind: "testType" as const }));
+  const severityChips = severityOptions
+    .filter((s) => selectedSeverities.includes(s.id))
+    .map((s) => ({ id: s.id, name: s.name, kind: "severity" as const }));
+  const activeChips = [...categoryChips, ...testTypeChips, ...severityChips];
+
+  const columns = React.useMemo<ColumnDef<TestCase>[]>(
+    () => [
+      {
+        id: "testCase",
+        header: "Test case",
+        meta: { className: "w-[36%]" },
+        cell: ({ row }) => {
+          const testCase = row.original;
+          return (
+            <>
+              <div className="line-clamp-3 text-sm font-medium leading-snug text-foreground break-words">
+                {testCase.action_test_case}
+              </div>
+              {testCase.objective?.name && (
+                <div className="mt-0.5 line-clamp-1 text-xs text-muted-foreground break-words">
+                  {testCase.objective.name}
+                </div>
+              )}
+            </>
+          );
+        },
+      },
+      {
+        id: "category",
+        header: "Category",
+        meta: { className: "w-[14%]" },
+        cell: ({ row }) => (
+          <span className="block break-words text-sm text-muted-foreground">
+            {row.original.category?.name ?? "—"}
+          </span>
+        ),
+      },
+      {
+        id: "type",
+        header: "Type",
+        meta: { className: "w-[10%]" },
+        cell: ({ row }) => (
+          <span className="block break-words text-sm text-muted-foreground">
+            {row.original.test_type?.name ?? "—"}
+          </span>
+        ),
+      },
+      {
+        id: "severity",
+        header: "Severity",
+        meta: { className: "w-[12%]" },
+        cell: ({ row }) => {
+          const sev = severityFromRank(row.original.severity?.severity_rank);
+          const SevIcon = sev?.icon;
+          return sev && SevIcon ? (
+            <span
+              className={`inline-flex w-fit max-w-full items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${sev.color} ${sev.ring}`}
+            >
+              <SevIcon className="size-3 shrink-0" />
+              <span className="truncate">{row.original.severity?.name}</span>
+            </span>
+          ) : (
+            <span className="text-muted-foreground">—</span>
+          );
+        },
+      },
+      {
+        id: "asset",
+        header: "Asset",
+        meta: { className: "w-[16%]" },
+        cell: ({ row }) => (
+          <span className="block break-words text-sm text-foreground">
+            {row.original.asset?.asset_name ?? "—"}
+          </span>
+        ),
+      },
+      {
+        id: "actions",
+        header: () => <span className="sr-only">View details</span>,
+        meta: { className: "w-[8%] text-right" },
+        cell: ({ row }) => {
+          const testCase = row.original;
+          return (
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                setActiveTestCase(testCase);
+              }}
+              aria-label={`View details for ${testCase.action_test_case}`}
+            >
+              <Eye className="size-3.5" />
+            </Button>
+          );
+        },
+      },
+    ],
+    [],
+  );
+
+  const table = useReactTable({
+    data: visible,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+    getRowId: (row, index) => `${row.id}-${index}`,
+  });
+
+  return (
+    <div className="space-y-5">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="space-y-1">
+          <h2 className="text-lg font-semibold tracking-tight">
+            Security test cases
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Search, and filter by category, test type, or severity to narrow the
+            relevant coverage.
+          </p>
+        </div>
+        <div className="hidden items-center gap-2 text-xs text-muted-foreground sm:flex">
+          <SlidersHorizontal className="size-3.5" />
+          <span>{totalItems} matching</span>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap items-end gap-3 rounded-lg border border-border/60 bg-card/60 p-4">
+        <div className="flex min-w-[16rem] flex-1 flex-col gap-1.5">
+          <span className="text-xs font-medium text-muted-foreground">
+            Search
+          </span>
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
+              placeholder="Search test cases..."
+              className="pl-8"
+            />
+          </div>
+        </div>
+        <MultiFilterDropdown
+          label="Category"
+          items={categories as Category[] | undefined}
+          selected={selectedCategories}
+          onToggle={toggleCategory}
+          onClear={clearCategories}
+          icon={Target}
+          allLabel="All categories"
+        />
+        <MultiFilterDropdown
+          label="Test type"
+          items={testTypes as TestType[] | undefined}
+          selected={selectedTestTypes}
+          onToggle={toggleTestType}
+          onClear={clearTestTypes}
+          icon={Wrench}
+          allLabel="All test types"
+        />
+        <MultiFilterDropdown
+          label="Severity"
+          items={severityOptions}
+          selected={selectedSeverities}
+          onToggle={toggleSeverity}
+          onClear={clearSeverities}
+          icon={ShieldAlert}
+          allLabel="All severities"
+        />
+        {hasFilters && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={clearAllFilters}
+            className="self-end"
+          >
+            Clear filters
+          </Button>
+        )}
+      </div>
+
+      {activeChips.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="text-xs text-muted-foreground">Active:</span>
+          {activeChips.map((chip) => (
+            <button
+              key={`${chip.kind}-${chip.id}`}
+              type="button"
+              onClick={() => {
+                if (chip.kind === "category") toggleCategory(chip.id);
+                else if (chip.kind === "testType") toggleTestType(chip.id);
+                else toggleSeverity(chip.id);
+              }}
+              className="group inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/5 px-2.5 py-0.5 text-xs font-medium text-foreground transition-colors hover:bg-primary/10"
+            >
+              <span>{chip.name}</span>
+              <X className="size-3 text-muted-foreground group-hover:text-foreground" />
+            </button>
+          ))}
+        </div>
+      )}
+
+      <div className="overflow-hidden rounded-xl border border-border/60 bg-card">
+        {isLoading ? (
+          <div className="space-y-3 p-6">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="space-y-2">
+                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+            ))}
+          </div>
+        ) : filteredTestCases.length > 0 ? (
+          <>
+            <DataTable table={table} onRowClick={setActiveTestCase} />
+
+            <Pagination
+              page={safePage}
+              pageSize={pageSize}
+              totalItems={totalItems}
+              onPageChange={setPage}
+              onPageSizeChange={(n) => {
+                setPageSize(n);
+                setPage(1);
+              }}
+            />
+
+            {testCases && testCases.length > 0 && (
+              <div className="flex flex-col gap-3 border-t border-border/60 px-6 py-4">
+                {pdfError && (
+                  <div className="rounded-md bg-red-50 p-3 text-sm text-red-900">
+                    <p className="font-medium">PDF Generation Error</p>
+                    <p className="text-xs">{pdfError}</p>
+                  </div>
+                )}
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-muted-foreground">
+                    {testCases.length} test case
+                    {testCases.length !== 1 ? "s" : ""} total
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleDownloadPDF}
+                    disabled={isPdfLoading || testCases.length === 0}
+                    className="gap-2"
+                  >
+                    <Download className="size-4" />
+                    {isPdfLoading ? "Generating PDF..." : "Generate PDF Report"}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="flex flex-col items-center justify-center gap-3 px-6 py-16 text-center">
+            <div className="flex size-12 items-center justify-center rounded-full bg-muted text-muted-foreground">
+              <ShieldCheck className="size-5" />
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm font-semibold">No test cases match</p>
+              <p className="mx-auto max-w-sm text-xs text-muted-foreground">
+                {hasFilters
+                  ? "Try removing some filters."
+                  : "Try adjusting your search."}
+              </p>
+            </div>
+            {hasFilters && (
+              <Button variant="outline" size="sm" onClick={clearAllFilters}>
+                Clear filters
+              </Button>
+            )}
+          </div>
+        )}
+      </div>
+
+      <TestCaseDetailDialog
+        testCase={activeTestCase}
+        open={activeTestCase !== null}
+        onOpenChange={(open) => {
+          if (!open) setActiveTestCase(null);
+        }}
+      />
+    </div>
+  );
+}
+</file>
+
+<file path="src/components/theme-provider.tsx">
+"use client";
+
+import * as React from "react";
+import { ThemeProvider as NextThemesProvider } from "next-themes";
+
+export function ThemeProvider({
+  children,
+  ...props
+}: React.ComponentProps<typeof NextThemesProvider>) {
+  return <NextThemesProvider {...props}>{children}</NextThemesProvider>;
+}
+</file>
+
+<file path="src/components/theme-toggle.tsx">
+"use client";
+
+import * as React from "react";
+import { Moon, Sun } from "lucide-react";
+import { useTheme } from "next-themes";
+
+import { Button } from "@/components/ui/button";
+
+export function ThemeToggle() {
+  const { setTheme, resolvedTheme } = useTheme();
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => setMounted(true), []);
+
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      aria-label="Toggle theme"
+      onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
+    >
+      {mounted && resolvedTheme === "dark" ? (
+        <Sun className="size-5" />
+      ) : (
+        <Moon className="size-5" />
+      )}
+    </Button>
+  );
+}
+</file>
+
+<file path="src/hooks/use-mobile.ts">
+import * as React from "react"
+
+const MOBILE_BREAKPOINT = 768
+
+export function useIsMobile() {
+  const [isMobile, setIsMobile] = React.useState<boolean | undefined>(undefined)
+
+  React.useEffect(() => {
+    const mql = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`)
+    const onChange = () => {
+      setIsMobile(window.innerWidth < MOBILE_BREAKPOINT)
+    }
+    mql.addEventListener("change", onChange)
+    setIsMobile(window.innerWidth < MOBILE_BREAKPOINT)
+    return () => mql.removeEventListener("change", onChange)
+  }, [])
+
+  return !!isMobile
+}
+</file>
+
+<file path="src/lib/api.ts">
+import { API_URL } from "@/config";
+import type { AttributeGroup, PageSelections, Project } from "@/lib/types";
+
+async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(`${API_URL}${path}`, {
+    headers: { "Content-Type": "application/json" },
+    ...init,
+  });
+  if (!res.ok) {
+    const detail = await res.text();
+    throw new Error(`Request failed (${res.status}): ${detail}`);
+  }
+  return res.json() as Promise<T>;
+}
+
+export const listProjects = () => request<Project[]>("/projects");
+
+export const createProject = (payload: {
+  name: string;
+  description?: string;
+}) =>
+  request<Project>("/projects", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+
+export const getProject = (id: number) => request<Project>(`/projects/${id}`);
+
+export const getPageAttributes = (page: number) =>
+  request<AttributeGroup[]>(`/pages/${page}/attributes`);
+
+export const getSelections = (projectId: number, page: number) =>
+  request<PageSelections>(`/projects/${projectId}/page/${page}/selections`);
+
+export const saveSelections = (
+  projectId: number,
+  page: number,
+  attributeIds: number[],
+) =>
+  request<PageSelections>(`/projects/${projectId}/page/${page}/selections`, {
+    method: "PUT",
+    body: JSON.stringify({ attribute_ids: attributeIds }),
+  });
+
+// ECU Detail APIs
+export interface EcuDetail {
+  id: number;
+  project_id: number;
+  ecu_name: string;
+  part_number: string;
+  ecu_risk_rating: string;
+  architecture: string;
+  vehicle_line: string;
+  year: number;
+  microcontroller_cpu_provider: string;
+  date_hardware_b_sample_available: string | null;
+  date_harness_available: string | null;
+  date_production_intent_software_available: string | null;
+  export_control_classification: string;
+  pentest_provider_name: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export const getEcuDetail = (projectId: number) =>
+  request<EcuDetail>(`/projects/${projectId}/ecu-detail`);
+
+export const createEcuDetail = (
+  projectId: number,
+  payload: Omit<EcuDetail, "id" | "project_id" | "created_at" | "updated_at">,
+) =>
+  request<EcuDetail>(`/projects/${projectId}/ecu-detail`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+
+export const updateEcuDetail = (
+  projectId: number,
+  payload: Partial<
+    Omit<EcuDetail, "id" | "project_id" | "created_at" | "updated_at">
+  >,
+) =>
+  request<EcuDetail>(`/projects/${projectId}/ecu-detail`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+
+// Test Case APIs
+export interface Category {
+  id: number;
+  name: string;
+}
+
+export interface TestType {
+  id: number;
+  name: string;
+}
+
+export interface TestCase {
+  id: number;
+  category_id: number;
+  objective_id: number;
+  protocol_id: number | null;
+  attack_vector_id: number | null;
+  test_type_id: number | null;
+  severity_id: number | null;
+  threat_id: number | null;
+  asset_id: number | null;
+  action_test_case: string;
+  source_scope_status: string | null;
+  description: string | null;
+  attack_path: string | null;
+  test_steps: string | null;
+  expected_output: string | null;
+  attack_feasibility: string | null;
+  cia_impact: string | null;
+  safety_impact: string | null;
+  automation_possible: string | null;
+  created_at: string;
+  category: { id: number; name: string } | null;
+  objective: { id: number; name: string; category_id: number } | null;
+  protocol: { id: number; name: string } | null;
+  attack_vector: { id: number; name: string } | null;
+  test_type: { id: number; name: string } | null;
+  severity: { id: number; name: string; severity_rank: number } | null;
+  threat: { id: number; threat_text: string } | null;
+  asset: { id: number; asset_name: string } | null;
+  test_case_tools: Array<{ tool: { id: number; tool_name: string } }>;
+  test_case_references: Array<{ reference: { id: number; ref_text: string } }>;
+}
+
+export const getCategories = () =>
+  request<Category[]>("/test-cases/categories");
+
+export const getTestTypes = () => request<TestType[]>("/test-cases/types");
+
+export const listTestCases = (
+  categoryIds?: number[] | number,
+  testTypeIds?: number[] | number,
+) => {
+  const params = new URLSearchParams();
+  const cats = Array.isArray(categoryIds)
+    ? categoryIds
+    : categoryIds !== undefined
+      ? [categoryIds]
+      : [];
+  const types = Array.isArray(testTypeIds)
+    ? testTypeIds
+    : testTypeIds !== undefined
+      ? [testTypeIds]
+      : [];
+  for (const id of cats) params.append("category_ids", String(id));
+  for (const id of types) params.append("test_type_ids", String(id));
+  const query = params.toString();
+  return request<TestCase[]>(`/test-cases${query ? `?${query}` : ""}`);
+};
+
+export const getTestCase = (id: number) =>
+  request<TestCase>(`/test-cases/${id}`);
+
+export const downloadTestCasesPDF = async (
+  projectId: number,
+  categoryIds?: number[],
+  testTypeIds?: number[],
+): Promise<void> => {
+  const params = new URLSearchParams();
+  params.append("project_id", String(projectId));
+
+  if (categoryIds && categoryIds.length > 0) {
+    for (const id of categoryIds) {
+      params.append("category_ids", String(id));
+    }
+  }
+
+  if (testTypeIds && testTypeIds.length > 0) {
+    for (const id of testTypeIds) {
+      params.append("test_type_ids", String(id));
+    }
+  }
+
+  const query = params.toString();
+  const url = `${API_URL}/test-cases/export/pdf${query ? `?${query}` : ""}`;
+
+  // Cap the wait so a stalled backend can't leave the UI stuck forever.
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), 60_000);
+
+  let response: Response;
+  try {
+    response = await fetch(url, { signal: controller.signal });
+  } catch (err) {
+    if (err instanceof DOMException && err.name === "AbortError") {
+      throw new Error("PDF generation timed out. Please try again.");
+    }
+    throw err;
+  } finally {
+    window.clearTimeout(timeoutId);
+  }
+
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(`PDF generation failed (${response.status}): ${error}`);
+  }
+
+  const contentDisposition = response.headers.get("content-disposition");
+  let filename = "test_plan.pdf";
+  if (contentDisposition) {
+    const match = contentDisposition.match(/filename=([^;]+)/);
+    if (match) {
+      filename = match[1].replace(/"/g, "").trim();
+    }
+  }
+
+  const blob = await response.blob();
+  const blobUrl = window.URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = blobUrl;
+  link.download = filename;
+  link.rel = "noopener";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  window.setTimeout(() => window.URL.revokeObjectURL(blobUrl), 60_000);
+};
+</file>
+
+<file path="src/lib/navigation.ts">
+export const totalPages = 4;
+
+export function nextPage(page: number): number | null {
+  return page >= totalPages ? null : page + 1;
+}
+
+export function prevPage(page: number): number | null {
+  return page <= 1 ? null : page - 1;
+}
+</file>
+
+<file path="src/lib/types.ts">
+export interface Project {
+  id: number;
+  name: string;
+  description: string | null;
+  created_at: string;
+}
+
+export interface Attribute {
+  id: number;
+  name: string;
+}
+
+export interface AttributeGroup {
+  id: number;
+  name: string;
+  attributes: Attribute[];
+}
+
+export interface PageSelections {
+  page: number;
+  attribute_ids: number[];
+}
+</file>
+
+<file path="src/lib/utils.ts">
+import { clsx, type ClassValue } from "clsx"
+import { twMerge } from "tailwind-merge"
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs))
+}
+</file>
+
+<file path="src/config.ts">
+export const APP_USER_NAME = "Alex";
+export const TOTAL_PAGES = 4;
+
+export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api";
+</file>
+
+<file path=".gitignore">
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files (can opt-in for committing if needed)
+.env*
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+</file>
+
+<file path="AGENTS.md">
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->
+</file>
+
+<file path="CLAUDE.md">
+@AGENTS.md
+</file>
+
+<file path="components.json">
+{
+  "$schema": "https://ui.shadcn.com/schema.json",
+  "style": "radix-nova",
+  "rsc": true,
+  "tsx": true,
+  "tailwind": {
+    "config": "",
+    "css": "src/app/globals.css",
+    "baseColor": "neutral",
+    "cssVariables": true,
+    "prefix": ""
+  },
+  "iconLibrary": "lucide",
+  "rtl": false,
+  "aliases": {
+    "components": "@/components",
+    "utils": "@/lib/utils",
+    "ui": "@/components/ui",
+    "lib": "@/lib",
+    "hooks": "@/hooks"
+  },
+  "menuColor": "default",
+  "menuAccent": "subtle",
+  "registries": {}
+}
+</file>
+
+<file path="eslint.config.mjs">
+import { defineConfig, globalIgnores } from "eslint/config";
+import nextVitals from "eslint-config-next/core-web-vitals";
+import nextTs from "eslint-config-next/typescript";
+
+const eslintConfig = defineConfig([
+  ...nextVitals,
+  ...nextTs,
+  // Override default ignores of eslint-config-next.
+  globalIgnores([
+    // Default ignores of eslint-config-next:
+    ".next/**",
+    "out/**",
+    "build/**",
+    "next-env.d.ts",
+  ]),
+]);
+
+export default eslintConfig;
+</file>
+
+<file path="next.config.ts">
+import type { NextConfig } from "next";
+
+const nextConfig: NextConfig = {
+  /* config options here */
+};
+
+export default nextConfig;
+</file>
+
+<file path="package.json">
+{
+  "name": "frontend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^5.102.3",
+    "@tanstack/react-table": "^8.21.3",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "date-fns": "^4.4.0",
+    "lucide-react": "^1.34.0",
+    "next": "16.3.2",
+    "next-themes": "^0.4.6",
+    "radix-ui": "^1.6.7",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "shadcn": "^4.19.0",
+    "tailwind-merge": "^3.6.0",
+    "tw-animate-css": "^1.4.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/node": "20.19.43",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.3.2",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}
+</file>
+
+<file path="postcss.config.mjs">
+const config = {
+  plugins: {
+    "@tailwindcss/postcss": {},
+  },
+};
+
+export default config;
+</file>
+
+<file path="README.md">
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+
+## Getting Started
+
+First, run the development server:
+
+```bash
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+
+## Learn More
+
+To learn more about Next.js, take a look at the following resources:
+
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+
+## Deploy on Vercel
+
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+</file>
+
+<file path="tsconfig.json">
+{
+  "compilerOptions": {
+    "target": "ES2017",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "react-jsx",
+    "incremental": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    ".next/dev/types/**/*.ts",
+    "**/*.mts"
+  ],
+  "exclude": ["node_modules"]
+}
+</file>
+
+</files>
