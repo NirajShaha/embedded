@@ -1,83 +1,127 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import APIRouter, HTTPException, status
 
-from app.database import get_db
-from app.models import Project, ProjectEcuDetail
-from app.schemas import ProjectEcuDetailCreate, ProjectEcuDetailRead, ProjectEcuDetailUpdate
+from app.prisma_client import db
+from app.schemas import (
+    ProjectEcuDetailCreate,
+    ProjectEcuDetailRead,
+    ProjectEcuDetailUpdate
+)
+
+from datetime import datetime
 
 router = APIRouter(prefix="/projects/{project_id}/ecu-detail", tags=["ecu-details"])
 
+def _convert_dates(data: dict) -> dict:
+    result = {}
+
+    for key, value in data.items():
+
+        if value is None:
+            result[key] = None
+
+        elif hasattr(value, "year") and hasattr(value, "month") and hasattr(value, "day"):
+            result[key] = datetime.combine(
+                value,
+                datetime.min.time()
+            )
+
+        else:
+            result[key] = value
+
+    return result
+
 
 @router.get("", response_model=ProjectEcuDetailRead)
-async def get_ecu_detail(
-    project_id: int, db: AsyncSession = Depends(get_db)
-) -> ProjectEcuDetail:
+async def get_ecu_detail(project_id: int):
     # Check if project exists
-    project = await db.get(Project, project_id)
+    project = await db.projects.find_unique(
+        where={
+            "id": project_id
+        }
+    )
     if project is None:
         raise HTTPException(status_code=404, detail="Project not found")
 
-    result = await db.scalars(
-        select(ProjectEcuDetail).where(ProjectEcuDetail.project_id == project_id)
+    ecu_detail = await db.project_ecu_details.find_first(
+        where={
+            "project_id": project_id
+        }
     )
-    ecu_detail = result.first()
     if ecu_detail is None:
         raise HTTPException(status_code=404, detail="ECU detail not found for this project")
+    
     return ecu_detail
 
 
 @router.post("", response_model=ProjectEcuDetailRead, status_code=status.HTTP_201_CREATED)
-async def create_ecu_detail(
-    project_id: int,
-    payload: ProjectEcuDetailCreate,
-    db: AsyncSession = Depends(get_db),
-) -> ProjectEcuDetail:
+async def create_ecu_detail(project_id: int, payload: ProjectEcuDetailCreate):
     # Check if project exists
-    project = await db.get(Project, project_id)
+    project = await db.projects.find_unique(
+        where={
+            "id": project_id
+        }
+    )
     if project is None:
         raise HTTPException(status_code=404, detail="Project not found")
 
     # Check if ECU detail already exists for this project
-    existing = await db.scalars(
-        select(ProjectEcuDetail).where(ProjectEcuDetail.project_id == project_id)
+    existing = await db.project_ecu_details.find_first(
+        where={
+            "project_id": project_id
+        }
     )
-    if existing.first() is not None:
+    if existing is not None:
         raise HTTPException(
             status_code=409, detail="ECU detail already exists for this project"
         )
 
-    ecu_detail = ProjectEcuDetail(project_id=project_id, **payload.model_dump())
-    db.add(ecu_detail)
-    await db.commit()
-    await db.refresh(ecu_detail)
+    payload_data = _convert_dates(
+        payload.model_dump()
+    )
+
+    ecu_detail = await db.project_ecu_details.create(
+        data={
+            "project_id": project_id,
+            **payload_data
+        }
+    )
     return ecu_detail
 
 
 @router.put("", response_model=ProjectEcuDetailRead)
 async def update_ecu_detail(
     project_id: int,
-    payload: ProjectEcuDetailUpdate,
-    db: AsyncSession = Depends(get_db),
-) -> ProjectEcuDetail:
+    payload: ProjectEcuDetailUpdate
+    ):
     # Check if project exists
-    project = await db.get(Project, project_id)
+    project = await db.projects.find_unique(
+        where={
+            "id": project_id
+        }
+    )
     if project is None:
         raise HTTPException(status_code=404, detail="Project not found")
 
     # Get existing ECU detail
-    result = await db.scalars(
-        select(ProjectEcuDetail).where(ProjectEcuDetail.project_id == project_id)
+    existing = await db.project_ecu_details.find_first(
+        where={
+            "project_id": project_id
+        }
     )
-    ecu_detail = result.first()
-    if ecu_detail is None:
+    if existing is None:
         raise HTTPException(status_code=404, detail="ECU detail not found for this project")
 
     # Update only provided fields
-    update_data = payload.model_dump(exclude_unset=True)
-    for field, value in update_data.items():
-        setattr(ecu_detail, field, value)
+    payload_data = _convert_dates(
+        payload.model_dump(
+            exclude_unset=True
+        )
+    )
 
-    await db.commit()
-    await db.refresh(ecu_detail)
-    return ecu_detail
+    updated = await db.project_ecu_details.update(
+        where={
+            "id": existing.id
+        },
+        data=payload_data
+    )
+    return updated

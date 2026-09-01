@@ -4,20 +4,17 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
-from app.database import Base, async_session_factory, engine, ensure_database
-from app.routers import ecu_details, pages, projects, test_cases
+from app.prisma_client import db
+from app.routers import projects, ecu_details, pages, test_cases
 from app.seed import ensure_attributes
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
-    await ensure_database()
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    async with async_session_factory() as session:
-        await ensure_attributes(session)
+async def lifespan(app:FastAPI):
+    await db.connect()
+    await ensure_attributes()
     yield
-    await engine.dispose()
+    await db.disconnect()
 
 
 app = FastAPI(title="Embedded Config API", lifespan=lifespan)

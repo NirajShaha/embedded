@@ -56,7 +56,7 @@ from reportlab.platypus import (
     TableStyle,
 )
 
-from app.models import ProjectEcuDetail, TestCase
+from typing import Any
 
 
 # ---------------------------------------------------------------------------
@@ -247,7 +247,7 @@ def _fmt_date(value: date | None) -> str:
     return value.strftime("%d/%m/%Y") if value else "\u2014"
 
 
-def _platform_label(ecu: ProjectEcuDetail) -> str:
+def _platform_label(ecu: Any) -> str:
     return f"{ecu.architecture} \u2013 {ecu.vehicle_line} ({ecu.year})"
 
 
@@ -347,7 +347,7 @@ def _simple_table(
 # ---------------------------------------------------------------------------
 # Section content builders
 # ---------------------------------------------------------------------------
-def _intro_rows(ecu: ProjectEcuDetail) -> list[list[str]]:
+def _intro_rows(ecu: Any) -> list[list[str]]:
     return [
         ["ECU name", ecu.ecu_name],
         ["Part number", ecu.part_number],
@@ -382,40 +382,78 @@ def _testing_type_rows(selected_test_type_names: list[str] | None) -> list[list[
 
 
 def _build_scope_rows(
-    test_cases: list[TestCase],
+    test_cases: list[Any],
 ) -> list[tuple[bool, str, str, str]]:
-    """Convert the test-case catalogue into the section 4 row format.
+    """
+    Convert the test-case catalogue into the section 4 row format.
 
     Returns a list of (is_section_banner, objective, action, comment) tuples
     where ``is_section_banner`` is True for category headers. The objective
     column is shown only on the first row of each objective group, matching
     the source template's visual style.
     """
+
     ordered = sorted(
         test_cases,
         key=lambda tc: (
-            tc.category.id if tc.category else 0,
-            tc.objective.id if tc.objective else 0,
+            tc.categories.id if tc.categories else 0,
+            tc.objectives.id if tc.objectives else 0,
             tc.id,
         ),
     )
 
     rows: list[tuple[bool, str, str, str]] = []
+
     current_category: str | None = None
     current_objective: str | None = None
+
     for tc in ordered:
-        category_name = tc.category.name if tc.category else "Uncategorised"
+
+        category_name = (
+            tc.categories.name
+            if tc.categories
+            else "Uncategorised"
+        )
+
         if category_name != current_category:
-            rows.append((True, category_name, "", ""))
+            rows.append(
+                (
+                    True,
+                    category_name,
+                    "",
+                    "",
+                )
+            )
+
             current_category = category_name
             current_objective = None
 
-        objective_name = tc.objective.name if tc.objective else ""
-        show_objective = objective_name != current_objective
+        objective_name = (
+            tc.objectives.name
+            if tc.objectives
+            else ""
+        )
+
+        show_objective = (
+            objective_name != current_objective
+        )
+
         current_objective = objective_name
 
-        status = tc.source_scope_status or "\u2014"
-        rows.append((False, objective_name if show_objective else "", tc.action_test_case, status))
+        status = (
+            tc.source_scope_status
+            if tc.source_scope_status
+            else "—"
+        )
+
+        rows.append(
+            (
+                False,
+                objective_name if show_objective else "",
+                tc.action_test_case,
+                status,
+            )
+        )
 
     return rows
 
@@ -470,7 +508,7 @@ def _scope_table(scope_rows: list[tuple[bool, str, str, str]], font_size: float 
 # ---------------------------------------------------------------------------
 # Page-level builders
 # ---------------------------------------------------------------------------
-def _build_cover_page(ecu: ProjectEcuDetail) -> list:
+def _build_cover_page(ecu: Any) -> list:
     base = getSampleStyleSheet()["Normal"]
     kicker = ParagraphStyle(
         "Kicker", parent=base, fontSize=18, fontName="Helvetica-Bold",
@@ -576,7 +614,7 @@ def _build_table_of_contents() -> list:
     return story
 
 
-def _build_introduction(ecu: ProjectEcuDetail) -> list:
+def _build_introduction(ecu: Any) -> list:
     base = getSampleStyleSheet()["Normal"]
     h1 = ParagraphStyle("H1", parent=base, fontSize=14, fontName="Helvetica-Bold",
                         textColor=INK, spaceAfter=4)
@@ -716,7 +754,7 @@ def _build_schedules() -> list:
 
 
 def _build_test_scope(
-    test_cases: list[TestCase],
+    test_cases: list[Any],
     selected_category_names: list[str] | None,
     selected_test_type_names: list[str] | None,
 ) -> list:
@@ -810,8 +848,8 @@ def _build_appendices() -> list:
 # Public entry point
 # ---------------------------------------------------------------------------
 def build_pdf(
-    test_cases: list[TestCase],
-    ecu_detail: ProjectEcuDetail,
+    test_cases: list[Any],
+    ecu_detail: Any,
     selected_category_names: list[str] | None = None,
     selected_test_type_names: list[str] | None = None,
 ) -> bytes:
