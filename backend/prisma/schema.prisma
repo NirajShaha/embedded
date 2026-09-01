@@ -1,0 +1,199 @@
+generator client {
+  provider = "prisma-client-py"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model assets {
+  id         BigInt       @id @default(autoincrement())
+  asset_name String       @unique(map: "asset_name") @db.VarChar(500)
+  test_cases test_cases[]
+}
+
+model attack_vectors {
+  id         BigInt       @id @default(autoincrement())
+  name       String       @unique(map: "name") @db.VarChar(255)
+  test_cases test_cases[]
+}
+
+model attribute_groups {
+  id         Int          @id @default(autoincrement())
+  page       Int
+  name       String       @db.VarChar(200)
+  attributes attributes[]
+
+  @@index([page], map: "ix_attribute_groups_page")
+}
+
+model attributes {
+  id                 Int                  @id @default(autoincrement())
+  group_id           Int
+  name               String               @db.VarChar(200)
+  attribute_groups   attribute_groups     @relation(fields: [group_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "attributes_ibfk_1")
+  project_selections project_selections[]
+
+  @@index([group_id], map: "group_id")
+}
+
+model categories {
+  id         BigInt       @id @default(autoincrement())
+  name       String       @unique(map: "name") @db.VarChar(255)
+  created_at DateTime?    @default(now()) @db.Timestamp(0)
+  objectives objectives[]
+  test_cases test_cases[]
+}
+
+model objectives {
+  id          BigInt       @id @default(autoincrement())
+  category_id BigInt
+  name        String       @db.Text
+  categories  categories   @relation(fields: [category_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "objectives_ibfk_1")
+  test_cases  test_cases[]
+
+  @@unique([category_id, name(length: 255)], map: "uk_obj")
+}
+
+model project_ecu_details {
+  id                                        Int       @id @default(autoincrement())
+  project_id                                Int       @unique(map: "ix_project_ecu_details_project_id")
+  ecu_name                                  String    @db.VarChar(255)
+  part_number                               String    @db.VarChar(255)
+  ecu_risk_rating                           String    @db.VarChar(100)
+  architecture                              String    @db.VarChar(255)
+  vehicle_line                              String    @db.VarChar(255)
+  year                                      Int
+  microcontroller_cpu_provider              String    @db.VarChar(255)
+  date_hardware_b_sample_available          DateTime? @db.Date
+  date_harness_available                    DateTime? @db.Date
+  date_production_intent_software_available DateTime? @db.Date
+  export_control_classification             String    @db.VarChar(255)
+  pentest_provider_name                     String    @db.VarChar(255)
+  created_at                                DateTime  @default(dbgenerated("(now())")) @db.DateTime(0)
+  updated_at                                DateTime  @default(dbgenerated("(now())")) @db.DateTime(0)
+  projects                                  projects  @relation(fields: [project_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "project_ecu_details_ibfk_1")
+}
+
+model project_selections {
+  id           Int        @id @default(autoincrement())
+  project_id   Int
+  attribute_id Int
+  page         Int
+  projects     projects   @relation(fields: [project_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "project_selections_ibfk_1")
+  attributes   attributes @relation(fields: [attribute_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "project_selections_ibfk_2")
+
+  @@unique([project_id, attribute_id], map: "uq_project_attribute")
+  @@index([attribute_id], map: "ix_project_selections_attribute_id")
+  @@index([page], map: "ix_project_selections_page")
+  @@index([project_id], map: "ix_project_selections_project_id")
+}
+
+model projects {
+  id                  Int                  @id @default(autoincrement())
+  name                String               @db.VarChar(200)
+  description         String?              @db.Text
+  created_at          DateTime             @default(dbgenerated("(now())")) @db.DateTime(0)
+  project_ecu_details project_ecu_details?
+  project_selections  project_selections[]
+}
+
+model protocols {
+  id         BigInt       @id @default(autoincrement())
+  name       String       @unique(map: "name") @db.VarChar(255)
+  test_cases test_cases[]
+}
+
+model references_master {
+  id                   BigInt                 @id @default(autoincrement())
+  ref_text             String                 @unique(map: "uk_ref", length: 255) @db.Text
+  test_case_references test_case_references[]
+}
+
+model severities {
+  id            BigInt       @id @default(autoincrement())
+  name          String       @unique(map: "name") @db.VarChar(50)
+  severity_rank Int
+  test_cases    test_cases[]
+}
+
+model test_case_references {
+  test_case_id      BigInt
+  reference_id      BigInt
+  test_cases        test_cases        @relation(fields: [test_case_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "test_case_references_ibfk_1")
+  references_master references_master @relation(fields: [reference_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "test_case_references_ibfk_2")
+
+  @@id([test_case_id, reference_id])
+  @@index([reference_id], map: "reference_id")
+}
+
+model test_case_tools {
+  test_case_id BigInt
+  tool_id      BigInt
+  test_cases   test_cases   @relation(fields: [test_case_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "test_case_tools_ibfk_1")
+  tools_master tools_master @relation(fields: [tool_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "test_case_tools_ibfk_2")
+
+  @@id([test_case_id, tool_id])
+  @@index([tool_id], map: "tool_id")
+}
+
+model test_cases {
+  id                   BigInt                 @id @default(autoincrement())
+  category_id          BigInt
+  objective_id         BigInt
+  protocol_id          BigInt?
+  attack_vector_id     BigInt?
+  test_type_id         BigInt?
+  severity_id          BigInt?
+  threat_id            BigInt?
+  asset_id             BigInt?
+  action_test_case     String                 @db.LongText
+  source_scope_status  String?                @db.VarChar(100)
+  description          String?                @db.LongText
+  attack_path          String?                @db.LongText
+  test_steps           String?                @db.LongText
+  expected_output      String?                @db.LongText
+  attack_feasibility   String?                @db.Text
+  cia_impact           String?                @db.Text
+  safety_impact        String?                @db.Text
+  automation_possible  String?                @db.VarChar(50)
+  created_at           DateTime?              @default(now()) @db.Timestamp(0)
+  test_case_references test_case_references[]
+  test_case_tools      test_case_tools[]
+  categories           categories             @relation(fields: [category_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "test_cases_ibfk_1")
+  objectives           objectives             @relation(fields: [objective_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "test_cases_ibfk_2")
+  protocols            protocols?             @relation(fields: [protocol_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "test_cases_ibfk_3")
+  attack_vectors       attack_vectors?        @relation(fields: [attack_vector_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "test_cases_ibfk_4")
+  test_types           test_types?            @relation(fields: [test_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "test_cases_ibfk_5")
+  severities           severities?            @relation(fields: [severity_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "test_cases_ibfk_6")
+  threats              threats?               @relation(fields: [threat_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "test_cases_ibfk_7")
+  assets               assets?                @relation(fields: [asset_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "test_cases_ibfk_8")
+
+  @@index([asset_id], map: "asset_id")
+  @@index([attack_vector_id], map: "attack_vector_id")
+  @@index([category_id], map: "category_id")
+  @@index([objective_id], map: "objective_id")
+  @@index([protocol_id], map: "protocol_id")
+  @@index([severity_id], map: "severity_id")
+  @@index([test_type_id], map: "test_type_id")
+  @@index([threat_id], map: "threat_id")
+}
+
+model test_types {
+  id         BigInt       @id @default(autoincrement())
+  name       String       @unique(map: "name") @db.VarChar(100)
+  test_cases test_cases[]
+}
+
+model threats {
+  id          BigInt       @id @default(autoincrement())
+  threat_text String       @unique(map: "uk_threat", length: 255) @db.Text
+  test_cases  test_cases[]
+}
+
+model tools_master {
+  id              BigInt            @id @default(autoincrement())
+  tool_name       String            @unique(map: "uk_tool", length: 255) @db.VarChar(1000)
+  test_case_tools test_case_tools[]
+}

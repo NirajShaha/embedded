@@ -1,11 +1,11 @@
-"""Idempotent seed of the four selection pages' generic attribute templates."""
+"""
+Idempotent seed of the four selection pages'
+generic attribute templates using Prisma.
+"""
 
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from app.prisma_client import db
 
-from app.models import Attribute, AttributeGroup
 
-# Each page holds 5 main attributes; each holds a few sub-attributes.
 TEMPLATES: dict[int, list[tuple[str, list[str]]]] = {
     1: [
         ("Core Functionality", ["Tracking", "Reporting", "Automation", "Notifications"]),
@@ -38,23 +38,34 @@ TEMPLATES: dict[int, list[tuple[str, list[str]]]] = {
 }
 
 
-async def ensure_attributes(session: AsyncSession) -> None:
-    """Seed groups + attributes, skipping any that already exist by name."""
+async def ensure_attributes():
+
     for page, groups in TEMPLATES.items():
+
         for group_name, sub_names in groups:
-            existing_group = await session.scalar(
-                select(AttributeGroup).where(
-                    AttributeGroup.page == page,
-                    AttributeGroup.name == group_name,
-                )
+
+            existing_group = await db.attribute_groups.find_first(
+                where={
+                    "page": page,
+                    "name": group_name,
+                }
             )
+
             if existing_group:
                 continue
 
-            group = AttributeGroup(page=page, name=group_name)
-            session.add(group)
-            await session.flush()
-            for sub_name in sub_names:
-                session.add(Attribute(group_id=group.id, name=sub_name))
+            group = await db.attribute_groups.create(
+                data={
+                    "page": page,
+                    "name": group_name,
+                }
+            )
 
-    await session.commit()
+            for sub_name in sub_names:
+
+                await db.attributes.create(
+                    data={
+                        "group_id": group.id,
+                        "name": sub_name,
+                    }
+                )
