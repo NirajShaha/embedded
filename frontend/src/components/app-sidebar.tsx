@@ -4,9 +4,10 @@ import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { LayoutDashboard, Cpu, ShieldCheck } from "lucide-react";
+import { LayoutDashboard, Cpu, ShieldCheck, Settings } from "lucide-react";
 
 import { getProject } from "@/lib/api";
+import { useAuth } from "@/contexts/auth-context";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -35,6 +36,7 @@ function pageNumberFromPath(pathname: string): number | null {
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname();
+  const { isAdmin } = useAuth();
   const currentProjectId = projectIdFromPath(pathname);
   const currentPage = pageNumberFromPath(pathname);
 
@@ -78,6 +80,29 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarGroup>
+
+        {isAdmin && (
+          <>
+            <SidebarSeparator />
+            <SidebarGroup>
+              <SidebarGroupLabel>Administration</SidebarGroupLabel>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname.startsWith("/admin")}
+                    tooltip="Admin Panel"
+                  >
+                    <Link href="/admin">
+                      <Settings />
+                      <span>Admin Panel</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroup>
+          </>
+        )}
 
         {currentProjectId !== null && (
           <>
