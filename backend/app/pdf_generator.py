@@ -80,143 +80,302 @@ TEAL_LIGHT = colors.HexColor("#e5eeee")
 GRID = colors.HexColor("#737373")
 FOOTER_GREY = colors.HexColor("#333333")
 
-DOC_TEMPLATE_CODE = "JLR-TMP-568088"
+# DOC_TEMPLATE_CODE = "JLR-TMP-568088"
+DOC_TEMPLATE_CODE = "COMP-TMP-483921"
 
 
 # ---------------------------------------------------------------------------
 # Static template content (no application data model for these)
 # ---------------------------------------------------------------------------
+# DISTRIBUTION = [
+#     ("Robert Aidi", "raidi1", "PO"),
+#     ("Harikrishnan Unnikrishnan", "Hunnikri", "Project Lead"),
+#     ("Jagadeesh Ram Chilla", "Jchilla", "Cybersecurity Engineer"),
+#     ("Hari Bhagavathi Ramian Monimekalai", "Hramianm", "Cyber Compliance Engineer"),
+# ]
+
 DISTRIBUTION = [
-    ("Robert Aidi", "raidi1", "PO"),
-    ("Harikrishnan Unnikrishnan", "Hunnikri", "Project Lead"),
-    ("Jagadeesh Ram Chilla", "Jchilla", "Cybersecurity Engineer"),
-    ("Hari Bhagavathi Ramian Monimekalai", "Hramianm", "Cyber Compliance Engineer"),
+    ("John Doe", "jdoe01", "Program Security Manager"),
+    ("Sarah Miller", "smiller02", "Principal Security Engineer"),
+    ("Michael Brown", "mbrown03", "Lead Penetration Tester"),
+    ("Emily Wilson", "ewilson04", "Compliance Specialist"),
 ]
+
+# HISTORY = [
+#     ("1", "18/06/2025", "Ashwin Sasi & Bhagirath", "First issue"),
+# ]
 
 HISTORY = [
-    ("1", "18/06/2025", "Ashwin Sasi & Bhagirath", "First issue"),
+    ("1.0", "14/03/2026", "John Doe", "Initial release"),
+    ("1.1", "20/03/2026", "Sarah Miller", "Updated review comments"),
+    ("2.0", "05/04/2026", "Security Team", "Approved baseline version"),
 ]
+
+# DOCS_PROVIDED = [
+#     ("Item Definition (JLR-TMP-568088)", "Y"),
+#     ("TARA", "Y"),
+#     ("PCB schematics", "Y"),
+#     ("Sequence diagram for ECU boot process", ""),
+#     ("Back-end infrastructure related specifications", ""),
+# ]
 
 DOCS_PROVIDED = [
-    ("Item Definition (JLR-TMP-568088)", "Y"),
-    ("TARA", "Y"),
-    ("PCB schematics", "Y"),
-    ("Sequence diagram for ECU boot process", ""),
-    ("Back-end infrastructure related specifications", ""),
+    ("System Architecture Specification", "Y"),
+    ("Threat Assessment Report", "Y"),
+    ("Hardware Design Package", "Y"),
+    ("Boot Sequence Documentation", "Y"),
+    ("Cloud Connectivity Specification", "N"),
 ]
+
+# ROLES = [
+#     ("JLR ECU team", ""),
+#     ("Robert Aidi", "PO"),
+#     ("Harikrishnan Unnikrishnan", "Project Lead"),
+#     ("Jagadeesh Ram Chilla", "Cybersecurity Engineer"),
+#     ("Hari Bhagavathi Ramian Monimekalai", "Cyber Compliance Engineer"),
+#     ("[Pentest partner]", ""),
+#     ("Name 1", ""),
+#     ("Name 2", ""),
+# ]
 
 ROLES = [
-    ("JLR ECU team", ""),
-    ("Robert Aidi", "PO"),
-    ("Harikrishnan Unnikrishnan", "Project Lead"),
-    ("Jagadeesh Ram Chilla", "Cybersecurity Engineer"),
-    ("Hari Bhagavathi Ramian Monimekalai", "Cyber Compliance Engineer"),
-    ("[Pentest partner]", ""),
-    ("Name 1", ""),
-    ("Name 2", ""),
+    ("John Doe", "Program Security Manager"),
+    ("Sarah Miller", "Principal Security Engineer"),
+    ("Michael Brown", "Lead Penetration Tester"),
+    ("Emily Wilson", "Compliance Specialist"),
+    ("David Taylor", "Systems Architect"),
+    ("Jessica Moore", "Software Engineering Lead"),
+    ("Christopher Anderson", "Hardware Engineering Lead"),
+    ("Secure Testing Group", "External Security Partner"),
 ]
 
+# ATTACKERS = [
+#     ("JLR insiders", "N"),
+#     ("JLR third parties", "Y"),
+#     ("JLR vehicle users", "Y"),
+#     ("JLR vehicle non-users - low capabilities", "Y"),
+#     ("JLR vehicle non-users - high capabilities", "N"),
+# ]
+
 ATTACKERS = [
-    ("JLR insiders", "N"),
-    ("JLR third parties", "Y"),
-    ("JLR vehicle users", "Y"),
-    ("JLR vehicle non-users - low capabilities", "Y"),
-    ("JLR vehicle non-users - high capabilities", "N"),
+    ("Internal employees", "Y"),
+    ("External vendors", "Y"),
+    ("System operators", "Y"),
+    ("External attackers - low capability", "Y"),
+    ("External attackers - high capability", "Y"),
 ]
+
+# LIMITATIONS = [
+#     (
+#         "The attacker cannot compromise the backend servers and infrastructure. "
+#         "However, they may control any communication channel towards the ECU.",
+#         "Offboard elements out of scope.",
+#     ),
+#     ("{other limitations}", ""),
+# ]
 
 LIMITATIONS = [
     (
-        "The attacker cannot compromise the backend servers and infrastructure. "
-        "However, they may control any communication channel towards the ECU.",
-        "Offboard elements out of scope.",
+        "Cloud infrastructure is outside the scope of this assessment.",
+        "Testing focuses on the embedded controller and its interfaces.",
     ),
-    ("{other limitations}", ""),
+    (
+        "Physical hardware destruction attacks are excluded.",
+        "Not considered practical cybersecurity attack scenarios.",
+    ),
+    (
+        "Attacks against enterprise networks are out of scope.",
+        "Assessment targets only the system under review.",
+    ),
 ]
 
+# ASSUMPTIONS = [
+#     ("Vehicle communication is secured", ""),
+# ]
+
 ASSUMPTIONS = [
-    ("Vehicle communication is secured", ""),
+    (
+        "Secure boot is enabled on all test units",
+        "Confirmed by engineering team",
+    ),
+    (
+        "Production firmware is installed",
+        "Release candidate build supplied",
+    ),
+    (
+        "Diagnostic access credentials are available",
+        "Required for authenticated testing",
+    ),
 ]
+
+# SCHEDULES = [
+#     (
+#         "Intermediary pentesting reports",
+#         "{weekly/fortnightly?}",
+#         "Draft pentesting reports with information on status and findings.",
+#     ),
+#     (
+#         "Final pentesting report",
+#         "{tbc}",
+#         "Final pentesting report in JLR approved template, containing all required "
+#         "information about tests conducted, findings, replication steps and "
+#         "remediation suggestions, etc (as per info required in template).",
+#     ),
+#     (
+#         "Log artifacts",
+#         "{tbc}",
+#         "Logfiles for all tests performed, including tests with no findings. For "
+#         "findings, logs showing successful exploitation are required.",
+#     ),
+#     ("{other deliverables}", "", ""),
+# ]
 
 SCHEDULES = [
     (
-        "Intermediary pentesting reports",
-        "{weekly/fortnightly?}",
-        "Draft pentesting reports with information on status and findings.",
+        "Weekly Status Report",
+        "Every Friday",
+        "Summary of progress, risks and findings.",
     ),
     (
-        "Final pentesting report",
-        "{tbc}",
-        "Final pentesting report in JLR approved template, containing all required "
-        "information about tests conducted, findings, replication steps and "
-        "remediation suggestions, etc (as per info required in template).",
+        "Final Assessment Report",
+        "30/06/2026",
+        "Comprehensive report including findings and remediation guidance.",
     ),
     (
-        "Log artifacts",
-        "{tbc}",
-        "Logfiles for all tests performed, including tests with no findings. For "
-        "findings, logs showing successful exploitation are required.",
+        "Evidence Package",
+        "30/06/2026",
+        "Logs, screenshots and verification data.",
     ),
-    ("{other deliverables}", "", ""),
+    (
+        "Executive Summary",
+        "01/07/2026",
+        "High-level overview for management.",
+    ),
 ]
 
+# REFERENCES = [
+#     "Hu, Vincent C., Rick Kuhn, and Dylan Yaga. \u201cVerification and test methods "
+#     "for access control policies/models.\u201d NIST Special Publication 800 (2017): 192.",
+#     "Joint Task Force. \u201cAssessing security and privacy controls in information "
+#     "systems and organizations.\u201d NIST Special Publication (2021).",
+#     "Scarfone, Karen, et al. \u201cTechnical guide to information security testing and "
+#     "assessment.\u201d NIST Special Publication 800.115 (2008): 2-25.",
+#     "ISO/SAE 21434 Road vehicles - Cybersecurity engineering: First edition 2021-08.",
+# ]
+
 REFERENCES = [
-    "Hu, Vincent C., Rick Kuhn, and Dylan Yaga. \u201cVerification and test methods "
-    "for access control policies/models.\u201d NIST Special Publication 800 (2017): 192.",
-    "Joint Task Force. \u201cAssessing security and privacy controls in information "
-    "systems and organizations.\u201d NIST Special Publication (2021).",
-    "Scarfone, Karen, et al. \u201cTechnical guide to information security testing and "
-    "assessment.\u201d NIST Special Publication 800.115 (2008): 2-25.",
-    "ISO/SAE 21434 Road vehicles - Cybersecurity engineering: First edition 2021-08.",
+    "Anderson, Michael and Rebecca Hayes. "
+    "Modern Embedded Security Assessment Techniques. "
+    "Journal of Secure Systems Engineering, Vol. 18, No. 4, 2023.",
+
+    "Parker, William. "
+    "Practical Approaches to Vehicle Network Hardening. "
+    "International Conference on Connected Systems Security, 2024.",
+
+    "Thompson, Kevin, Laura Evans and Samuel Price. "
+    "Secure Firmware Validation and Update Strategies. "
+    "Advanced Embedded Computing Review, Vol. 11, Issue 2, 2022.",
+
+    "Carter, James and Olivia Reed. "
+    "Defensive Design Patterns for Connected Devices. "
+    "Secure Computing Press, Second Edition, 2025.",
+
+    "Global Cyber Systems Consortium. "
+    "Connected Device Security Framework. "
+    "Version 3.1, 2024.",
 ]
+
+# ATTACKER_MODEL_APPENDIX = [
+#     (
+#         "JLR insiders",
+#         "Software developer, system designer, tester, quality engineer, project "
+#         "manager, production engineer",
+#         "Leak confidential information, introduce vulnerabilities, use insider knowledge",
+#     ),
+#     (
+#         "JLR third parties",
+#         "Supplier, service provider, dealership, repair garage, data analyst, remote "
+#         "diagnostic user, certificate authority",
+#         "Introduce malicious software, delay patching, steal information, access "
+#         "vehicle network",
+#     ),
+#     (
+#         "JLR vehicle users",
+#         "Driver, vehicle owner",
+#         "Activate paid-for features, customise vehicle features",
+#     ),
+#     (
+#         "JLR vehicle non-users - low capability",
+#         "Cyber criminals, competitor, pirate software seller, malicious web designer, "
+#         "insurer",
+#         "Steal vehicle or data, control vehicle, steal IP, create counterfeit products",
+#     ),
+#     (
+#         "JLR vehicle non-users - high capability",
+#         "Nation state hacker, hostile government, terrorist",
+#         "Crash, steal or control vehicle; large-scale disruption; steal data",
+#     ),
+# ]
 
 ATTACKER_MODEL_APPENDIX = [
     (
-        "JLR insiders",
-        "Software developer, system designer, tester, quality engineer, project "
-        "manager, production engineer",
-        "Leak confidential information, introduce vulnerabilities, use insider knowledge",
+        "Internal employees",
+        "Developer, tester, project manager, administrator",
+        "Privilege misuse, information disclosure, configuration manipulation",
     ),
     (
-        "JLR third parties",
-        "Supplier, service provider, dealership, repair garage, data analyst, remote "
-        "diagnostic user, certificate authority",
-        "Introduce malicious software, delay patching, steal information, access "
-        "vehicle network",
+        "External vendors",
+        "Suppliers, contractors, maintenance providers",
+        "Introduction of insecure software or hardware",
     ),
     (
-        "JLR vehicle users",
-        "Driver, vehicle owner",
-        "Activate paid-for features, customise vehicle features",
+        "Authorized end users",
+        "Operators and system owners",
+        "Unauthorized feature enablement or configuration changes",
     ),
     (
-        "JLR vehicle non-users - low capability",
-        "Cyber criminals, competitor, pirate software seller, malicious web designer, "
-        "insurer",
-        "Steal vehicle or data, control vehicle, steal IP, create counterfeit products",
+        "External attackers - low capability",
+        "Cyber criminals, hobbyists, competitors",
+        "Data theft, denial of service, unauthorized access",
     ),
     (
-        "JLR vehicle non-users - high capability",
-        "Nation state hacker, hostile government, terrorist",
-        "Crash, steal or control vehicle; large-scale disruption; steal data",
+        "External attackers - high capability",
+        "Organized groups, nation-state actors",
+        "Persistent compromise, credential theft, large-scale disruption",
     ),
 ]
 
+# TESTING_TYPE_APPENDIX = [
+#     (
+#         "Blackbox testing",
+#         "Testing without access to internal structures or workings. The analyst "
+#         "simulates a real-world attacker with no or limited system knowledge and may "
+#         "use public information.",
+#     ),
+#     (
+#         "Whitebox Testing",
+#         "Testing with full access to internal structures, technical information, "
+#         "source code and architecture.",
+#     ),
+#     (
+#         "Greybox Testing",
+#         "A combination of black-box and white-box testing. The analyst has some "
+#         "implementation details and binaries but no source code.",
+#     ),
+# ]
+
 TESTING_TYPE_APPENDIX = [
     (
-        "Blackbox testing",
-        "Testing without access to internal structures or workings. The analyst "
-        "simulates a real-world attacker with no or limited system knowledge and may "
-        "use public information.",
+        "Black-box Testing",
+        "Assessment performed without access to internal design documentation or implementation details.",
     ),
     (
-        "Whitebox Testing",
-        "Testing with full access to internal structures, technical information, "
-        "source code and architecture.",
+        "White-box Testing",
+        "Assessment performed with complete access to source code, architecture and technical documentation.",
     ),
     (
-        "Greybox Testing",
-        "A combination of black-box and white-box testing. The analyst has some "
-        "implementation details and binaries but no source code.",
+        "Gray-box Testing",
+        "Assessment performed with partial knowledge of system internals and limited documentation.",
     ),
 ]
 
@@ -262,13 +421,15 @@ def _header_footer(canv: canvas.Canvas, doc) -> None:
     foot_y = 14 * mm
     canv.drawString(
         MARGIN_LEFT, foot_y,
-        "JLR-RMP: This shall be retained for 10 years after the End of life of",
+        # "JLR-RMP: This shall be retained for 10 years after the End of life of",
+        "COMP-RMP: This shall be retained for 10 years after the End of life of",
     )
     canv.drawString(
         MARGIN_LEFT, foot_y - 3.2 * mm,
         "vehicle product or component in production and service.",
     )
-    canv.drawString(MARGIN_LEFT, foot_y - 8 * mm, "JLR-RMP Classification: Confidential")
+    # canv.drawString(MARGIN_LEFT, foot_y - 8 * mm, "JLR-RMP Classification: Confidential")
+    canv.drawString(MARGIN_LEFT, foot_y - 8 * mm, "COMP-RMP Classification: Confidential")
 
     canv.setFont("Helvetica-Bold", 7)
     canv.drawRightString(PAGE_WIDTH - MARGIN_RIGHT, foot_y, "CONFIDENTIAL")
@@ -546,9 +707,11 @@ def _build_cover_page(ecu: Any) -> list:
             font_size=9,
         ),
         Spacer(1, 12 * mm),
-        Paragraph("Jaguar Land Rover Proprietary and Confidential", copyright),
+        # Paragraph("Jaguar Land Rover Proprietary and Confidential", copyright),
+        Paragraph("Example Corporation Proprietary and Confidential", copyright),
         Paragraph(_esc(f"Copyright \u00a9 {date.today().year}"), copyright),
-        Paragraph("Jaguar Land Rover Ltd.", copyright),
+        # Paragraph("Jaguar Land Rover Ltd.", copyright),
+        Paragraph("Example Corporation", copyright),
         PageBreak(),
     ]
     return story
@@ -720,11 +883,16 @@ def _build_testing_approach(selected_test_type_names: list[str] | None) -> list:
             header=["Assumption", "Rationale"],
         ),
         Spacer(1, 2 * mm),
+        # Paragraph(
+        #     "\u00b2 If JLR insiders or high-capability non-users are in scope, provide "
+        #     "additional justification to the pentesting team.",
+        #     footnote,
+        # ),
         Paragraph(
-            "\u00b2 If JLR insiders or high-capability non-users are in scope, provide "
-            "additional justification to the pentesting team.",
-            footnote,
-        ),
+                    "\u00b2 If COMP insiders or high-capability non-users are in scope, provide "
+                    "additional justification to the pentesting team.",
+                    footnote,
+                ),
         PageBreak(),
     ]
 
@@ -810,7 +978,8 @@ def _build_appendices() -> list:
     body = ParagraphStyle("Body", parent=base, fontSize=9, textColor=INK, leading=12)
     story = [
         Paragraph("Appendix A. Attacker model", h1),
-        Paragraph("Please use the following definitions for attacker models, as per JLR-PRD-569408:", body),
+        # Paragraph("Please use the following definitions for attacker models, as per JLR-PRD-569408:", body),
+        Paragraph("Please use the following definitions for attacker models, as per COMP-PRD-569408:", body),
         _simple_table(
             [list(r) for r in ATTACKER_MODEL_APPENDIX],
             col_widths=[CONTENT_WIDTH * 0.24, CONTENT_WIDTH * 0.33, CONTENT_WIDTH * 0.43],
@@ -827,7 +996,8 @@ def _build_appendices() -> list:
         ),
         PageBreak(),
         Paragraph("Appendix C. High level penetration testing requirements", h1),
-        Paragraph("For more information, refer to process JLR-PRD-569408.", body),
+        # Paragraph("For more information, refer to process JLR-PRD-569408.", body),
+        Paragraph("For more information, refer to process COMP-PRD-569408.", body),
         _simple_table(
             [list(r) for r in RISK_MATRIX],
             col_widths=[CONTENT_WIDTH * 0.20] * 5,
