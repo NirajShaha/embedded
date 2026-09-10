@@ -1,31 +1,56 @@
 "use client";
 
 import * as React from "react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { ThemeProvider } from "@/components/theme-provider";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { AuthProvider } from "@/contexts/auth-context";
+import {
+  QueryClient,
+  QueryClientProvider,
+} from "@tanstack/react-query";
 
-export function Providers({ children }: { children: React.ReactNode }) {
-  const [queryClient] = React.useState(
+import {
+  ThemeProvider,
+} from "@/components/theme-provider";
+import {
+  TooltipProvider,
+} from "@/components/ui/tooltip";
+import {
+  AuthProvider,
+} from "@/contexts/auth-context";
+
+
+export function Providers({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const [
+    queryClient,
+  ] = React.useState(
     () =>
       new QueryClient({
         defaultOptions: {
-          queries: { retry: 1, refetchOnWindowFocus: false },
+          queries: {
+            retry: 1,
+            refetchOnWindowFocus:
+              false,
+          },
         },
-      })
+      }),
   );
 
   return (
     <AuthProvider>
       <ThemeProvider
-        attribute="class"
         defaultTheme="system"
-        enableSystem
-        disableTransitionOnChange
+        storageKey="embedded-config-theme"
       >
-        <QueryClientProvider client={queryClient}>
-          <TooltipProvider delayDuration={200}>{children}</TooltipProvider>
+        <QueryClientProvider
+          client={queryClient}
+        >
+          <TooltipProvider
+            delayDuration={200}
+          >
+            {children}
+          </TooltipProvider>
         </QueryClientProvider>
       </ThemeProvider>
     </AuthProvider>

@@ -1,4 +1,5 @@
 from datetime import date, datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -205,3 +206,202 @@ class TestCaseRead(BaseModel):
     asset: AssetRead | None
     test_case_tools: list[TestCaseToolRead]
     test_case_references: list[TestCaseReferenceRead]
+
+# Authentication schemas
+
+UserRole = Literal[
+    "ADMIN",
+    "USER",
+]
+
+
+class LoginRequest(BaseModel):
+    username: str = Field(
+        min_length=1,
+        max_length=255,
+    )
+
+    password: str = Field(
+        min_length=1,
+        max_length=255,
+    )
+
+
+class AuthUserRead(BaseModel):
+    id: int
+    username: str
+    role: UserRole
+
+
+class LoginResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    user: AuthUserRead
+
+
+# Admin test-case write schemas
+
+AutomationOption = Literal[
+    "Yes",
+    "No",
+    "Partial",
+]
+
+
+class TestCaseCreate(BaseModel):
+    category_id: int = Field(gt=0)
+    objective_id: int = Field(gt=0)
+
+    protocol_id: int | None = Field(
+        default=None,
+        gt=0,
+    )
+
+    attack_vector_id: int | None = Field(
+        default=None,
+        gt=0,
+    )
+
+    test_type_id: int | None = Field(
+        default=None,
+        gt=0,
+    )
+
+    severity_id: int | None = Field(
+        default=None,
+        gt=0,
+    )
+
+    threat_id: int | None = Field(
+        default=None,
+        gt=0,
+    )
+
+    asset_id: int | None = Field(
+        default=None,
+        gt=0,
+    )
+
+    action_test_case: str = Field(
+        min_length=1,
+    )
+
+    source_scope_status: str | None = Field(
+        default=None,
+        max_length=100,
+    )
+
+    description: str | None = None
+    attack_path: str | None = None
+    test_steps: str | None = None
+    expected_output: str | None = None
+    attack_feasibility: str | None = None
+    cia_impact: str | None = None
+    safety_impact: str | None = None
+
+    automation_possible: AutomationOption | None = None
+
+    tool_ids: list[int] = Field(
+        default_factory=list,
+    )
+
+    reference_ids: list[int] = Field(
+        default_factory=list,
+    )
+
+
+class TestCaseUpdate(BaseModel):
+    category_id: int | None = Field(
+        default=None,
+        gt=0,
+    )
+
+    objective_id: int | None = Field(
+        default=None,
+        gt=0,
+    )
+
+    protocol_id: int | None = Field(
+        default=None,
+        gt=0,
+    )
+
+    attack_vector_id: int | None = Field(
+        default=None,
+        gt=0,
+    )
+
+    test_type_id: int | None = Field(
+        default=None,
+        gt=0,
+    )
+
+    severity_id: int | None = Field(
+        default=None,
+        gt=0,
+    )
+
+    threat_id: int | None = Field(
+        default=None,
+        gt=0,
+    )
+
+    asset_id: int | None = Field(
+        default=None,
+        gt=0,
+    )
+
+    action_test_case: str | None = Field(
+        default=None,
+        min_length=1,
+    )
+
+    source_scope_status: str | None = Field(
+        default=None,
+        max_length=100,
+    )
+
+    description: str | None = None
+    attack_path: str | None = None
+    test_steps: str | None = None
+    expected_output: str | None = None
+    attack_feasibility: str | None = None
+    cia_impact: str | None = None
+    safety_impact: str | None = None
+
+    automation_possible: AutomationOption | None = None
+
+    tool_ids: list[int] | None = None
+    reference_ids: list[int] | None = None
+
+
+class LookupItem(BaseModel):
+    id: int
+    name: str
+
+
+class ObjectiveLookupItem(LookupItem):
+    category_id: int
+
+
+class SeverityLookupItem(LookupItem):
+    severity_rank: int
+
+
+class TestCaseLookups(BaseModel):
+    categories: list[LookupItem]
+    objectives: list[ObjectiveLookupItem]
+    protocols: list[LookupItem]
+    attack_vectors: list[LookupItem]
+    test_types: list[LookupItem]
+    severities: list[SeverityLookupItem]
+    threats: list[LookupItem]
+    assets: list[LookupItem]
+    tools: list[LookupItem]
+    references: list[LookupItem]
+
+
+class AdminStatsRead(BaseModel):
+    total_test_cases: int
+    total_users: int
+    recent_updates: int

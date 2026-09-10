@@ -1,11 +1,26 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import {
+  useMemo,
+  useState,
+  type FormEvent,
+} from "react";
 import { useQuery } from "@tanstack/react-query";
+import {
+  AlertCircle,
+  Loader2,
+} from "lucide-react";
+
+import {
+  getAdminLookups,
+  type LookupItem,
+  type TestCase,
+  type TestCaseWritePayload,
+} from "@/lib/api";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -13,407 +28,1185 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2 } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+
+
+const NOT_SPECIFIED_VALUE =
+  "__not_specified__";
+
 
 interface TestCaseFormProps {
-  testCase?: unknown;
-  onSubmit: (data: unknown) => Promise<void>;
+  testCase?: TestCase;
+
+  onSubmit: (
+    payload: TestCaseWritePayload,
+  ) => Promise<void>;
+
+  onCancel: () => void;
   isLoading?: boolean;
+  error?: string | null;
 }
 
-interface SelectOption {
-  id: number;
-  name: string;
+
+interface FormData {
+  action_test_case: string;
+  category_id: string;
+  objective_id: string;
+  protocol_id: string;
+  attack_vector_id: string;
+  test_type_id: string;
+  severity_id: string;
+  threat_id: string;
+  asset_id: string;
+  source_scope_status: string;
+  description: string;
+  attack_path: string;
+  test_steps: string;
+  expected_output: string;
+  attack_feasibility: string;
+  cia_impact: string;
+  safety_impact: string;
+  automation_possible: string;
+  tool_ids: number[];
+  reference_ids: number[];
 }
 
-export function TestCaseForm({ testCase, onSubmit, isLoading = false }: TestCaseFormProps) {
-  const [formData, setFormData] = useState({
-    action_test_case: "",
-    category_id: "",
-    objective_id: "",
-    protocol_id: "",
-    attack_vector_id: "",
-    test_type_id: "",
-    severity_id: "",
-    threat_id: "",
-    asset_id: "",
-    source_scope_status: "",
-    description: "",
-    attack_path: "",
-    test_steps: "",
-    expected_output: "",
-    attack_feasibility: "",
-    cia_impact: "",
-    safety_impact: "",
-    automation_possible: "",
+
+function initialFormData(
+  testCase?: TestCase,
+): FormData {
+  return {
+    action_test_case:
+      testCase?.action_test_case ?? "",
+
+    category_id:
+      testCase !== undefined
+        ? String(testCase.category_id)
+        : "",
+
+    objective_id:
+      testCase !== undefined
+        ? String(testCase.objective_id)
+        : "",
+
+    protocol_id:
+      testCase?.protocol_id !== null &&
+        testCase?.protocol_id !== undefined
+        ? String(testCase.protocol_id)
+        : "",
+
+    attack_vector_id:
+      testCase?.attack_vector_id !== null &&
+        testCase?.attack_vector_id !== undefined
+        ? String(
+          testCase.attack_vector_id,
+        )
+        : "",
+
+    test_type_id:
+      testCase?.test_type_id !== null &&
+        testCase?.test_type_id !== undefined
+        ? String(testCase.test_type_id)
+        : "",
+
+    severity_id:
+      testCase?.severity_id !== null &&
+        testCase?.severity_id !== undefined
+        ? String(testCase.severity_id)
+        : "",
+
+    threat_id:
+      testCase?.threat_id !== null &&
+        testCase?.threat_id !== undefined
+        ? String(testCase.threat_id)
+        : "",
+
+    asset_id:
+      testCase?.asset_id !== null &&
+        testCase?.asset_id !== undefined
+        ? String(testCase.asset_id)
+        : "",
+
+    source_scope_status:
+      testCase?.source_scope_status ?? "",
+
+    description:
+      testCase?.description ?? "",
+
+    attack_path:
+      testCase?.attack_path ?? "",
+
+    test_steps:
+      testCase?.test_steps ?? "",
+
+    expected_output:
+      testCase?.expected_output ?? "",
+
+    attack_feasibility:
+      testCase?.attack_feasibility ?? "",
+
+    cia_impact:
+      testCase?.cia_impact ?? "",
+
+    safety_impact:
+      testCase?.safety_impact ?? "",
+
+    automation_possible:
+      testCase?.automation_possible ?? "",
+
+    tool_ids:
+      testCase?.test_case_tools.map(
+        (item) => item.tool.id,
+      ) ?? [],
+
+    reference_ids:
+      testCase?.test_case_references.map(
+        (item) => item.reference.id,
+      ) ?? [],
+  };
+}
+
+
+function optionalId(
+  value: string,
+): number | null {
+  if (!value) {
+    return null;
+  }
+
+  const parsedValue = Number(value);
+
+  return Number.isFinite(parsedValue)
+    ? parsedValue
+    : null;
+}
+
+
+function optionalText(
+  value: string,
+): string | null {
+  const trimmedValue = value.trim();
+
+  return trimmedValue || null;
+}
+
+
+function MultiSelectList({
+  label,
+  items,
+  selected,
+  onToggle,
+  disabled = false,
+}: {
+  label: string;
+  items: LookupItem[];
+  selected: number[];
+  onToggle: (id: number) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <div className="space-y-2">
+      <Label>{label}</Label>
+
+      <div className="max-h-44 space-y-1 overflow-y-auto rounded-md border p-2">
+        {items.length === 0 ? (
+          <p className="p-2 text-xs text-muted-foreground">
+            No options available.
+          </p>
+        ) : (
+          items.map((item) => {
+            const checked =
+              selected.includes(item.id);
+
+            return (
+              <label
+                key={item.id}
+                className={[
+                  "flex items-start gap-2 rounded-md p-2 text-sm",
+                  disabled
+                    ? "cursor-not-allowed opacity-60"
+                    : "cursor-pointer hover:bg-muted",
+                ].join(" ")}
+              >
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  disabled={disabled}
+                  onChange={() => {
+                    if (!disabled) {
+                      onToggle(item.id);
+                    }
+                  }}
+                  className="mt-0.5 size-4"
+                />
+
+                <span className="break-words">
+                  {item.name}
+                </span>
+              </label>
+            );
+          })
+        )}
+      </div>
+    </div>
+  );
+}
+
+
+export function TestCaseForm({
+  testCase,
+  onSubmit,
+  onCancel,
+  isLoading = false,
+  error,
+}: TestCaseFormProps) {
+  const [
+    formData,
+    setFormData,
+  ] = useState<FormData>(() =>
+    initialFormData(testCase),
+  );
+
+  const [
+    validationError,
+    setValidationError,
+  ] = useState<string | null>(null);
+
+  const {
+    data: lookups,
+    isLoading: lookupsLoading,
+    isError: lookupsError,
+    error: lookupError,
+  } = useQuery({
+    queryKey: [
+      "admin",
+      "test-case-lookups",
+    ],
+    queryFn: getAdminLookups,
   });
 
-  // Fetch dropdown options
-  const { data: categories = [] } = useQuery({
-    queryKey: ["test-cases", "categories"],
-    queryFn: async () => {
-      // Placeholder - will be real API call later
-      return [] as SelectOption[];
-    },
-  });
+  const selectedCategoryId =
+    formData.category_id
+      ? Number(formData.category_id)
+      : null;
 
-  const { data: objectives = [] } = useQuery({
-    queryKey: ["test-cases", "objectives"],
-    queryFn: async () => {
-      return [] as SelectOption[];
-    },
-  });
+  const objectives = useMemo(
+    () =>
+      (lookups?.objectives ?? []).filter(
+        (objective) =>
+          selectedCategoryId !== null &&
+          objective.category_id ===
+          selectedCategoryId,
+      ),
+    [
+      lookups?.objectives,
+      selectedCategoryId,
+    ],
+  );
 
-  const { data: protocols = [] } = useQuery({
-    queryKey: ["test-cases", "protocols"],
-    queryFn: async () => {
-      return [] as SelectOption[];
-    },
-  });
+  const isFormValid =
+    formData.action_test_case
+      .trim()
+      .length > 0 &&
+    formData.category_id.length > 0 &&
+    formData.objective_id.length > 0;
 
-  const { data: attackVectors = [] } = useQuery({
-    queryKey: ["test-cases", "attack-vectors"],
-    queryFn: async () => {
-      return [] as SelectOption[];
-    },
-  });
-
-  const { data: testTypes = [] } = useQuery({
-    queryKey: ["test-cases", "test-types"],
-    queryFn: async () => {
-      return [] as SelectOption[];
-    },
-  });
-
-  const { data: severities = [] } = useQuery({
-    queryKey: ["test-cases", "severities"],
-    queryFn: async () => {
-      return [] as SelectOption[];
-    },
-  });
-
-  const { data: threats = [] } = useQuery({
-    queryKey: ["test-cases", "threats"],
-    queryFn: async () => {
-      return [] as SelectOption[];
-    },
-  });
-
-  const { data: assets = [] } = useQuery({
-    queryKey: ["test-cases", "assets"],
-    queryFn: async () => {
-      return [] as SelectOption[];
-    },
-  });
-
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  const setField = (
+    field: keyof FormData,
+    value: string | number[],
   ) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setValidationError(null);
+
+    setFormData((previous) => ({
+      ...previous,
+      [field]: value,
+    }));
   };
 
-  const handleSelectChange = (name: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [name]: value }));
+  const toggleListItem = (
+    field:
+      | "tool_ids"
+      | "reference_ids",
+    id: number,
+  ) => {
+    setValidationError(null);
+
+    setFormData((previous) => {
+      const current = previous[field];
+
+      return {
+        ...previous,
+        [field]: current.includes(id)
+          ? current.filter(
+            (item) => item !== id,
+          )
+          : [
+            ...current,
+            id,
+          ],
+      };
+    });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSubmit(formData);
+  const handleCategoryChange = (
+    value: string,
+  ) => {
+    setValidationError(null);
+
+    setFormData((previous) => ({
+      ...previous,
+      category_id: value,
+      objective_id: "",
+    }));
   };
+
+  const handleSubmit = async (
+    event: FormEvent<HTMLFormElement>,
+  ) => {
+    event.preventDefault();
+    setValidationError(null);
+
+    const actionTestCase =
+      formData.action_test_case.trim();
+
+    if (!actionTestCase) {
+      setValidationError(
+        "Action/Test Case is required.",
+      );
+      return;
+    }
+
+    if (!formData.category_id) {
+      setValidationError(
+        "Category is required.",
+      );
+      return;
+    }
+
+    if (!formData.objective_id) {
+      setValidationError(
+        "Objective is required.",
+      );
+      return;
+    }
+
+    const categoryId = Number(
+      formData.category_id,
+    );
+
+    const objectiveId = Number(
+      formData.objective_id,
+    );
+
+    if (
+      !Number.isFinite(categoryId) ||
+      categoryId <= 0
+    ) {
+      setValidationError(
+        "Please select a valid category.",
+      );
+      return;
+    }
+
+    if (
+      !Number.isFinite(objectiveId) ||
+      objectiveId <= 0
+    ) {
+      setValidationError(
+        "Please select a valid objective.",
+      );
+      return;
+    }
+
+    const selectedObjective =
+      objectives.find(
+        (objective) =>
+          objective.id === objectiveId,
+      );
+
+    if (!selectedObjective) {
+      setValidationError(
+        "The selected objective does not belong to the selected category.",
+      );
+      return;
+    }
+
+    const automation =
+      formData.automation_possible;
+
+    const payload: TestCaseWritePayload = {
+      action_test_case:
+        actionTestCase,
+
+      category_id:
+        categoryId,
+
+      objective_id:
+        objectiveId,
+
+      protocol_id: optionalId(
+        formData.protocol_id,
+      ),
+
+      attack_vector_id: optionalId(
+        formData.attack_vector_id,
+      ),
+
+      test_type_id: optionalId(
+        formData.test_type_id,
+      ),
+
+      severity_id: optionalId(
+        formData.severity_id,
+      ),
+
+      threat_id: optionalId(
+        formData.threat_id,
+      ),
+
+      asset_id: optionalId(
+        formData.asset_id,
+      ),
+
+      source_scope_status:
+        optionalText(
+          formData.source_scope_status,
+        ),
+
+      description: optionalText(
+        formData.description,
+      ),
+
+      attack_path: optionalText(
+        formData.attack_path,
+      ),
+
+      test_steps: optionalText(
+        formData.test_steps,
+      ),
+
+      expected_output: optionalText(
+        formData.expected_output,
+      ),
+
+      attack_feasibility:
+        optionalText(
+          formData.attack_feasibility,
+        ),
+
+      cia_impact: optionalText(
+        formData.cia_impact,
+      ),
+
+      safety_impact: optionalText(
+        formData.safety_impact,
+      ),
+
+      automation_possible:
+        automation === "Yes" ||
+          automation === "No" ||
+          automation === "Partial"
+          ? automation
+          : null,
+
+      tool_ids: [
+        ...new Set(
+          formData.tool_ids,
+        ),
+      ].sort(
+        (first, second) =>
+          first - second,
+      ),
+
+      reference_ids: [
+        ...new Set(
+          formData.reference_ids,
+        ),
+      ].sort(
+        (first, second) =>
+          first - second,
+      ),
+    };
+
+    try {
+      await onSubmit(payload);
+    } catch {
+      /*
+       * The parent React Query mutation exposes
+       * the backend error through the error prop.
+       */
+    }
+  };
+
+  if (lookupsLoading) {
+    return (
+      <div className="flex min-h-60 flex-1 items-center justify-center">
+        <Loader2 className="size-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (lookupsError) {
+    return (
+      <div className="m-6 rounded-md border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">
+        {lookupError instanceof Error
+          ? lookupError.message
+          : "Could not load form options."}
+      </div>
+    );
+  }
 
   return (
-    <ScrollArea className="h-full">
-      <form onSubmit={handleSubmit} className="space-y-6 pr-4">
-        {/* Primary Fields - Required */}
-        <div className="space-y-4 rounded-lg border border-border/60 bg-card/50 p-4">
-          <h3 className="font-semibold text-sm">Required Fields</h3>
+    <form
+      onSubmit={handleSubmit}
+      className="flex min-h-0 flex-1 flex-col overflow-hidden"
+      noValidate
+    >
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+        <div className="space-y-6 p-6 pb-10">
+          <section className="space-y-4 rounded-lg border p-4">
+            <h3 className="font-semibold">
+              Required Fields
+            </h3>
 
-          <div className="space-y-2">
-            <Label htmlFor="action_test_case">
-              Action/Test Case <span className="text-destructive">*</span>
-            </Label>
-            <Textarea
-              id="action_test_case"
-              name="action_test_case"
-              placeholder="Describe the action or test case..."
-              value={formData.action_test_case}
-              onChange={handleChange}
-              required
-              className="min-h-24"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="category_id">
-                Category <span className="text-destructive">*</span>
+              <Label htmlFor="action_test_case">
+                Action/Test Case
+                <span className="text-destructive">
+                  {" "}
+                  *
+                </span>
               </Label>
-              <Select value={formData.category_id} onValueChange={(val) => handleSelectChange("category_id", val)}>
-                <SelectTrigger id="category_id">
-                  <SelectValue placeholder="Select category..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.map((cat) => (
-                    <SelectItem key={cat.id} value={String(cat.id)}>
-                      {cat.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+
+              <Textarea
+                id="action_test_case"
+                value={
+                  formData.action_test_case
+                }
+                onChange={(event) =>
+                  setField(
+                    "action_test_case",
+                    event.target.value,
+                  )
+                }
+                disabled={isLoading}
+                required
+                aria-required="true"
+                className="min-h-28"
+                placeholder="Enter the security action or test case."
+              />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="objective_id">
-                Objective <span className="text-destructive">*</span>
-              </Label>
-              <Select value={formData.objective_id} onValueChange={(val) => handleSelectChange("objective_id", val)}>
-                <SelectTrigger id="objective_id">
-                  <SelectValue placeholder="Select objective..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {objectives.map((obj) => (
-                    <SelectItem key={obj.id} value={String(obj.id)}>
-                      {obj.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="category_id">
+                  Category
+                  <span className="text-destructive">
+                    {" "}
+                    *
+                  </span>
+                </Label>
+
+                <Select
+                  value={
+                    formData.category_id
+                  }
+                  onValueChange={
+                    handleCategoryChange
+                  }
+                  disabled={isLoading}
+                  required
+                >
+                  <SelectTrigger
+                    id="category_id"
+                    className="w-full"
+                    aria-required="true"
+                  >
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+
+                  <SelectContent>
+                    {(lookups?.categories ?? []).map(
+                      (item) => (
+                        <SelectItem
+                          key={item.id}
+                          value={String(
+                            item.id,
+                          )}
+                        >
+                          {item.name}
+                        </SelectItem>
+                      ),
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="objective_id">
+                  Objective
+                  <span className="text-destructive">
+                    {" "}
+                    *
+                  </span>
+                </Label>
+
+                <Select
+                  value={
+                    formData.objective_id
+                  }
+                  onValueChange={(value) =>
+                    setField(
+                      "objective_id",
+                      value,
+                    )
+                  }
+                  disabled={
+                    isLoading ||
+                    !formData.category_id
+                  }
+                  required
+                >
+                  <SelectTrigger
+                    id="objective_id"
+                    className="w-full"
+                    aria-required="true"
+                  >
+                    <SelectValue
+                      placeholder={
+                        formData.category_id
+                          ? "Select objective"
+                          : "Select category first"
+                      }
+                    />
+                  </SelectTrigger>
+
+                  <SelectContent>
+                    {objectives.length === 0 ? (
+                      <div className="px-2 py-3 text-sm text-muted-foreground">
+                        No objectives are available
+                        for this category.
+                      </div>
+                    ) : (
+                      objectives.map(
+                        (item) => (
+                          <SelectItem
+                            key={item.id}
+                            value={String(
+                              item.id,
+                            )}
+                          >
+                            {item.name}
+                          </SelectItem>
+                        ),
+                      )
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-          </div>
+          </section>
+
+          <section className="space-y-4 rounded-lg border p-4">
+            <h3 className="font-semibold">
+              Test Classification
+            </h3>
+
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <LookupSelect
+                label="Protocol"
+                value={
+                  formData.protocol_id
+                }
+                items={
+                  lookups?.protocols ?? []
+                }
+                disabled={isLoading}
+                onChange={(value) =>
+                  setField(
+                    "protocol_id",
+                    value,
+                  )
+                }
+              />
+
+              <LookupSelect
+                label="Attack Vector"
+                value={
+                  formData.attack_vector_id
+                }
+                items={
+                  lookups?.attack_vectors ??
+                  []
+                }
+                disabled={isLoading}
+                onChange={(value) =>
+                  setField(
+                    "attack_vector_id",
+                    value,
+                  )
+                }
+              />
+
+              <LookupSelect
+                label="Test Type"
+                value={
+                  formData.test_type_id
+                }
+                items={
+                  lookups?.test_types ?? []
+                }
+                disabled={isLoading}
+                onChange={(value) =>
+                  setField(
+                    "test_type_id",
+                    value,
+                  )
+                }
+              />
+
+              <LookupSelect
+                label="Severity"
+                value={
+                  formData.severity_id
+                }
+                items={
+                  lookups?.severities ?? []
+                }
+                disabled={isLoading}
+                onChange={(value) =>
+                  setField(
+                    "severity_id",
+                    value,
+                  )
+                }
+              />
+
+              <LookupSelect
+                label="Threat"
+                value={
+                  formData.threat_id
+                }
+                items={
+                  lookups?.threats ?? []
+                }
+                disabled={isLoading}
+                onChange={(value) =>
+                  setField(
+                    "threat_id",
+                    value,
+                  )
+                }
+              />
+
+              <LookupSelect
+                label="Asset"
+                value={
+                  formData.asset_id
+                }
+                items={
+                  lookups?.assets ?? []
+                }
+                disabled={isLoading}
+                onChange={(value) =>
+                  setField(
+                    "asset_id",
+                    value,
+                  )
+                }
+              />
+            </div>
+          </section>
+
+          <section className="space-y-4 rounded-lg border p-4">
+            <h3 className="font-semibold">
+              Test Details and Analysis
+            </h3>
+
+            <TextField
+              label="Description"
+              value={
+                formData.description
+              }
+              disabled={isLoading}
+              onChange={(value) =>
+                setField(
+                  "description",
+                  value,
+                )
+              }
+            />
+
+            <TextField
+              label="Attack Path"
+              value={
+                formData.attack_path
+              }
+              disabled={isLoading}
+              onChange={(value) =>
+                setField(
+                  "attack_path",
+                  value,
+                )
+              }
+            />
+
+            <TextField
+              label="Test Steps"
+              value={
+                formData.test_steps
+              }
+              disabled={isLoading}
+              onChange={(value) =>
+                setField(
+                  "test_steps",
+                  value,
+                )
+              }
+            />
+
+            <TextField
+              label="Expected Output"
+              value={
+                formData.expected_output
+              }
+              disabled={isLoading}
+              onChange={(value) =>
+                setField(
+                  "expected_output",
+                  value,
+                )
+              }
+            />
+          </section>
+
+          <section className="space-y-4 rounded-lg border p-4">
+            <h3 className="font-semibold">
+              Risk and Feasibility
+            </h3>
+
+            <TextField
+              label="Attack Feasibility"
+              value={
+                formData.attack_feasibility
+              }
+              disabled={isLoading}
+              onChange={(value) =>
+                setField(
+                  "attack_feasibility",
+                  value,
+                )
+              }
+            />
+
+            <TextField
+              label="CIA Impact"
+              value={
+                formData.cia_impact
+              }
+              disabled={isLoading}
+              onChange={(value) =>
+                setField(
+                  "cia_impact",
+                  value,
+                )
+              }
+            />
+
+            <TextField
+              label="Safety Impact"
+              value={
+                formData.safety_impact
+              }
+              disabled={isLoading}
+              onChange={(value) =>
+                setField(
+                  "safety_impact",
+                  value,
+                )
+              }
+            />
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="automation_possible">
+                  Automation Possible
+                </Label>
+
+                <Select
+                  value={
+                    formData
+                      .automation_possible ||
+                    NOT_SPECIFIED_VALUE
+                  }
+                  disabled={isLoading}
+                  onValueChange={(value) =>
+                    setField(
+                      "automation_possible",
+                      value ===
+                        NOT_SPECIFIED_VALUE
+                        ? ""
+                        : value,
+                    )
+                  }
+                >
+                  <SelectTrigger
+                    id="automation_possible"
+                    className="w-full"
+                  >
+                    <SelectValue placeholder="Select option" />
+                  </SelectTrigger>
+
+                  <SelectContent>
+                    <SelectItem
+                      value={
+                        NOT_SPECIFIED_VALUE
+                      }
+                    >
+                      Not specified
+                    </SelectItem>
+
+                    <SelectItem value="Yes">
+                      Yes
+                    </SelectItem>
+
+                    <SelectItem value="No">
+                      No
+                    </SelectItem>
+
+                    <SelectItem value="Partial">
+                      Partial
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="source_scope_status">
+                  Source Scope Status
+                </Label>
+
+                <Input
+                  id="source_scope_status"
+                  value={
+                    formData
+                      .source_scope_status
+                  }
+                  disabled={isLoading}
+                  onChange={(event) =>
+                    setField(
+                      "source_scope_status",
+                      event.target.value,
+                    )
+                  }
+                  maxLength={100}
+                  placeholder="Enter source or scope status."
+                />
+              </div>
+            </div>
+          </section>
+
+          <section className="space-y-4 rounded-lg border p-4">
+            <h3 className="font-semibold">
+              Tools and References
+            </h3>
+
+            <div className="grid gap-6 md:grid-cols-2">
+              <MultiSelectList
+                label="Tools"
+                items={
+                  lookups?.tools ?? []
+                }
+                selected={
+                  formData.tool_ids
+                }
+                disabled={isLoading}
+                onToggle={(id) =>
+                  toggleListItem(
+                    "tool_ids",
+                    id,
+                  )
+                }
+              />
+
+              <MultiSelectList
+                label="References"
+                items={
+                  lookups?.references ?? []
+                }
+                selected={
+                  formData.reference_ids
+                }
+                disabled={isLoading}
+                onToggle={(id) =>
+                  toggleListItem(
+                    "reference_ids",
+                    id,
+                  )
+                }
+              />
+            </div>
+          </section>
         </div>
+      </div>
 
-        {/* Optional Fields - Related Resources */}
-        <div className="space-y-4 rounded-lg border border-border/60 bg-card/50 p-4">
-          <h3 className="font-semibold text-sm">Related Resources (Optional)</h3>
+      <div className="shrink-0 space-y-3 border-t bg-card p-4 sm:p-6">
+        {(validationError || error) && (
+          <div
+            role="alert"
+            className="flex gap-2 rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive"
+          >
+            <AlertCircle className="mt-0.5 size-4 shrink-0" />
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="protocol_id">Protocol</Label>
-              <Select value={formData.protocol_id} onValueChange={(val) => handleSelectChange("protocol_id", val)}>
-                <SelectTrigger id="protocol_id">
-                  <SelectValue placeholder="Select protocol..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {protocols.map((proto) => (
-                    <SelectItem key={proto.id} value={String(proto.id)}>
-                      {proto.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="attack_vector_id">Attack Vector</Label>
-              <Select value={formData.attack_vector_id} onValueChange={(val) => handleSelectChange("attack_vector_id", val)}>
-                <SelectTrigger id="attack_vector_id">
-                  <SelectValue placeholder="Select attack vector..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {attackVectors.map((av) => (
-                    <SelectItem key={av.id} value={String(av.id)}>
-                      {av.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="test_type_id">Test Type</Label>
-              <Select value={formData.test_type_id} onValueChange={(val) => handleSelectChange("test_type_id", val)}>
-                <SelectTrigger id="test_type_id">
-                  <SelectValue placeholder="Select test type..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {testTypes.map((tt) => (
-                    <SelectItem key={tt.id} value={String(tt.id)}>
-                      {tt.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="severity_id">Severity</Label>
-              <Select value={formData.severity_id} onValueChange={(val) => handleSelectChange("severity_id", val)}>
-                <SelectTrigger id="severity_id">
-                  <SelectValue placeholder="Select severity..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {severities.map((sev) => (
-                    <SelectItem key={sev.id} value={String(sev.id)}>
-                      {sev.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="threat_id">Threat</Label>
-              <Select value={formData.threat_id} onValueChange={(val) => handleSelectChange("threat_id", val)}>
-                <SelectTrigger id="threat_id">
-                  <SelectValue placeholder="Select threat..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {threats.map((threat) => (
-                    <SelectItem key={threat.id} value={String(threat.id)}>
-                      {threat.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="asset_id">Asset</Label>
-              <Select value={formData.asset_id} onValueChange={(val) => handleSelectChange("asset_id", val)}>
-                <SelectTrigger id="asset_id">
-                  <SelectValue placeholder="Select asset..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {assets.map((asset) => (
-                    <SelectItem key={asset.id} value={String(asset.id)}>
-                      {asset.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <span>
+              {validationError || error}
+            </span>
           </div>
-        </div>
+        )}
 
-        {/* Details & Analysis */}
-        <div className="space-y-4 rounded-lg border border-border/60 bg-card/50 p-4">
-          <h3 className="font-semibold text-sm">Test Details & Analysis</h3>
+        {!isFormValid && (
+          <p className="text-xs text-muted-foreground">
+            Complete Action/Test Case,
+            Category, and Objective to enable
+            the submit button.
+          </p>
+        )}
 
-          <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              name="description"
-              placeholder="Detailed description of the test case..."
-              value={formData.description}
-              onChange={handleChange}
-              className="min-h-20"
-            />
-          </div>
+        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onCancel}
+            disabled={isLoading}
+          >
+            Cancel
+          </Button>
 
-          <div className="space-y-2">
-            <Label htmlFor="attack_path">Attack Path</Label>
-            <Textarea
-              id="attack_path"
-              name="attack_path"
-              placeholder="Describe the attack path..."
-              value={formData.attack_path}
-              onChange={handleChange}
-              className="min-h-20"
-            />
-          </div>
+          <Button
+            type="submit"
+            disabled={
+              isLoading ||
+              !isFormValid
+            }
+          >
+            {isLoading && (
+              <Loader2 className="animate-spin" />
+            )}
 
-          <div className="space-y-2">
-            <Label htmlFor="test_steps">Test Steps</Label>
-            <Textarea
-              id="test_steps"
-              name="test_steps"
-              placeholder="Step-by-step instructions for executing the test..."
-              value={formData.test_steps}
-              onChange={handleChange}
-              className="min-h-20"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="expected_output">Expected Output</Label>
-            <Textarea
-              id="expected_output"
-              name="expected_output"
-              placeholder="Expected results when test case succeeds..."
-              value={formData.expected_output}
-              onChange={handleChange}
-              className="min-h-20"
-            />
-          </div>
-        </div>
-
-        {/* Risk & Feasibility */}
-        <div className="space-y-4 rounded-lg border border-border/60 bg-card/50 p-4">
-          <h3 className="font-semibold text-sm">Risk & Feasibility Analysis</h3>
-
-          <div className="space-y-2">
-            <Label htmlFor="attack_feasibility">Attack Feasibility</Label>
-            <Textarea
-              id="attack_feasibility"
-              name="attack_feasibility"
-              placeholder="Assess the feasibility of this attack..."
-              value={formData.attack_feasibility}
-              onChange={handleChange}
-              className="min-h-16"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="cia_impact">CIA Impact</Label>
-            <Textarea
-              id="cia_impact"
-              name="cia_impact"
-              placeholder="Impact on Confidentiality, Integrity, Availability..."
-              value={formData.cia_impact}
-              onChange={handleChange}
-              className="min-h-16"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="safety_impact">Safety Impact</Label>
-            <Textarea
-              id="safety_impact"
-              name="safety_impact"
-              placeholder="Describe safety implications..."
-              value={formData.safety_impact}
-              onChange={handleChange}
-              className="min-h-16"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="automation_possible">Automation Possible</Label>
-            <Select value={formData.automation_possible} onValueChange={(val) => handleSelectChange("automation_possible", val)}>
-              <SelectTrigger id="automation_possible">
-                <SelectValue placeholder="Can this be automated?" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="yes">Yes</SelectItem>
-                <SelectItem value="no">No</SelectItem>
-                <SelectItem value="partial">Partial</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="source_scope_status">Source Scope Status</Label>
-            <Input
-              id="source_scope_status"
-              name="source_scope_status"
-              placeholder="E.g., In Scope, Out of Scope..."
-              value={formData.source_scope_status}
-              onChange={handleChange}
-            />
-          </div>
-        </div>
-
-        {/* Form Actions */}
-        <div className="flex gap-2 border-t pt-6">
-          <Button type="submit" disabled={isLoading} className="flex-1">
-            {isLoading && <Loader2 className="size-4 animate-spin mr-2" />}
-            {testCase ? "Update Test Case" : "Create Test Case"}
+            {isLoading
+              ? "Saving..."
+              : testCase
+                ? "Save Changes"
+                : "Create Test Case"}
           </Button>
         </div>
-      </form>
-    </ScrollArea>
+      </div>
+    </form>
+  );
+}
+
+
+function LookupSelect({
+  label,
+  value,
+  items,
+  onChange,
+  disabled = false,
+}: {
+  label: string;
+  value: string;
+  items: LookupItem[];
+  onChange: (value: string) => void;
+  disabled?: boolean;
+}) {
+  const fieldId = label
+    .toLowerCase()
+    .replaceAll(" ", "_");
+
+  return (
+    <div className="space-y-2">
+      <Label htmlFor={fieldId}>
+        {label}
+      </Label>
+
+      <Select
+        value={
+          value ||
+          NOT_SPECIFIED_VALUE
+        }
+        disabled={disabled}
+        onValueChange={(selectedValue) => {
+          onChange(
+            selectedValue ===
+              NOT_SPECIFIED_VALUE
+              ? ""
+              : selectedValue,
+          );
+        }}
+      >
+        <SelectTrigger
+          id={fieldId}
+          className="w-full"
+        >
+          <SelectValue
+            placeholder={`Select ${label.toLowerCase()}`}
+          />
+        </SelectTrigger>
+
+        <SelectContent>
+          <SelectItem
+            value={
+              NOT_SPECIFIED_VALUE
+            }
+          >
+            Not specified
+          </SelectItem>
+
+          {items.map((item) => (
+            <SelectItem
+              key={item.id}
+              value={String(item.id)}
+            >
+              {item.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
+
+
+function TextField({
+  label,
+  value,
+  onChange,
+  disabled = false,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  disabled?: boolean;
+}) {
+  const id = label
+    .toLowerCase()
+    .replaceAll(" ", "_");
+
+  return (
+    <div className="space-y-2">
+      <Label htmlFor={id}>
+        {label}
+      </Label>
+
+      <Textarea
+        id={id}
+        value={value}
+        disabled={disabled}
+        onChange={(event) =>
+          onChange(event.target.value)
+        }
+        className="min-h-20"
+      />
+    </div>
   );
 }

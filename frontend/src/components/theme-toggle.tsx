@@ -1,29 +1,90 @@
 "use client";
 
-import * as React from "react";
-import { Moon, Sun } from "lucide-react";
-import { useTheme } from "next-themes";
+import {
+  useEffect,
+  useState,
+} from "react";
+import {
+  Moon,
+  Sun,
+} from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import {
+  useTheme,
+} from "@/components/theme-provider";
+import {
+  Button,
+} from "@/components/ui/button";
+
 
 export function ThemeToggle() {
-  const { setTheme, resolvedTheme } = useTheme();
-  const [mounted, setMounted] = React.useState(false);
+  const {
+    resolvedTheme,
+    setTheme,
+  } = useTheme();
 
-  React.useEffect(() => setMounted(true), []);
+  const [
+    mounted,
+    setMounted,
+  ] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return (
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        disabled
+        aria-label="Loading theme"
+      >
+        <Sun className="size-5" />
+
+        <span className="sr-only">
+          Loading theme
+        </span>
+      </Button>
+    );
+  }
+
+  const isDark =
+    resolvedTheme === "dark";
 
   return (
     <Button
+      type="button"
       variant="ghost"
       size="icon"
-      aria-label="Toggle theme"
-      onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
+      onClick={() =>
+        setTheme(
+          isDark
+            ? "light"
+            : "dark",
+        )
+      }
+      aria-label={
+        isDark
+          ? "Switch to light theme"
+          : "Switch to dark theme"
+      }
+      title={
+        isDark
+          ? "Switch to light theme"
+          : "Switch to dark theme"
+      }
     >
-      {mounted && resolvedTheme === "dark" ? (
+      {isDark ? (
         <Sun className="size-5" />
       ) : (
         <Moon className="size-5" />
       )}
+
+      <span className="sr-only">
+        Toggle theme
+      </span>
     </Button>
   );
 }

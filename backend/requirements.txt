@@ -1,18 +1,13 @@
 fastapi
 uvicorn[standard]
-
-# sqlalchemy[asyncio]
-# aiomysql
-
-prisma
-
+prisma==0.15.0
 pydantic
 pydantic-settings
 python-dotenv
-
 pandas
 openpyxl
-
 cryptography
 reportlab
 pillow
+PyJWT
+pwdlib[argon2]

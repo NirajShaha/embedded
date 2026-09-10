@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "name": "Embedded Project",
+  "description": "Full-stack embedded system project with Python backend and Next.js frontend",
+  "output": {
+    "file": "embedded-repomix.txt",
+    "style": "plain",
+    "showDirectoryTree": true,
+    "showFileTree": true,
+    "topFilesLength": 5,
+    "removeComments": false,
+    "removeEmptyLines": false,
+    "maxFileSize": 100000
+  },
+  "include": [
+    "backend/**/*.py",
+    "backend/**/*.sql",
+    "backend/prisma/*.prisma",
+    "backend/requirements.txt",
+    "frontend/src/**/*.ts",
+    "frontend/src/**/*.tsx",
+    "frontend/package.json",
+    "frontend/tsconfig.json",
+    "frontend/next.config.ts",
+    "docs/**/*.md",
+    "README.md",
+    "*.md"
+  ],
+  "ignore": [
+    "node_modules",
+    ".venv",
+    "venv",
+    "__pycache__",
+    ".git",
+    ".vscode",
+    ".next",
+    ".env",
+    "*.pyc",
+    "*.log"
+  ],
+  "topDirectories": [
+    "backend",
+    "frontend",
+    "docs"
+  ]
+}

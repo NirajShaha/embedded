@@ -8,21 +8,22 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { BarChart3, CheckSquare, Users, Settings, LogOut } from "lucide-react";
 import Link from "next/link";
+import { getAdminStats } from "@/lib/api";
 
 export default function AdminDashboardPage() {
   const { user, logout } = useAuth();
 
   // Fetch admin stats
-  const { data: stats } = useQuery({
-    queryKey: ["admin", "stats"],
-    queryFn: async () => {
-      // Placeholder - will be real API call later
-      return {
-        totalTestCases: 42,
-        totalUsers: 5,
-        recentUpdates: 3,
-      };
-    },
+  const {
+    data: stats,
+    isLoading: statsLoading,
+    isError: statsError,
+  } = useQuery({
+    queryKey: [
+      "admin",
+      "stats",
+    ],
+    queryFn: getAdminStats,
   });
 
   return (
@@ -60,7 +61,9 @@ export default function AdminDashboardPage() {
               <CheckSquare className="size-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats?.totalTestCases ?? 0}</div>
+              <div className="text-2xl font-bold">{statsLoading
+                ? "..."
+                : stats?.total_test_cases ?? 0}</div>
               <p className="text-xs text-muted-foreground mt-1">Total in system</p>
             </CardContent>
           </Card>
@@ -71,7 +74,9 @@ export default function AdminDashboardPage() {
               <Users className="size-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats?.totalUsers ?? 0}</div>
+              <div className="text-2xl font-bold">{statsLoading
+                ? "..."
+                : stats?.total_users ?? 0}</div>
               <p className="text-xs text-muted-foreground mt-1">Active users</p>
             </CardContent>
           </Card>
@@ -82,7 +87,14 @@ export default function AdminDashboardPage() {
               <BarChart3 className="size-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats?.recentUpdates ?? 0}</div>
+              <div className="text-2xl font-bold">{statsLoading
+                ? "..."
+                : stats?.recent_updates ?? 0}
+                {statsError && (
+                  <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
+                    Could not load admin statistics.
+                  </div>
+                )}</div>
               <p className="text-xs text-muted-foreground mt-1">Last 7 days</p>
             </CardContent>
           </Card>

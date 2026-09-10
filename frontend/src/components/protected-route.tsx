@@ -1,20 +1,43 @@
 "use client";
 
-import { ReactNode } from "react";
+import {
+  useEffect,
+  type ReactNode,
+} from "react";
 import { useRouter } from "next/navigation";
+
 import { useAuth } from "@/contexts/auth-context";
 import { Skeleton } from "@/components/ui/skeleton";
+
 
 interface ProtectedRouteProps {
   children: ReactNode;
   requiredRole?: "ADMIN" | "USER";
 }
 
-export function ProtectedRoute({ children, requiredRole = "USER" }: ProtectedRouteProps) {
-  const router = useRouter();
-  const { user, isLoading } = useAuth();
 
-  if (isLoading) {
+export function ProtectedRoute({
+  children,
+  requiredRole = "USER",
+}: ProtectedRouteProps) {
+  const router = useRouter();
+
+  const {
+    user,
+    isLoading,
+  } = useAuth();
+
+  useEffect(() => {
+    if (!isLoading && !user) {
+      router.replace("/login");
+    }
+  }, [
+    isLoading,
+    user,
+    router,
+  ]);
+
+  if (isLoading || !user) {
     return (
       <div className="space-y-4 p-8">
         <Skeleton className="h-8 w-1/3" />
@@ -24,17 +47,20 @@ export function ProtectedRoute({ children, requiredRole = "USER" }: ProtectedRou
     );
   }
 
-  if (!user) {
-    router.push("/login");
-    return null;
-  }
-
-  if (requiredRole === "ADMIN" && user.role !== "ADMIN") {
+  if (
+    requiredRole === "ADMIN" &&
+    user.role !== "ADMIN"
+  ) {
     return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold">Access Denied</h1>
-          <p className="text-muted-foreground">You need admin privileges to access this page</p>
+      <div className="flex min-h-[50vh] items-center justify-center">
+        <div className="space-y-2 text-center">
+          <h1 className="text-2xl font-bold">
+            Access Denied
+          </h1>
+
+          <p className="text-muted-foreground">
+            You need admin privileges to access this page.
+          </p>
         </div>
       </div>
     );

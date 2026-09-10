@@ -1,241 +1,561 @@
-# Embedded Config App — Full Setup Guide
+# Embedded Config App — Complete Setup Guide
 
-A two-part application: a **Next.js frontend** (TypeScript, shadcn/ui, Tailwind, dark/light
-mode) and a **FastAPI backend** (MySQL via SQLAlchemy async). This guide takes you
-from a clean machine to a running app.
+A full-stack application for managing **ECU (Electronic Control Unit) configurations and security testing**.
 
-**What you get:** a dashboard that greets the user, lists past projects in cards, lets you
-create a project (name + description), add ECU details for each project, view test cases
-filtered by category and test type, and walk through **4 multi-select attribute pages**
-one by one. Every selection is persisted to MySQL.
+- **Frontend:** Next.js 16 + TypeScript + shadcn/ui + Tailwind CSS (dark/light mode)
+- **Backend:** FastAPI + SQLAlchemy async + MySQL 8.0
+- **Database:** MySQL with Prisma schema management
+
+The application auto-creates the database, tables, and seed data on first backend run. You manage projects, ECU details, test cases, and walk through **4 multi-select attribute configuration pages**. All data persists to MySQL.
+
+---
+
+## Table of Contents
+
+1. [Prerequisites](#1-prerequisites)
+2. [Project Structure](#2-project-structure)
+3. [Backend Setup](#3-backend-setup)
+4. [Frontend Setup](#4-frontend-setup)
+5. [Running Both Servers](#5-running-both-at-once)
+6. [Configuration Reference](#6-configuration-reference)
+7. [API Endpoints](#7-api-endpoints)
+8. [Troubleshooting](#8-troubleshooting)
+9. [Fresh Start / Reset Database](#9-restarting-clean-fresh-data)
 
 ---
 
 ## 1. Prerequisites
 
-| Tool    | Version tested    | Check with                                               |
-| ------- | ----------------- | -------------------------------------------------------- |
-| Node.js | v26 (any LTS 18+) | `node --version`                                         |
-| Python  | 3.14 (3.11+)      | `python --version`                                       |
-| MySQL   | 8.0 (5.7+)        | `mysql --version` or service running on `localhost:3306` |
+Install these tools first:
 
-**MySQL must be running** before you start the backend. Nothing else has to be
-pre-created — the backend creates its **database, tables, and seed data automatically**
-on first start. All you need is a working `user` / `password`.
+| Tool    | Version      | Check with                      | Download                              |
+| ------- | ------------ | ------------------------------- | ------------------------------------ |
+| Node.js | 18+ (LTS)    | `node --version`                | https://nodejs.org                   |
+| Python  | 3.11+        | `python --version`              | https://python.org                   |
+| MySQL   | 5.7+ (8.0+)  | `mysql --version` or app verify | https://mysql.com or Docker image    |
+
+**Critical:** MySQL must be running and accessible at `localhost:3306` before starting the backend.
+- Default MySQL credentials: `root` / `password` (or your custom user/password)
+- Database is auto-created; no manual schema setup needed
+
+**Optional:** Git (for cloning the repository)
 
 ---
 
-## 2. Project layout
+## 2. Project Structure
 
 ```
 embedded/
-  backend/
-    app/
-      main.py                    # FastAPI app, CORS, startup (create db+seed)
-      config.py                  # reads .env (DATABASE_URL, CORS_ORIGINS)
-      database.py                # async engine + auto-create database
-      models.py                  # Project, EcuDetail, TestCase, Categories, etc.
-      schemas.py                 # Pydantic request/response models
-      seed.py                    # 4 pages x 5 groups x sub-attributes (idempotent)
-      routers/
-        projects.py              # GET/POST projects
-        ecu_details.py          # GET/POST/PUT ECU details
-        test_cases.py           # GET test cases with filtering
-        pages.py                # page attributes + per-project page selections
-    schema/
-      schema.sql                # MySQL table definitions
-    requirements.txt
-    .env.example                # template for .env
-    run.py                      # uvicorn launcher
-  frontend/
-    src/
-      app/                      # dashboard + projects/[id]/dashboard + page/[n]
-      components/               # sidebar, ECU form, test cases dashboard, etc.
-      lib/                      # types, api client, navigation
-    .env.local                  # NEXT_PUBLIC_API_URL (not committed)
+├── backend/                        # FastAPI + SQLAlchemy + MySQL
+│   ├── app/
+│   │   ├── main.py                # FastAPI app entry, CORS setup, auto-seed on startup
+│   │   ├── config.py              # Environment config (DATABASE_URL, CORS_ORIGINS)
+│   │   ├── database.py            # Async SQLAlchemy engine + auto-create database
+│   │   ├── models.py              # ORM models (Project, EcuDetail, TestCase, etc.)
+│   │   ├── schemas.py             # Pydantic request/response schemas
+│   │   ├── auth.py                # Authentication (JWT, password hashing with pwdlib)
+│   │   ├── pdf_generator.py       # PDF generation for test cases
+│   │   ├── prisma_client.py       # Prisma ORM client
+│   │   ├── routers/
+│   │   │   ├── projects.py        # GET/POST projects (list, create, get by ID)
+│   │   │   ├── ecu_details.py    # GET/POST/PUT ECU configurations
+│   │   │   ├── test_cases.py     # GET test cases with filtering (category, type)
+│   │   │   ├── pages.py          # Page attributes + per-project page selections
+│   │   │   ├── admin_test_cases.py
+│   │   │   └── auth.py           # Auth endpoints
+│   │   └── seed.py                # Auto-seed: 4 pages × 5 groups with attributes
+│   ├── prisma/
+│   │   ├── schema.prisma          # Prisma schema definitions
+│   │   └── migrations/            # Database migrations
+│   ├── requirements.txt           # Python dependencies
+│   ├── .env.example               # Template for .env (copy this → .env)
+│   └── run.py                     # Uvicorn launcher script
+│
+├── frontend/                       # Next.js + TypeScript + shadcn/ui
+│   ├── src/
+│   │   ├── app/
+│   │   │   ├── page.tsx           # Dashboard (project cards, new project button)
+│   │   │   ├── login/page.tsx     # Login page
+│   │   │   ├── admin/             # Admin test cases management
+│   │   │   └── projects/[projectId]/
+│   │   │       ├── dashboard/     # Project-specific dashboard
+│   │   │       └── page/[pageNumber]/  # Multi-page configuration wizard
+│   │   ├── components/
+│   │   │   ├── create-project-dialog.tsx
+│   │   │   ├── ecu-detail-form.tsx
+│   │   │   ├── test-cases-dashboard.tsx
+│   │   │   ├── page-selection-form.tsx
+│   │   │   └── ui/               # shadcn/ui components (buttons, cards, dialogs, etc.)
+│   │   ├── lib/
+│   │   │   ├── api.ts            # Fetch wrapper + base API URLs
+│   │   │   ├── types.ts          # TypeScript type definitions
+│   │   │   └── utils.ts          # Utility functions
+│   │   └── config.ts             # Frontend app config (greetings, names, etc.)
+│   ├── package.json              # Dependencies + scripts
+│   ├── tsconfig.json             # TypeScript config
+│   ├── next.config.ts            # Next.js config
+│   └── .env.local                # Environment variables (not committed, auto-ignored)
+│
+└── docs/                          # Documentation
+    ├── SETUP.md                   # This file
+    ├── IMPLEMENTATION.md          # Implementation details and flow
+    └── PDF_GENERATION.md          # PDF feature documentation
 ```
 
 ---
 
-## 3. Backend setup (FastAPI + MySQL)
+## 3. Backend Setup (FastAPI + MySQL)
 
-### 3.1 Create a virtual env and install dependencies
-
-From the repo root:
+### 3.1 Open Terminal & Navigate
 
 ```bash
 cd backend
-python -m venv .venv
 ```
 
-Activate it, then install:
+### 3.2 Create & Activate Python Virtual Environment
 
 ```bash
+# Create virtual environment
+python -m venv .venv
+
+# Activate it
 # Windows (PowerShell)
 .venv\Scripts\Activate.ps1
+
+# Windows (Command Prompt)
+.venv\Scripts\activate.bat
+
 # macOS / Linux
 source .venv/bin/activate
+```
 
+You should see `(.venv)` in your terminal prompt.
+
+### 3.3 Install Python Dependencies
+
+```bash
 pip install -r requirements.txt
 ```
 
-> If `pip` reports `No module named pip`, bootstrap it first:
-> `python -m ensurepip --upgrade`
+**Dependencies include:**
+- `fastapi` — web framework
+- `uvicorn[standard]` — ASGI server
+- `sqlalchemy` + `aiomysql` — async MySQL driver
+- `pydantic` + `pydantic-settings` — validation & config
+- `PyJWT` + `pwdlib[argon2]` — authentication
+- `pandas` + `openpyxl` — Excel reading
+- `reportlab` + `pillow` — PDF generation
+- `cryptography` — encryption
+- `prisma` — ORM (optional, for migrations)
 
-### 3.2 Configure the database connection
+### 3.4 Configure MySQL Connection
 
-Copy the template and edit it:
+Copy the example environment file:
 
 ```bash
+# Windows
+copy .env.example .env
+
+# macOS / Linux
 cp .env.example .env
 ```
 
+Edit `backend/.env`:
+
 ```ini
 # backend/.env
-DATABASE_URL=mysql+aiomysql://root:manager@localhost:3306/embedded_db
+DATABASE_URL=mysql+aiomysql://root:password@localhost:3306/embedded_db
 CORS_ORIGINS=["http://localhost:3000"]
 ```
 
-- Replace `root:manager` with **your** MySQL user and password.
-- `CORS_ORIGINS` **must be JSON syntax** (it's a list) because pydantic-settings parses
-  lists as JSON.
+**Important:**
+- Replace `root:password` with your actual MySQL username and password
+- `embedded_db` is created automatically; don't create it manually
+- `CORS_ORIGINS` must be **valid JSON** (a list in double quotes)
 
-> `DATABASE_URL` is also configurable via an environment variable of the same name, which
-> takes precedence over the `.env` file.
-
-### 3.3 Run the backend
+### 3.5 Start the Backend
 
 ```bash
 python run.py
-# or directly:
-python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 
-On startup the backend **automatically**:
-
-1. Creates the `embedded_db` database if it doesn't exist.
-2. Creates all tables (projects, ECU details, test cases, categories, etc.).
-3. Seeds the 4 pages with 5 main attributes each (idempotent — safe to restart).
-
-Verify:
+Or directly:
 
 ```bash
-curl http://localhost:8000/api/health        # {"status":"ok"}
-curl http://localhost:8000/api/projects      # []
-curl http://localhost:8000/api/pages/1/attributes  # 5 seeded groups
-curl http://localhost:8000/api/test-cases/categories  # test categories
+python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-Interactive docs: **http://localhost:8000/docs**
+**On startup, the backend automatically:**
+1. Connects to MySQL
+2. Creates the `embedded_db` database (if missing)
+3. Creates all tables using SQLAlchemy models
+4. Seeds 4 pages with 5 attribute groups each (idempotent — safe to restart)
+
+**Expected output:**
+```
+INFO:     Uvicorn running on http://0.0.0.0:8000
+INFO:     Application startup complete
+```
+
+### 3.6 Verify Backend is Running
+
+In a new terminal (while backend is running):
+
+```bash
+# Check health
+curl http://localhost:8000/api/health
+
+# List projects (should be empty initially)
+curl http://localhost:8000/api/projects
+
+# View seeded page attributes
+curl http://localhost:8000/api/pages/1/attributes
+
+# View test case categories
+curl http://localhost:8000/api/test-cases/categories
+```
+
+**Interactive API docs:** Open http://localhost:8000/docs in your browser to explore all endpoints.
 
 ---
 
-## 4. Frontend setup (Next.js + shadcn)
+## 4. Frontend Setup (Next.js + shadcn/ui)
 
-The shadcn/ui components are pre-installed in `frontend/src/components/ui`,
-so `npm install` is all you need.
+### 4.1 Open a New Terminal & Navigate
 
 ```bash
 cd frontend
+```
+
+### 4.2 Install Dependencies
+
+```bash
 npm install
 ```
 
-Create the environment file (not committed to git):
+This installs:
+- **Next.js 16** — React framework
+- **TypeScript** — type safety
+- **shadcn/ui** — pre-built UI components
+- **Tailwind CSS** — utility-first styling
+- **Radix UI** — accessible component primitives
+- **TanStack Query** — data fetching
+- **TanStack Table** — data tables
+
+### 4.3 Create Environment File
 
 ```bash
 # Windows (PowerShell)
 New-Item -ItemType File .env.local
+
 # macOS / Linux
 touch .env.local
 ```
+
+Edit `frontend/.env.local`:
 
 ```ini
 # frontend/.env.local
 NEXT_PUBLIC_API_URL=http://localhost:8000/api
 ```
 
-Run the dev server:
+**Note:** `NEXT_PUBLIC_` prefix makes this variable available in the browser. Keep this file in `.gitignore` (already excluded).
+
+### 4.4 Start the Frontend Dev Server
 
 ```bash
 npm run dev
 ```
 
-Open **http://localhost:3000** — the dashboard greets you, shows project cards, and the
-**New project** button starts the 4-page wizard.
+**Expected output:**
+```
+  ▲ Next.js 16.0.0
+  - Local:        http://localhost:3000
+  - Environments: .env.local
+```
+
+Open **http://localhost:3000** in your browser.
 
 ---
 
-## 5. Running both at once
+## 5. Running Both at Once
 
-Terminal 1 — backend:
+**Terminal 1 (Backend):**
 
 ```bash
 cd backend
-python run.py          # -> http://localhost:8000
+# (activate venv first if not already)
+python run.py
 ```
 
-Terminal 2 — frontend:
+**Terminal 2 (Frontend):**
 
 ```bash
 cd frontend
-npm run dev            # -> http://localhost:3000
+npm run dev
 ```
 
-**Flow:** Dashboard → **New project** (name + description) → auto-redirects to
-`/projects/{id}/page/1` → select sub-attributes, **Save & continue** through pages 1–4 →
-back to the dashboard with the new project card. Toggle dark/light via the button in the
-sidebar footer. Reloading a page restores your saved selections from the backend.
+### User Journey
+
+1. **Dashboard** → See project cards + greeting
+2. **New Project** → Enter project name & description
+3. **Auto-redirect** → `/projects/{id}/page/1`
+4. **Configuration Wizard** → Pages 1–4, select attributes on each page
+5. **Save & Continue** → Progress through wizard
+6. **Back to Dashboard** → New project card appears with all selections persisted
+
+### UI Features
+
+- **Dark/Light Mode** → Toggle in sidebar footer
+- **Responsive** → Works on desktop, tablet, mobile
+- **Live Reload** → Changes appear instantly (with `.venv` running backend)
 
 ---
 
-## 6. Config summary
+## 6. Configuration Reference
 
-| Setting              | Backend (`.env`)                                                      | Frontend (`.env.local`)                         |
-| -------------------- | --------------------------------------------------------------------- | ----------------------------------------------- |
-| API URL              | —                                                                     | `NEXT_PUBLIC_API_URL=http://localhost:8000/api` |
-| Database             | `DATABASE_URL=postgresql+asyncpg://user:pass@localhost:5432/embedded` | —                                               |
-| Allowed CORS origins | `CORS_ORIGINS=["http://localhost:3000"]`                              | —                                               |
-| Greeting name        | —                                                                     | `src/config.ts` → `APP_USER_NAME = "Alex"`      |
+### Backend Environment Variables
 
-CORS already allows `http://localhost:3000`, so the frontend can call the API.
+**`backend/.env`**
 
----
+| Variable          | Example                                                  | Required | Notes                                                       |
+| ----------------- | -------------------------------------------------------- | -------- | ----------------------------------------------------------- |
+| `DATABASE_URL`    | `mysql+aiomysql://root:password@localhost:3306/embedded` | ✓        | Must be MySQL async URL; database auto-created on startup   |
+| `CORS_ORIGINS`    | `["http://localhost:3000"]`                              | ✓        | **Must be valid JSON** (double-quoted list)                 |
+| `SECRET_KEY`      | (optional)                                               |          | JWT secret; auto-generated if omitted                       |
 
-## 7. Common issues
+### Frontend Environment Variables
 
-**Backend won't start: `error parsing value for field "cors_origins"`**
-`syntax: CORS_ORIGINS` must be JSON: `CORS_ORIGINS=["http://localhost:3000"]`.
+**`frontend/.env.local`**
 
-**`password authentication failed for user "postgres"`**
-Your real Postgres password differs from the default. Update `DATABASE_URL` in `backend/.env`.
+| Variable               | Example                        | Required | Notes                                                          |
+| ---------------------- | ------------------------------ | -------- | -------------------------------------------------------------- |
+| `NEXT_PUBLIC_API_URL`  | `http://localhost:8000/api`    | ✓        | Backend API base URL; must match running backend              |
 
-**Port 8000 already in use**
-Stop the previous server: on PowerShell
-`Stop-Process -Id (Get-NetTCPConnection -LocalPort 8000).OwningProcess -Force`.
+### Frontend Source Config
 
-**`python -m venv .venv` fails with "Unable to copy ... python.exe"**
-The existing venv's interpreter is still running (e.g. the backend is up). Stop the server
-first, then delete `.venv` and recreate. You usually don't need to recreate at all — just
-reuse the existing `.venv`.
+**`frontend/src/config.ts`**
 
-**Frontend "fetch failed" / empty dashboard**
-Backend isn't running, or `NEXT_PUBLIC_API_URL` points at the wrong host/port. Start the
-backend and confirm `http://localhost:8000/api/health` responds.
-
-**Missing sub-attributes on a page (500 from `/api/pages/{n}/attributes`)**
-This was a lazy-loading bug in async SQLAlchemy; it's already fixed with `selectinload` in
-`app/routers/pages.py`. If you see it again, ensure the query uses
-`.options(selectinload(AttributeGroup.attributes))`.
+```typescript
+export const APP_USER_NAME = "Alex";        // Greeting name
+export const DEFAULT_DARK_MODE = false;     // Dark mode by default?
+```
 
 ---
 
-## 8. Restarting clean (fresh data)
+## 7. API Endpoints
 
-To wipe all data and start over:
+All endpoints are prefixed with `/api`.
+
+### Projects
+
+- `GET /api/projects` — List all projects (cards, project info)
+- `POST /api/projects` — Create a new project (name, description)
+- `GET /api/projects/{projectId}` — Get project details
+- `PUT /api/projects/{projectId}` — Update project
+
+### ECU Details
+
+- `GET /api/projects/{projectId}/ecu-details` — List ECU details for a project
+- `POST /api/projects/{projectId}/ecu-details` — Add ECU detail
+- `PUT /api/ecu-details/{ecuId}` — Update ECU detail
+
+### Test Cases
+
+- `GET /api/test-cases` — List all test cases
+- `GET /api/test-cases/categories` — List test categories
+- `GET /api/projects/{projectId}/test-cases` — Test cases for a project
+- (Filtering by category and test type supported via query params)
+
+### Page Attributes
+
+- `GET /api/pages/{pageNumber}/attributes` — Seeded attributes for page N (1–4)
+- `GET /api/projects/{projectId}/pages/{pageNumber}/selections` — User's saved selections
+- `POST /api/projects/{projectId}/pages/{pageNumber}/selections` — Save attribute selections
+
+### Health & Docs
+
+- `GET /api/health` — Backend status (`{"status":"ok"}`)
+- `GET /docs` — Interactive Swagger UI (FastAPI docs)
+- `GET /redoc` — ReDoc API documentation
+
+---
+
+## 8. Troubleshooting
+
+### Backend Issues
+
+#### "Failed to connect to MySQL server"
+- **Cause:** MySQL not running or wrong credentials
+- **Fix:**
+  ```bash
+  # Verify MySQL is running (Windows)
+  Get-Process mysqld
+  # or check Services app
+  
+  # Test connection
+  mysql -u root -p -h localhost
+  ```
+- Update `DATABASE_URL` in `backend/.env` with correct credentials
+
+#### "CORS_ORIGINS error parsing value"
+- **Cause:** `CORS_ORIGINS` is not valid JSON
+- **Fix:** Ensure it's a valid JSON list with double quotes:
+  ```ini
+  # Wrong
+  CORS_ORIGINS=['http://localhost:3000']
+  
+  # Correct
+  CORS_ORIGINS=["http://localhost:3000"]
+  ```
+
+#### "Port 8000 already in use"
+- **Fix (Windows PowerShell):**
+  ```powershell
+  $id = (Get-NetTCPConnection -LocalPort 8000).OwningProcess
+  Stop-Process -Id $id -Force
+  ```
+- **Fix (macOS/Linux):**
+  ```bash
+  lsof -i :8000
+  kill -9 <PID>
+  ```
+
+#### "No module named 'aiomysql'" after installing requirements
+- **Cause:** `pip install` might have failed silently
+- **Fix:**
+  ```bash
+  pip install --upgrade pip
+  pip install -r requirements.txt --no-cache-dir
+  ```
+
+#### ".venv\Scripts\Activate.ps1 cannot be loaded" (PowerShell)
+- **Cause:** Execution policy blocked
+- **Fix:**
+  ```powershell
+  Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+  .venv\Scripts\Activate.ps1
+  ```
+
+### Frontend Issues
+
+#### "fetch failed" / Dashboard is empty
+- **Cause:** Backend not running or wrong `NEXT_PUBLIC_API_URL`
+- **Fix:**
+  1. Verify backend is running: `curl http://localhost:8000/api/health`
+  2. Check `frontend/.env.local`:
+     ```ini
+     NEXT_PUBLIC_API_URL=http://localhost:8000/api
+     ```
+  3. Hard refresh browser (Ctrl+Shift+R)
+
+#### "Port 3000 already in use"
+- **Fix (Windows PowerShell):**
+  ```powershell
+  $id = (Get-NetTCPConnection -LocalPort 3000).OwningProcess
+  Stop-Process -Id $id -Force
+  ```
+
+#### "Cannot find module '@/components/ui/...'"
+- **Cause:** Missing shadcn components
+- **Fix:**
+  ```bash
+  npm install
+  ```
+
+#### Components not loading / Errors in console
+- **Fix:** Clear Next.js cache and reinstall
+  ```bash
+  rm -r .next node_modules
+  npm install
+  npm run dev
+  ```
+
+### Network / CORS Issues
+
+If you get CORS errors when the frontend calls the backend:
+
+1. **Verify backend is running:** `curl http://localhost:8000/api/health`
+2. **Check `CORS_ORIGINS` in `backend/.env`:**
+   ```ini
+   # Must include frontend URL
+   CORS_ORIGINS=["http://localhost:3000"]
+   ```
+3. **Restart backend** after changing `.env`
+
+---
+
+## 9. Restarting Clean (Fresh Data)
+
+To wipe all data and start fresh:
+
+### Option A: Delete Database via MySQL CLI
 
 ```bash
-# from the repo root, with backend stopped
-psql -U postgres -c "DROP DATABASE IF EXISTS embedded WITH (FORCE);"
+# Connect to MySQL and drop the database
+mysql -u root -p
+
+# At the mysql> prompt:
+mysql> DROP DATABASE IF EXISTS embedded_db;
+mysql> EXIT;
 ```
 
-Then just run the backend again — it recreates the database, tables, and seed data.
+Then restart the backend — it will recreate the database and seed data.
+
+### Option B: Delete Database via PowerShell (Windows)
+
+```powershell
+mysql -u root -p -e "DROP DATABASE IF EXISTS embedded_db;"
+```
+
+### Option C: Manual Database Directory (Advanced)
+
+```bash
+# Find MySQL data directory (usually)
+# Windows: C:\ProgramData\MySQL\MySQL Server 8.0\data\
+# macOS: /usr/local/mysql/data/
+# Linux: /var/lib/mysql/
+
+# Delete the folder: rm -r <data_dir>/embedded_db
+```
+
+**After any of the above:**
+
+```bash
+# Restart backend (Terminal 1)
+cd backend
+python run.py
+```
+
+The backend will:
+1. Detect missing `embedded_db`
+2. Create it from scratch
+3. Re-seed all attributes, test cases, and categories
+4. Be ready for use immediately
+
+---
+
+## Quick Reference: First Run Checklist
+
+- [ ] MySQL running and accessible (verify with `mysql -u root -p`)
+- [ ] Python 3.11+ installed (`python --version`)
+- [ ] Node.js 18+ installed (`node --version`)
+- [ ] Backend virtual env created: `python -m venv .venv`
+- [ ] Backend activated: `.venv\Scripts\Activate.ps1` (Windows) or `source .venv/bin/activate` (macOS/Linux)
+- [ ] Backend dependencies installed: `pip install -r requirements.txt`
+- [ ] Backend `.env` created and configured with MySQL credentials
+- [ ] Backend running: `python run.py` (Terminal 1)
+- [ ] Backend health check: `curl http://localhost:8000/api/health`
+- [ ] Frontend dependencies installed: `npm install`
+- [ ] Frontend `.env.local` created with `NEXT_PUBLIC_API_URL`
+- [ ] Frontend running: `npm run dev` (Terminal 2)
+- [ ] Dashboard loads at `http://localhost:3000`
+
+---
+
+## Need Help?
+
+- **API Docs:** http://localhost:8000/docs (interactive Swagger UI)
+- **Backend logs:** Check terminal where `python run.py` is running
+- **Frontend logs:** Check browser console (F12 → Console tab)
+- **Project docs:** See `docs/IMPLEMENTATION.md` for architecture details
