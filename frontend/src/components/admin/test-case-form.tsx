@@ -285,22 +285,18 @@ export function TestCaseForm({
     queryFn: getAdminLookups,
   });
 
-  const selectedCategoryId =
-    formData.category_id
-      ? Number(formData.category_id)
-      : null;
+  const selectedCategoryIdStr = formData.category_id;
 
   const objectives = useMemo(
     () =>
       (lookups?.objectives ?? []).filter(
         (objective) =>
-          selectedCategoryId !== null &&
-          objective.category_id ===
-          selectedCategoryId,
+          selectedCategoryIdStr !== "" &&
+          String(objective.category_id) === selectedCategoryIdStr,
       ),
     [
       lookups?.objectives,
-      selectedCategoryId,
+      selectedCategoryIdStr,
     ],
   );
 
@@ -418,15 +414,15 @@ export function TestCaseForm({
       return;
     }
 
-    const selectedObjective =
-      objectives.find(
-        (objective) =>
-          objective.id === objectiveId,
-      );
+    // Verify the chosen objective exists in the filtered list (string comparison
+    // avoids BigInt-to-float precision loss for very large IDs).
+    const selectedObjective = objectives.find(
+      (objective) => String(objective.id) === String(objectiveId),
+    );
 
     if (!selectedObjective) {
       setValidationError(
-        "The selected objective does not belong to the selected category.",
+        "Please re-select the objective — it may not match the chosen category.",
       );
       return;
     }
