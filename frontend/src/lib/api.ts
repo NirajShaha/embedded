@@ -127,6 +127,32 @@ export interface TestCase {
   asset: { id: number; asset_name: string } | null;
   test_case_tools: Array<{ tool: { id: number; tool_name: string } }>;
   test_case_references: Array<{ reference: { id: number; ref_text: string } }>;
+  is_overridden?: boolean;
+}
+
+export interface ToolOption {
+  id: number;
+  tool_name: string;
+}
+
+export interface ReferenceOption {
+  id: number;
+  ref_text: string;
+}
+
+export interface TestCaseOverridePayload {
+  action_test_case?: string | null;
+  source_scope_status?: string | null;
+  description?: string | null;
+  attack_path?: string | null;
+  test_steps?: string | null;
+  expected_output?: string | null;
+  attack_feasibility?: string | null;
+  cia_impact?: string | null;
+  safety_impact?: string | null;
+  automation_possible?: string | null;
+  tools?: number[] | null;
+  references?: number[] | null;
 }
 
 export const getCategories = () =>
@@ -134,9 +160,15 @@ export const getCategories = () =>
 
 export const getTestTypes = () => request<TestType[]>("/test-cases/types");
 
+export const listTools = () => request<ToolOption[]>("/test-cases/tools");
+
+export const listReferences = () =>
+  request<ReferenceOption[]>("/test-cases/references");
+
 export const listTestCases = (
   categoryIds?: number[] | number,
   testTypeIds?: number[] | number,
+  projectId?: number,
 ) => {
   const params = new URLSearchParams();
   const cats = Array.isArray(categoryIds)
@@ -151,12 +183,42 @@ export const listTestCases = (
       : [];
   for (const id of cats) params.append("category_ids", String(id));
   for (const id of types) params.append("test_type_ids", String(id));
+  if (projectId !== undefined) {
+    params.append("project_id", String(projectId));
+  }
   const query = params.toString();
   return request<TestCase[]>(`/test-cases${query ? `?${query}` : ""}`);
 };
 
-export const getTestCase = (id: number) =>
-  request<TestCase>(`/test-cases/${id}`);
+export const getTestCase = (id: number, projectId?: number) => {
+  const params = new URLSearchParams();
+  if (projectId !== undefined) {
+    params.append("project_id", String(projectId));
+  }
+  const query = params.toString();
+  return request<TestCase>(`/test-cases/${id}${query ? `?${query}` : ""}`);
+};
+
+export const updateTestCaseOverride = (
+  projectId: number,
+  testCaseId: number,
+  payload: TestCaseOverridePayload,
+) =>
+  request<TestCase>(`/projects/${projectId}/test-cases/${testCaseId}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+
+export const resetTestCaseOverride = (projectId: number, testCaseId: number) =>
+  fetch(`${API_URL}/projects/${projectId}/test-cases/${testCaseId}`, {
+    method: "DELETE",
+  }).then((res) => {
+    if (!res.ok) {
+      return res.text().then((detail) => {
+        throw new Error(`Request failed (${res.status}): ${detail}`);
+      });
+    }
+  });
 
 export const downloadTestCasesPDF = async (
   projectId: number,

@@ -116,6 +116,53 @@ CREATE TABLE test_case_references (
     FOREIGN KEY(reference_id) REFERENCES references_master(id)
 );
 
+CREATE TABLE project_test_case_overrides (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    project_id INT NOT NULL,
+    test_case_id BIGINT NOT NULL,
+
+    action_test_case LONGTEXT,
+    source_scope_status VARCHAR(100),
+    description LONGTEXT,
+    attack_path LONGTEXT,
+    test_steps LONGTEXT,
+    expected_output LONGTEXT,
+    attack_feasibility TEXT,
+    cia_impact TEXT,
+    safety_impact TEXT,
+    automation_possible VARCHAR(50),
+
+    tools_overridden BOOLEAN NOT NULL DEFAULT FALSE,
+    references_overridden BOOLEAN NOT NULL DEFAULT FALSE,
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    UNIQUE KEY uq_project_test_case(project_id, test_case_id),
+    KEY ix_ptco_project_id(project_id),
+    KEY ix_ptco_test_case_id(test_case_id),
+    FOREIGN KEY (project_id) REFERENCES projects(id),
+    FOREIGN KEY (test_case_id) REFERENCES test_cases(id)
+);
+
+CREATE TABLE project_test_case_override_tools (
+    override_id INT NOT NULL,
+    tool_id BIGINT NOT NULL,
+    PRIMARY KEY(override_id, tool_id),
+    KEY ix_ptcot_tool_id(tool_id),
+    FOREIGN KEY(override_id) REFERENCES project_test_case_overrides(id) ON DELETE CASCADE,
+    FOREIGN KEY(tool_id) REFERENCES tools_master(id)
+);
+
+CREATE TABLE project_test_case_override_references (
+    override_id INT NOT NULL,
+    reference_id BIGINT NOT NULL,
+    PRIMARY KEY(override_id, reference_id),
+    KEY ix_ptcor_reference_id(reference_id),
+    FOREIGN KEY(override_id) REFERENCES project_test_case_overrides(id) ON DELETE CASCADE,
+    FOREIGN KEY(reference_id) REFERENCES references_master(id)
+);
+
 INSERT INTO severities(name,severity_rank)
 VALUES
 ('Informational',1),

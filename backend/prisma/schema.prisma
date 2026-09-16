@@ -13,6 +13,61 @@ model assets {
   test_cases test_cases[]
 }
 
+model project_test_case_overrides {
+  id          Int    @id @default(autoincrement())
+  project_id  Int
+  test_case_id BigInt
+
+  action_test_case    String? @db.LongText
+  source_scope_status String? @db.VarChar(100)
+  description         String? @db.LongText
+  attack_path         String? @db.LongText
+  test_steps          String? @db.LongText
+  expected_output     String? @db.LongText
+  attack_feasibility  String? @db.Text
+  cia_impact          String? @db.Text
+  safety_impact       String? @db.Text
+  automation_possible String? @db.VarChar(50)
+
+  tools_overridden      Boolean @default(false)
+  references_overridden Boolean @default(false)
+
+  created_at DateTime @default(now()) @db.Timestamp(0)
+  updated_at DateTime @default(now()) @db.Timestamp(0)
+
+  projects      projects   @relation(fields: [project_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "ptco_ibfk_1")
+  test_cases    test_cases @relation(fields: [test_case_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "ptco_ibfk_2")
+
+  project_test_case_override_tools      project_test_case_override_tools[]
+  project_test_case_override_references project_test_case_override_references[]
+
+  @@unique([project_id, test_case_id], map: "uq_project_test_case")
+  @@index([project_id], map: "ix_ptco_project_id")
+  @@index([test_case_id], map: "ix_ptco_test_case_id")
+}
+
+model project_test_case_override_tools {
+  override_id Int
+  tool_id     BigInt
+
+  project_test_case_overrides project_test_case_overrides @relation(fields: [override_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "ptcot_ibfk_1")
+  tools_master                tools_master                @relation(fields: [tool_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "ptcot_ibfk_2")
+
+  @@id([override_id, tool_id])
+  @@index([tool_id], map: "ix_ptcot_tool_id")
+}
+
+model project_test_case_override_references {
+  override_id  Int
+  reference_id BigInt
+
+  project_test_case_overrides project_test_case_overrides @relation(fields: [override_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "ptcor_ibfk_1")
+  references_master           references_master           @relation(fields: [reference_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "ptcor_ibfk_2")
+
+  @@id([override_id, reference_id])
+  @@index([reference_id], map: "ix_ptcor_reference_id")
+}
+
 model attack_vectors {
   id         BigInt       @id @default(autoincrement())
   name       String       @unique(map: "name") @db.VarChar(255)
@@ -97,6 +152,7 @@ model projects {
   created_at          DateTime             @default(dbgenerated("(now())")) @db.DateTime(0)
   project_ecu_details project_ecu_details?
   project_selections  project_selections[]
+  test_case_overrides project_test_case_overrides[]
 }
 
 model protocols {
@@ -109,6 +165,7 @@ model references_master {
   id                   BigInt                 @id @default(autoincrement())
   ref_text             String                 @unique(map: "uk_ref", length: 255) @db.Text
   test_case_references test_case_references[]
+  override_references  project_test_case_override_references[]
 }
 
 model severities {
@@ -161,6 +218,7 @@ model test_cases {
   created_at           DateTime?              @default(now()) @db.Timestamp(0)
   test_case_references test_case_references[]
   test_case_tools      test_case_tools[]
+  test_case_overrides  project_test_case_overrides[]
   categories           categories             @relation(fields: [category_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "test_cases_ibfk_1")
   objectives           objectives             @relation(fields: [objective_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "test_cases_ibfk_2")
   protocols            protocols?             @relation(fields: [protocol_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "test_cases_ibfk_3")
@@ -196,4 +254,5 @@ model tools_master {
   id              BigInt            @id @default(autoincrement())
   tool_name       String            @unique(map: "uk_tool", length: 255) @db.VarChar(1000)
   test_case_tools test_case_tools[]
+  override_tools  project_test_case_override_tools[]
 }
