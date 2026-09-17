@@ -45,6 +45,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { DataTable } from "@/components/ui/data-table";
+import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Pagination } from "@/components/pagination";
 import { TestCaseDetailDialog } from "@/components/test-case-detail-dialog";
@@ -189,7 +190,7 @@ export function TestCasesDashboard({ projectId }: TestCasesDashboardProps) {
   const [search, setSearch] = React.useState("");
   const [page, setPage] = React.useState(1);
   const [pageSize, setPageSize] = React.useState(PAGE_SIZE_DEFAULT);
-  const [activeTestCase, setActiveTestCase] = React.useState<TestCase | null>(
+  const [activeTestCaseId, setActiveTestCaseId] = React.useState<number | null>(
     null,
   );
   const [isPdfLoading, setIsPdfLoading] = React.useState(false);
@@ -208,6 +209,7 @@ export function TestCasesDashboard({ projectId }: TestCasesDashboardProps) {
   const { data: testCases, isLoading: casesLoading } = useQuery({
     queryKey: [
       "test-cases",
+      projectId,
       selectedCategories
         .slice()
         .sort((a, b) => a - b)
@@ -221,8 +223,16 @@ export function TestCasesDashboard({ projectId }: TestCasesDashboardProps) {
       listTestCases(
         selectedCategories.length > 0 ? selectedCategories : undefined,
         selectedTestTypes.length > 0 ? selectedTestTypes : undefined,
+        projectId,
       ),
   });
+
+  // Derive the open test case from the query data so edits saved through the
+  // dialog immediately flow back into the row and the detail view.
+  const activeTestCase = React.useMemo(
+    () => (testCases ?? []).find((tc) => tc.id === activeTestCaseId) ?? null,
+    [testCases, activeTestCaseId],
+  );
 
   const toggleCategory = React.useCallback((id: number) => {
     setSelectedCategories((prev) =>
@@ -340,12 +350,6 @@ export function TestCasesDashboard({ projectId }: TestCasesDashboardProps) {
   }, [testCases, selectedSeverities, search]);
 
   const totalItems = filteredTestCases.length;
-  console.log("Pagination Debug", {
-    page,
-    pageSize,
-    totalItems,
-    filteredCount: filteredTestCases.length,
-  });
   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
   React.useEffect(() => {
     if (page > totalPages) {
@@ -387,11 +391,18 @@ export function TestCasesDashboard({ projectId }: TestCasesDashboardProps) {
               <div className="line-clamp-3 text-sm font-medium leading-snug text-foreground break-words">
                 {testCase.action_test_case}
               </div>
-              {testCase.objective?.name && (
-                <div className="mt-0.5 line-clamp-1 text-xs text-muted-foreground break-words">
-                  {testCase.objective.name}
-                </div>
-              )}
+              <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                {testCase.objective?.name && (
+                  <div className="line-clamp-1 text-xs text-muted-foreground break-words">
+                    {testCase.objective.name}
+                  </div>
+                )}
+                {testCase.is_overridden && (
+                  <Badge variant="secondary" className="text-[10px]">
+                    Edited
+                  </Badge>
+                )}
+              </div>
             </>
           );
         },
@@ -457,7 +468,7 @@ export function TestCasesDashboard({ projectId }: TestCasesDashboardProps) {
               size="icon-sm"
               onClick={(e) => {
                 e.stopPropagation();
-                setActiveTestCase(testCase);
+                setActiveTestCaseId(testCase.id);
               }}
               aria-label={`View details for ${testCase.action_test_case}`}
             >
@@ -586,7 +597,10 @@ export function TestCasesDashboard({ projectId }: TestCasesDashboardProps) {
           </div>
         ) : filteredTestCases.length > 0 ? (
           <>
-            <DataTable table={table} onRowClick={setActiveTestCase} />
+            <DataTable
+              table={table}
+              onRowClick={(testCase) => setActiveTestCaseId(testCase.id)}
+            />
 
             <Pagination
               page={safePage}
@@ -650,9 +664,10 @@ export function TestCasesDashboard({ projectId }: TestCasesDashboardProps) {
 
       <TestCaseDetailDialog
         testCase={activeTestCase}
+        projectId={projectId}
         open={activeTestCase !== null}
         onOpenChange={(open) => {
-          if (!open) setActiveTestCase(null);
+          if (!open) setActiveTestCaseId(null);
         }}
       />
     </div>

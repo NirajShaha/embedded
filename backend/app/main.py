@@ -33,6 +33,7 @@ app.include_router(projects.router, prefix=api_prefix)
 app.include_router(ecu_details.router, prefix=api_prefix)
 app.include_router(pages.router, prefix=api_prefix)
 app.include_router(test_cases.router, prefix=api_prefix)
+app.include_router(test_cases.overrides_router, prefix=api_prefix)
 
 
 @app.get("/api/health")

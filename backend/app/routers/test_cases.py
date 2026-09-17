@@ -1,7 +1,13 @@
 from fastapi import APIRouter, HTTPException, Query
 
 from app.prisma_client import db
-from app.schemas import TestCaseRead
+from app.schemas import TestCaseOverrideUpdate, TestCaseRead
+from app.test_case_overrides import (
+    apply_override,
+    load_overrides,
+    map_test_case,
+    map_test_cases,
+)
 
 import asyncio
 from datetime import datetime
@@ -14,35 +20,68 @@ router = APIRouter(
     tags=["test-cases"],
 )
 
+overrides_router = APIRouter(
+    prefix="/projects/{project_id}/test-cases",
+    tags=["test-cases"],
+)
+
+_INCLUDES = {
+    "categories": True,
+    "objectives": True,
+    "protocols": True,
+    "attack_vectors": True,
+    "test_types": True,
+    "severities": True,
+    "threats": True,
+    "assets": True,
+    "test_case_tools": {
+        "include": {
+            "tools_master": True
+        }
+    },
+    "test_case_references": {
+        "include": {
+            "references_master": True
+        }
+    },
+}
+
+
 async def _load_test_cases_for_pdf(
     where_clause: dict,
 ):
     return await db.test_cases.find_many(
         where=where_clause,
-        include={
-            "categories": True,
-            "objectives": True,
-            "protocols": True,
-            "attack_vectors": True,
-            "test_types": True,
-            "severities": True,
-            "threats": True,
-            "assets": True,
-            "test_case_tools": {
-                "include": {
-                    "tools_master": True
-                }
-            },
-            "test_case_references": {
-                "include": {
-                    "references_master": True
-                }
-            }
-        },
+        include=_INCLUDES,
         order={
             "id": "asc"
         }
     )
+
+
+async def _fetch_test_case(test_case_id: int):
+    return await db.test_cases.find_unique(
+        where={
+            "id": test_case_id
+        },
+        include=_INCLUDES,
+    )
+
+
+async def _merged_test_case(project_id: int | None, test_case) -> dict:
+    """Map one test case and merge the project's override, if any."""
+    mapped = map_test_case(test_case)
+
+    if project_id is None:
+        return mapped
+
+    overrides = await load_overrides(project_id, [mapped["id"]])
+    override = overrides.get(mapped["id"])
+
+    if override is not None:
+        apply_override(mapped, override)
+
+    return mapped
 
 
 @router.get("/categories", response_model=list[dict])
@@ -83,54 +122,91 @@ async def get_test_types():
     ]
 
 
+@router.get("/tools", response_model=list[dict])
+async def list_tools():
+    """Get all tools that can be attached to a test case."""
+
+    tools = await db.tools_master.find_many(
+        order={
+            "tool_name": "asc"
+        }
+    )
+
+    return [
+        {
+            "id": int(item.id),
+            "tool_name": item.tool_name,
+        }
+        for item in tools
+    ]
+
+
+@router.get("/references", response_model=list[dict])
+async def list_references():
+    """Get all reference documents that can be attached to a test case."""
+
+    references = await db.references_master.find_many(
+        order={
+            "ref_text": "asc"
+        }
+    )
+
+    return [
+        {
+            "id": int(item.id),
+            "ref_text": item.ref_text,
+        }
+        for item in references
+    ]
+
+
+def _effective_ids(
+    ids: list[int] | None,
+    single_id: int | None,
+) -> list[int]:
+    effective: list[int] = []
+
+    if ids:
+        effective.extend(ids)
+
+    if single_id is not None and single_id not in effective:
+        effective.append(single_id)
+
+    return effective
+
+
+async def _is_both_wildcard(effective_test_type_ids: list[int]) -> bool:
+    if not effective_test_type_ids:
+        return False
+
+    both_row = await db.test_types.find_first(
+        where={
+            "name": {
+                "equals": "Both"
+            }
+        }
+    )
+
+    return both_row is not None and int(both_row.id) in effective_test_type_ids
+
+
 @router.get("", response_model=list[TestCaseRead])
 async def list_test_cases(
+    project_id: int | None = Query(default=None),
     category_ids: list[int] | None = Query(default=None),
     test_type_ids: list[int] | None = Query(default=None),
     category_id: int | None = Query(default=None, deprecated=True),
     test_type_id: int | None = Query(default=None, deprecated=True),
 ):
 
-    effective_category_ids: list[int] = []
-
-    if category_ids:
-        effective_category_ids.extend(category_ids)
-
-    if (
-        category_id is not None
-        and category_id not in effective_category_ids
-    ):
-        effective_category_ids.append(category_id)
-
-    effective_test_type_ids: list[int] = []
-
-    if test_type_ids:
-        effective_test_type_ids.extend(test_type_ids)
-
-    if (
-        test_type_id is not None
-        and test_type_id not in effective_test_type_ids
-    ):
-        effective_test_type_ids.append(test_type_id)
+    effective_category_ids = _effective_ids(category_ids, category_id)
+    effective_test_type_ids = _effective_ids(test_type_ids, test_type_id)
 
     #
     # Handle BOTH wildcard
     #
-    if effective_test_type_ids:
-
-        both_row = await db.test_types.find_first(
-            where={
-                "name": {
-                    "equals": "Both"
-                }
-            }
-        )
-
-        if (
-            both_row is not None
-            and int(both_row.id) in effective_test_type_ids
-        ):
-            effective_test_type_ids = []
+    if await _is_both_wildcard(effective_test_type_ids):
+        effective_test_type_ids = []
 
     where_clause = {}
 
@@ -146,128 +222,14 @@ async def list_test_cases(
 
     test_cases = await db.test_cases.find_many(
         where=where_clause,
-        include={
-            "categories": True,
-            "objectives": True,
-            "protocols": True,
-            "attack_vectors": True,
-            "test_types": True,
-            "severities": True,
-            "threats": True,
-            "assets": True,
-            "test_case_tools": {
-                "include": {
-                    "tools_master": True
-                }
-            },
-            "test_case_references": {
-                "include": {
-                    "references_master": True
-                }
-            }
-        },
+        include=_INCLUDES,
         order={
             "id": "asc"
         }
     )
 
-    return [
-        _map_test_case(tc)
-        for tc in test_cases
-    ]
+    return await map_test_cases(project_id, test_cases)
 
-
-@router.get("/{test_case_id}", response_model=TestCaseRead)
-async def get_test_case(
-    test_case_id: int,
-):
-    """Get a specific test case by ID."""
-
-    test_case = await db.test_cases.find_unique(
-        where={
-            "id": test_case_id
-        },
-        include={
-            "categories": True,
-            "objectives": True,
-            "protocols": True,
-            "attack_vectors": True,
-            "test_types": True,
-            "severities": True,
-            "threats": True,
-            "assets": True,
-            "test_case_tools": {
-                "include": {
-                    "tools_master": True
-                }
-            },
-            "test_case_references": {
-                "include": {
-                    "references_master": True
-                }
-            }
-        }
-    )
-
-    if test_case is None:
-        raise HTTPException(
-            status_code=404,
-            detail="Test case not found",
-        )
-
-    return _map_test_case(test_case)
-
-
-def _map_test_case(tc):
-
-    return {
-        "id": int(tc.id),
-        "category_id": int(tc.category_id),
-        "objective_id": int(tc.objective_id),
-        "protocol_id": tc.protocol_id,
-        "attack_vector_id": tc.attack_vector_id,
-        "test_type_id": tc.test_type_id,
-        "severity_id": tc.severity_id,
-        "threat_id": tc.threat_id,
-        "asset_id": tc.asset_id,
-        "action_test_case": tc.action_test_case,
-        "source_scope_status": tc.source_scope_status,
-        "description": tc.description,
-        "attack_path": tc.attack_path,
-        "test_steps": tc.test_steps,
-        "expected_output": tc.expected_output,
-        "attack_feasibility": tc.attack_feasibility,
-        "cia_impact": tc.cia_impact,
-        "safety_impact": tc.safety_impact,
-        "automation_possible": tc.automation_possible,
-        "created_at": tc.created_at,
-
-        #
-        # Prisma -> Schema mapping
-        #
-        "category": tc.categories,
-        "objective": tc.objectives,
-        "protocol": tc.protocols,
-        "attack_vector": tc.attack_vectors,
-        "test_type": tc.test_types,
-        "severity": tc.severities,
-        "threat": tc.threats,
-        "asset": tc.assets,
-
-        "test_case_tools": [
-            {
-                "tool": item.tools_master
-            }
-            for item in tc.test_case_tools
-        ],
-
-        "test_case_references": [
-            {
-                "reference": item.references_master
-            }
-            for item in tc.test_case_references
-        ]
-    }
 
 @router.get("/export/pdf")
 async def export_test_cases_to_pdf(
@@ -305,45 +267,13 @@ async def export_test_cases_to_pdf(
             ),
         )
 
-    effective_category_ids = []
-
-    if category_ids:
-        effective_category_ids.extend(category_ids)
-
-    if (
-        category_id is not None
-        and category_id not in effective_category_ids
-    ):
-        effective_category_ids.append(category_id)
-
-    raw_test_type_ids = []
-
-    if test_type_ids:
-        raw_test_type_ids.extend(test_type_ids)
-
-    if (
-        test_type_id is not None
-        and test_type_id not in raw_test_type_ids
-    ):
-        raw_test_type_ids.append(test_type_id)
+    effective_category_ids = _effective_ids(category_ids, category_id)
+    raw_test_type_ids = _effective_ids(test_type_ids, test_type_id)
 
     effective_test_type_ids = list(raw_test_type_ids)
 
-    if effective_test_type_ids:
-
-        both_row = await db.test_types.find_first(
-            where={
-                "name": {
-                    "equals": "Both"
-                }
-            }
-        )
-
-        if (
-            both_row is not None
-            and int(both_row.id) in effective_test_type_ids
-        ):
-            effective_test_type_ids = []
+    if await _is_both_wildcard(effective_test_type_ids):
+        effective_test_type_ids = []
 
     where_clause = {}
 
@@ -357,15 +287,20 @@ async def export_test_cases_to_pdf(
             "in": effective_test_type_ids
         }
 
-    test_cases = await _load_test_cases_for_pdf(
+    rows = await _load_test_cases_for_pdf(
         where_clause
     )
 
-    if not test_cases:
+    if not rows:
         raise HTTPException(
             status_code=404,
             detail="No test cases found matching the specified filters",
         )
+
+    #
+    # Merge each project's overrides over the master catalogue.
+    #
+    test_cases = await map_test_cases(project_id, rows)
 
     category_names = []
 
@@ -422,4 +357,224 @@ async def export_test_cases_to_pdf(
             "Content-Disposition":
                 f"attachment; filename={filename}"
         },
+    )
+
+
+@router.get("/{test_case_id}", response_model=TestCaseRead)
+async def get_test_case(
+    test_case_id: int,
+    project_id: int | None = Query(default=None),
+):
+    """Get a specific test case by ID, with project overrides merged when given."""
+
+    test_case = await _fetch_test_case(test_case_id)
+
+    if test_case is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Test case not found",
+        )
+
+    return await _merged_test_case(project_id, test_case)
+
+
+async def _ensure_project(project_id: int) -> None:
+    project = await db.projects.find_unique(
+        where={
+            "id": project_id
+        }
+    )
+
+    if project is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Project not found",
+        )
+
+
+async def _ensure_ids_exist(
+    model,
+    id_field: str,
+    ids: list[int],
+    label: str,
+) -> None:
+    if not ids:
+        return
+
+    unique_ids = sorted(set(ids))
+
+    rows = await model.find_many(
+        where={
+            "id": {
+                "in": unique_ids
+            }
+        }
+    )
+
+    found = {
+        int(getattr(row, id_field))
+        for row in rows
+    }
+
+    if set(unique_ids) != found:
+        raise HTTPException(
+            status_code=400,
+            detail=f"One or more {label} do not exist",
+        )
+
+
+@overrides_router.put("/{test_case_id}", response_model=TestCaseRead)
+async def update_test_case_override(
+    project_id: int,
+    test_case_id: int,
+    payload: TestCaseOverrideUpdate,
+):
+    """Create or update this project's override for a test case.
+
+    Writes to ``project_test_case_overrides`` only; the master ``test_cases`` row is
+    never touched.
+    """
+
+    await _ensure_project(project_id)
+
+    test_case = await _fetch_test_case(test_case_id)
+
+    if test_case is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Test case not found",
+        )
+
+    if payload.tools is not None:
+        await _ensure_ids_exist(
+            db.tools_master,
+            "id",
+            payload.tools,
+            "tools",
+        )
+
+    if payload.references is not None:
+        await _ensure_ids_exist(
+            db.references_master,
+            "id",
+            payload.references,
+            "references",
+        )
+
+    text_data = payload.model_dump(exclude={"tools", "references"})
+
+    create_data = {
+        "project_id": project_id,
+        "test_case_id": test_case_id,
+        **text_data,
+        "tools_overridden": payload.tools is not None,
+        "references_overridden": payload.references is not None,
+    }
+
+    update_data = {
+        **text_data,
+        "updated_at": datetime.now(),
+    }
+
+    if payload.tools is not None:
+        update_data["tools_overridden"] = True
+
+    if payload.references is not None:
+        update_data["references_overridden"] = True
+
+    override = await db.project_test_case_overrides.upsert(
+        where={
+            "project_id_test_case_id": {
+                "project_id": project_id,
+                "test_case_id": test_case_id,
+            }
+        },
+        data={
+            "create": create_data,
+            "update": update_data,
+        },
+    )
+
+    if payload.tools is not None:
+
+        await db.project_test_case_override_tools.delete_many(
+            where={
+                "override_id": override.id
+            }
+        )
+
+        for tool_id in sorted(set(payload.tools)):
+            await db.project_test_case_override_tools.create(
+                data={
+                    "override_id": override.id,
+                    "tool_id": tool_id,
+                }
+            )
+
+    if payload.references is not None:
+
+        await db.project_test_case_override_references.delete_many(
+            where={
+                "override_id": override.id
+            }
+        )
+
+        for reference_id in sorted(set(payload.references)):
+            await db.project_test_case_override_references.create(
+                data={
+                    "override_id": override.id,
+                    "reference_id": reference_id,
+                }
+            )
+
+    #
+    # A row that overrides nothing is noise; drop it so the UI doesn't claim
+    # the test case was edited.
+    #
+    has_text = any(value is not None for value in text_data.values())
+
+    if (
+        not has_text
+        and not override.tools_overridden
+        and not override.references_overridden
+    ):
+        await db.project_test_case_overrides.delete(
+            where={
+                "id": override.id
+            }
+        )
+
+        return map_test_case(test_case)
+
+    return await _merged_test_case(project_id, test_case)
+
+
+@overrides_router.delete("/{test_case_id}", status_code=204)
+async def reset_test_case_override(
+    project_id: int,
+    test_case_id: int,
+):
+    """Delete this project's override so the master values apply again."""
+
+    await _ensure_project(project_id)
+
+    existing = await db.project_test_case_overrides.find_unique(
+        where={
+            "project_id_test_case_id": {
+                "project_id": project_id,
+                "test_case_id": test_case_id,
+            }
+        }
+    )
+
+    if existing is None:
+        raise HTTPException(
+            status_code=404,
+            detail="No override exists for this test case",
+        )
+
+    await db.project_test_case_overrides.delete(
+        where={
+            "id": existing.id
+        }
     )
