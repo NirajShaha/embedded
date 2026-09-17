@@ -6,6 +6,9 @@ from app.auth import require_admin
 from app.prisma_client import db
 from app.schemas import (
     AdminStatsRead,
+    CreateLookupItemPayload,
+    FieldSuggestions,
+    LookupItem,
     TestCaseCreate,
     TestCaseLookups,
     TestCaseRead,
@@ -824,3 +827,133 @@ async def get_admin_stats(
         "total_users": total_users,
         "recent_updates": recent_updates,
     }
+
+
+@router.get(
+    "/field-suggestions",
+    response_model=FieldSuggestions,
+)
+async def get_field_suggestions(
+    _current_admin=Depends(require_admin),
+):
+    """
+    Return distinct previously-used values for every free-text
+    field so the admin form can offer them as quick-pick options.
+    """
+
+    TEXT_FIELDS = [
+        "source_scope_status",
+        "description",
+        "attack_path",
+        "test_steps",
+        "expected_output",
+        "attack_feasibility",
+        "cia_impact",
+        "safety_impact",
+    ]
+
+    result: dict[str, list[str]] = {}
+
+    for field in TEXT_FIELDS:
+        # Fetch all non-deleted rows that have a value for this field,
+        # then deduplicate in Python (more portable than relying on
+        # Prisma Python's distinct + where combination).
+        rows = await db.test_cases.find_many(
+            where={
+                "deleted_at": None,
+                field: {
+                    "not": None,
+                },
+            },
+            # Only select the field we need to keep payloads small
+        )
+        seen: set[str] = set()
+        for row in rows:
+            raw = getattr(row, field, None)
+            if raw is not None:
+                stripped = str(raw).strip()
+                if stripped:
+                    seen.add(stripped)
+        result[field] = sorted(seen)
+
+    return result
+
+
+@router.post(
+    "/lookups/{lookup_type}",
+    response_model=LookupItem,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_lookup_item(
+    lookup_type: str,
+    payload: CreateLookupItemPayload,
+    _current_admin=Depends(require_admin),
+):
+    """
+    Create a new entry in the requested lookup table.
+    Supported types: protocols, attack_vectors, test_types,
+    threats, assets, tools, references.
+    """
+
+    name = payload.name.strip()
+    if not name:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Name is required",
+        )
+
+    if lookup_type == "protocols":
+        # Check for duplicate
+        existing = await db.protocols.find_first(where={"name": name})
+        if existing:
+            return {"id": int(existing.id), "name": existing.name}
+        item = await db.protocols.create(data={"name": name})
+        return {"id": int(item.id), "name": item.name}
+
+    elif lookup_type == "attack_vectors":
+        existing = await db.attack_vectors.find_first(where={"name": name})
+        if existing:
+            return {"id": int(existing.id), "name": existing.name}
+        item = await db.attack_vectors.create(data={"name": name})
+        return {"id": int(item.id), "name": item.name}
+
+    elif lookup_type == "test_types":
+        existing = await db.test_types.find_first(where={"name": name})
+        if existing:
+            return {"id": int(existing.id), "name": existing.name}
+        item = await db.test_types.create(data={"name": name})
+        return {"id": int(item.id), "name": item.name}
+
+    elif lookup_type == "threats":
+        existing = await db.threats.find_first(where={"threat_text": name})
+        if existing:
+            return {"id": int(existing.id), "name": existing.threat_text}
+        item = await db.threats.create(data={"threat_text": name})
+        return {"id": int(item.id), "name": item.threat_text}
+
+    elif lookup_type == "assets":
+        existing = await db.assets.find_first(where={"asset_name": name})
+        if existing:
+            return {"id": int(existing.id), "name": existing.asset_name}
+        item = await db.assets.create(data={"asset_name": name})
+        return {"id": int(item.id), "name": item.asset_name}
+
+    elif lookup_type == "tools":
+        existing = await db.tools_master.find_first(where={"tool_name": name})
+        if existing:
+            return {"id": int(existing.id), "name": existing.tool_name}
+        item = await db.tools_master.create(data={"tool_name": name})
+        return {"id": int(item.id), "name": item.tool_name}
+
+    elif lookup_type == "references":
+        existing = await db.references_master.find_first(where={"ref_text": name})
+        if existing:
+            return {"id": int(existing.id), "name": existing.ref_text}
+        item = await db.references_master.create(data={"ref_text": name})
+        return {"id": int(item.id), "name": item.ref_text}
+
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Unknown lookup type: {lookup_type!r}. Supported: protocols, attack_vectors, test_types, threats, assets, tools, references",
+        )

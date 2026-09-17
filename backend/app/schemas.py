@@ -405,3 +405,20 @@ class AdminStatsRead(BaseModel):
     total_test_cases: int
     total_users: int
     recent_updates: int
+
+
+class FieldSuggestions(BaseModel):
+    """Distinct previously-used values for each free-text field in test_cases."""
+    source_scope_status: list[str] = []
+    description: list[str] = []
+    attack_path: list[str] = []
+    test_steps: list[str] = []
+    expected_output: list[str] = []
+    attack_feasibility: list[str] = []
+    cia_impact: list[str] = []
+    safety_impact: list[str] = []
+
+
+class CreateLookupItemPayload(BaseModel):
+    """Payload for on-the-fly lookup item creation from the admin form."""
+    name: str = Field(min_length=1, max_length=500)

@@ -838,6 +838,18 @@ export interface TestCaseLookups {
 }
 
 
+export interface FieldSuggestions {
+  source_scope_status: string[];
+  description: string[];
+  attack_path: string[];
+  test_steps: string[];
+  expected_output: string[];
+  attack_feasibility: string[];
+  cia_impact: string[];
+  safety_impact: string[];
+}
+
+
 export interface TestCaseWritePayload {
   action_test_case: string;
 
@@ -909,6 +921,35 @@ export interface AdminStats {
 export const getAdminLookups = () =>
   request<TestCaseLookups>(
     "/admin/lookups",
+  );
+
+
+export const getAdminFieldSuggestions = () =>
+  request<FieldSuggestions>(
+    "/admin/field-suggestions",
+  );
+
+
+export type LookupCreateType =
+  | "protocols"
+  | "attack_vectors"
+  | "test_types"
+  | "threats"
+  | "assets"
+  | "tools"
+  | "references";
+
+
+export const createAdminLookupItem = (
+  type: LookupCreateType,
+  name: string,
+) =>
+  request<LookupItem>(
+    `/admin/lookups/${type}`,
+    {
+      method: "POST",
+      body: JSON.stringify({ name }),
+    },
   );
 
 
