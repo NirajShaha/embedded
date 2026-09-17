@@ -10,55 +10,18 @@ import {
   BarChart3,
   CheckSquare,
   Clock,
-  LogOut,
   Settings,
   ShieldCheck,
   Users,
 } from "lucide-react";
 import Link from "next/link";
 import { getAdminStats } from "@/lib/api";
+import { PageHeader } from "@/components/page-header";
+import { SectionHeader } from "@/components/section-header";
+import { ContentWrapper } from "@/components/content-wrapper";
+import { StatCard } from "@/components/stat-card";
 
-
-function StatCard({
-  label,
-  value,
-  sub,
-  icon: Icon,
-  iconBg,
-  iconColor,
-  loading,
-}: {
-  label: string;
-  value: number | string;
-  sub: string;
-  icon: React.ElementType;
-  iconBg: string;
-  iconColor: string;
-  loading: boolean;
-}) {
-  return (
-    <div className="flex items-center gap-4 rounded-xl border bg-card p-5 shadow-sm transition-shadow hover:shadow-md">
-      <div className={`flex size-12 shrink-0 items-center justify-center rounded-xl ${iconBg}`}>
-        <Icon className={`size-6 ${iconColor}`} />
-      </div>
-      <div className="min-w-0 flex-1">
-        <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-          {label}
-        </p>
-        <p className="mt-0.5 text-3xl font-bold tabular-nums text-foreground">
-          {loading ? (
-            <span className="inline-block h-8 w-16 animate-pulse rounded-md bg-muted" />
-          ) : (
-            value
-          )}
-        </p>
-        <p className="mt-0.5 text-xs text-muted-foreground">{sub}</p>
-      </div>
-    </div>
-  );
-}
-
-
+// Action Card component - inline since it's admin-specific
 function ActionCard({
   href,
   icon: Icon,
@@ -115,7 +78,7 @@ function ActionCard({
 
 
 export default function AdminDashboardPage() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
 
   const {
     data: stats,
@@ -128,76 +91,43 @@ export default function AdminDashboardPage() {
 
   return (
     <ProtectedRoute requiredRole="ADMIN">
-      <div className="min-h-screen space-y-8 p-6 sm:p-8">
+      <ContentWrapper>
+        {/* Page Header */}
+        <PageHeader
+          title="Admin Dashboard"
+          description="Manage security test cases, users, and system settings. Full administrative control over the test case library."
+          badge="Admin"
+          icon={<ShieldCheck className="h-6 w-6 text-blue-600" />}
+        />
 
-        {/* ── Hero banner ── */}
-        <div className="relative overflow-hidden rounded-2xl border bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-8 text-white shadow-lg dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
-          {/* decorative blobs */}
-          <div className="pointer-events-none absolute -right-16 -top-16 size-64 rounded-full bg-blue-500/10 blur-3xl" />
-          <div className="pointer-events-none absolute -bottom-8 left-8 size-40 rounded-full bg-indigo-500/10 blur-2xl" />
-
-          <div className="relative flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
-            <div className="space-y-2">
-              {/* identity row */}
-              <div className="flex items-center gap-2">
-                <div className="flex size-9 items-center justify-center rounded-lg bg-white/10 ring-1 ring-white/20">
-                  <ShieldCheck className="size-5 text-white" />
-                </div>
-                <Badge className="border-white/20 bg-white/10 text-white hover:bg-white/20">
-                  🔐 Admin
-                </Badge>
-              </div>
-
-              <h1 className="text-3xl font-bold tracking-tight text-white">
-                Welcome back,{" "}
-                <span className="text-blue-300">{user?.username}</span>
-              </h1>
-              <p className="max-w-md text-sm text-slate-400">
-                You have full administrative control over the test case library.
-                Changes you make are reflected immediately for all users.
-              </p>
-            </div>
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={logout}
-              className="shrink-0 border-white/20 bg-white/10 text-white hover:bg-white/20 hover:text-white"
-            >
-              <LogOut className="size-4" />
-              Logout
-            </Button>
-          </div>
-        </div>
-
-        {/* ── Stats strip ── */}
+        {/* Statistics Section */}
         <div className="grid gap-4 sm:grid-cols-3">
           <StatCard
             label="Active Test Cases"
             value={stats?.total_test_cases ?? 0}
-            sub="Total in the system"
+            subLabel="Total in the system"
             icon={CheckSquare}
-            iconBg="bg-blue-50 dark:bg-blue-950/60"
-            iconColor="text-blue-600 dark:text-blue-400"
-            loading={statsLoading}
+            iconBg="bg-blue-100 dark:bg-blue-950"
+            iconColor="text-blue-600 dark:text-blue-200"
+            isLoading={statsLoading}
           />
           <StatCard
             label="Users"
             value={stats?.total_users ?? 0}
-            sub="Registered accounts"
+            subLabel="Registered accounts"
             icon={Users}
-            iconBg="bg-violet-50 dark:bg-violet-950/60"
-            iconColor="text-violet-600 dark:text-violet-400"
-            loading={statsLoading}
+            iconBg="bg-violet-100 dark:bg-violet-950"
+            iconColor="text-violet-600 dark:text-violet-200"
+            isLoading={statsLoading}
           />
           <StatCard
             label="Recent Updates"
             value={stats?.recent_updates ?? 0}
-            sub="Test cases edited in last 7 days"
+            subLabel="Test cases edited in last 7 days"
             icon={BarChart3}
-            iconBg="bg-emerald-50 dark:bg-emerald-950/60"
-            iconColor="text-emerald-600 dark:text-emerald-400"
-            loading={statsLoading}
+            iconBg="bg-emerald-100 dark:bg-emerald-950"
+            iconColor="text-emerald-600 dark:text-emerald-200"
+            isLoading={statsLoading}
           />
         </div>
 
@@ -207,26 +137,26 @@ export default function AdminDashboardPage() {
           </div>
         )}
 
-        {/* ── Quick Actions ── */}
-        <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <h2 className="text-lg font-semibold tracking-tight">Quick Actions</h2>
-            <div className="h-px flex-1 bg-border" />
-          </div>
+        {/* Quick Actions Section */}
+        <div className="space-y-6">
+          <SectionHeader
+            title="Quick Actions"
+            description="Common administrative tasks and shortcuts"
+          />
 
           <div className="grid gap-3 sm:grid-cols-1 lg:grid-cols-3">
             <ActionCard
               href="/admin/test-cases"
               icon={CheckSquare}
-              iconBg="bg-blue-50 dark:bg-blue-950/60"
-              iconColor="text-blue-600 dark:text-blue-400"
+              iconBg="bg-blue-100 dark:bg-blue-950"
+              iconColor="text-blue-600 dark:text-blue-200"
               title="Test Case Management"
               description="Create, edit, and delete security test cases"
             />
             <ActionCard
               icon={Users}
-              iconBg="bg-violet-50 dark:bg-violet-950/60"
-              iconColor="text-violet-600 dark:text-violet-400"
+              iconBg="bg-violet-100 dark:bg-violet-950"
+              iconColor="text-violet-600 dark:text-violet-200"
               title="User Management"
               description="Manage users and roles"
               badge="Coming soon"
@@ -244,12 +174,12 @@ export default function AdminDashboardPage() {
           </div>
         </div>
 
-        {/* ── Capabilities info ── */}
-        <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <h2 className="text-lg font-semibold tracking-tight">Your Permissions</h2>
-            <div className="h-px flex-1 bg-border" />
-          </div>
+        {/* Permissions Section */}
+        <div className="space-y-6">
+          <SectionHeader
+            title="Your Permissions"
+            description="Administrative capabilities available to your account"
+          />
 
           <div className="grid gap-3 sm:grid-cols-2">
             {[
@@ -280,7 +210,7 @@ export default function AdminDashboardPage() {
             ].map(({ icon: Icon, color, title, desc }) => (
               <div
                 key={title}
-                className="flex items-start gap-3 rounded-xl border bg-card p-4"
+                className="flex items-start gap-3 rounded-xl border bg-card p-4 transition-shadow hover:shadow-sm"
               >
                 <Icon className={`mt-0.5 size-4 shrink-0 ${color}`} />
                 <div>
@@ -291,8 +221,7 @@ export default function AdminDashboardPage() {
             ))}
           </div>
         </div>
-
-      </div>
+      </ContentWrapper>
     </ProtectedRoute>
   );
 }
