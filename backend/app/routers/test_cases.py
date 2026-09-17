@@ -1,5 +1,18 @@
-from fastapi import APIRouter, HTTPException, Query
+import asyncio
+from datetime import datetime, timezone
+from typing import Any
 
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException,
+    Query,
+    Response,
+    status,
+)
+
+from app.auth import get_current_user
+from app.pdf_generator import build_pdf
 from app.prisma_client import db
 from app.schemas import TestCaseOverrideUpdate, TestCaseRead
 from app.test_case_overrides import (
@@ -9,11 +22,6 @@ from app.test_case_overrides import (
     map_test_cases,
 )
 
-import asyncio
-from datetime import datetime
-
-from fastapi import Response
-from app.pdf_generator import build_pdf
 
 router = APIRouter(
     prefix="/test-cases",
@@ -25,7 +33,7 @@ overrides_router = APIRouter(
     tags=["test-cases"],
 )
 
-_INCLUDES = {
+TEST_CASE_INCLUDE = {
     "categories": True,
     "objectives": True,
     "protocols": True,
@@ -36,35 +44,149 @@ _INCLUDES = {
     "assets": True,
     "test_case_tools": {
         "include": {
-            "tools_master": True
+            "tools_master": True,
         }
     },
     "test_case_references": {
         "include": {
-            "references_master": True
+            "references_master": True,
         }
     },
 }
 
 
 async def _load_test_cases_for_pdf(
-    where_clause: dict,
+    where_clause: dict[str, Any],
 ):
+    """
+    Load test cases and all relationships required
+    for PDF generation.
+    """
+
     return await db.test_cases.find_many(
         where=where_clause,
-        include=_INCLUDES,
+        include=TEST_CASE_INCLUDE,
         order={
-            "id": "asc"
-        }
+            "id": "asc",
+        },
     )
 
 
-async def _fetch_test_case(test_case_id: int):
-    return await db.test_cases.find_unique(
-        where={
-            "id": test_case_id
-        },
-        include=_INCLUDES,
+async def _resolve_test_type_filters(
+    test_type_ids: list[int] | None,
+    legacy_test_type_id: int | None,
+) -> tuple[list[int], list[int]]:
+    """
+    Resolve raw and effective test-type filters.
+
+    raw_test_type_ids:
+        Original normalized IDs used for PDF metadata.
+
+    effective_test_type_ids:
+        IDs actually used to filter test cases.
+
+    If the test type named 'Both' is selected, the effective
+    filter is cleared so test cases from all test types are returned.
+    """
+
+    raw_test_type_ids = sorted(
+        {
+            current_test_type_id
+            for current_test_type_id in (
+                test_type_ids or []
+            )
+            if current_test_type_id > 0
+        }
+    )
+
+    if (
+        legacy_test_type_id is not None
+        and legacy_test_type_id > 0
+        and legacy_test_type_id
+        not in raw_test_type_ids
+    ):
+        raw_test_type_ids.append(
+            legacy_test_type_id
+        )
+
+    raw_test_type_ids.sort()
+
+    effective_test_type_ids = list(
+        raw_test_type_ids
+    )
+
+    if effective_test_type_ids:
+        both_row = (
+            await db.test_types.find_first(
+                where={
+                    "name": {
+                        "equals": "Both",
+                    }
+                }
+            )
+        )
+
+        if (
+            both_row is not None
+            and int(both_row.id)
+            in effective_test_type_ids
+        ):
+            effective_test_type_ids = []
+
+    return (
+        raw_test_type_ids,
+        effective_test_type_ids,
+    )
+
+
+def _resolve_category_filters(
+    category_ids: list[int] | None,
+    legacy_category_id: int | None,
+) -> list[int]:
+    """
+    Normalize, deduplicate, and sort category filter IDs.
+    """
+
+    effective_category_ids = sorted(
+        {
+            current_category_id
+            for current_category_id in (
+                category_ids or []
+            )
+            if current_category_id > 0
+        }
+    )
+
+    if (
+        legacy_category_id is not None
+        and legacy_category_id > 0
+        and legacy_category_id
+        not in effective_category_ids
+    ):
+        effective_category_ids.append(
+            legacy_category_id
+        )
+
+    effective_category_ids.sort()
+
+    return effective_category_ids
+
+
+def _normalize_test_case_ids(
+    test_case_ids: list[int] | None,
+) -> list[int]:
+    """
+    Normalize, deduplicate, and sort selected test-case IDs.
+    """
+
+    return sorted(
+        {
+            test_case_id
+            for test_case_id in (
+                test_case_ids or []
+            )
+            if test_case_id > 0
+        }
     )
 
 
@@ -84,13 +206,22 @@ async def _merged_test_case(project_id: int | None, test_case) -> dict:
     return mapped
 
 
-@router.get("/categories", response_model=list[dict])
-async def get_categories():
-    """Get all test categories."""
+@router.get(
+    "/categories",
+    response_model=list[dict],
+)
+async def get_categories(
+    _current_user=Depends(
+        get_current_user
+    ),
+):
+    """
+    Return all test categories to an authenticated user.
+    """
 
     categories = await db.categories.find_many(
         order={
-            "name": "asc"
+            "name": "asc",
         }
     )
 
@@ -103,32 +234,50 @@ async def get_categories():
     ]
 
 
-@router.get("/types", response_model=list[dict])
-async def get_test_types():
-    """Get all test types."""
+@router.get(
+    "/types",
+    response_model=list[dict],
+)
+async def get_test_types(
+    _current_user=Depends(
+        get_current_user
+    ),
+):
+    """
+    Return all test types to an authenticated user.
+    """
 
     test_types = await db.test_types.find_many(
         order={
-            "name": "asc"
+            "name": "asc",
         }
     )
 
     return [
         {
-            "id": int(item.id),
-            "name": item.name,
+            "id": int(test_type.id),
+            "name": test_type.name,
         }
-        for item in test_types
+        for test_type in test_types
     ]
 
 
-@router.get("/tools", response_model=list[dict])
-async def list_tools():
-    """Get all tools that can be attached to a test case."""
+@router.get(
+    "/tools",
+    response_model=list[dict],
+)
+async def list_tools(
+    _current_user=Depends(
+        get_current_user
+    ),
+):
+    """
+    Return all tools that can be attached to a test case.
+    """
 
     tools = await db.tools_master.find_many(
         order={
-            "tool_name": "asc"
+            "tool_name": "asc",
         }
     )
 
@@ -141,13 +290,22 @@ async def list_tools():
     ]
 
 
-@router.get("/references", response_model=list[dict])
-async def list_references():
-    """Get all reference documents that can be attached to a test case."""
+@router.get(
+    "/references",
+    response_model=list[dict],
+)
+async def list_references(
+    _current_user=Depends(
+        get_current_user
+    ),
+):
+    """
+    Return all reference documents that can be attached to a test case.
+    """
 
     references = await db.references_master.find_many(
         order={
-            "ref_text": "asc"
+            "ref_text": "asc",
         }
     )
 
@@ -160,72 +318,71 @@ async def list_references():
     ]
 
 
-def _effective_ids(
-    ids: list[int] | None,
-    single_id: int | None,
-) -> list[int]:
-    effective: list[int] = []
+@router.get(
+    "",
+    response_model=list[TestCaseRead],
+)
+async def list_test_cases(
+    project_id: int | None = Query(
+        default=None,
+    ),
+    category_ids: list[int] | None = Query(
+        default=None,
+    ),
+    test_type_ids: list[int] | None = Query(
+        default=None,
+    ),
+    category_id: int | None = Query(
+        default=None,
+        deprecated=True,
+    ),
+    test_type_id: int | None = Query(
+        default=None,
+        deprecated=True,
+    ),
+    _current_user=Depends(
+        get_current_user
+    ),
+):
+    """
+    Return active test cases matching the supplied filters.
+    """
 
-    if ids:
-        effective.extend(ids)
-
-    if single_id is not None and single_id not in effective:
-        effective.append(single_id)
-
-    return effective
-
-
-async def _is_both_wildcard(effective_test_type_ids: list[int]) -> bool:
-    if not effective_test_type_ids:
-        return False
-
-    both_row = await db.test_types.find_first(
-        where={
-            "name": {
-                "equals": "Both"
-            }
-        }
+    effective_category_ids = (
+        _resolve_category_filters(
+            category_ids,
+            category_id,
+        )
     )
 
-    return both_row is not None and int(both_row.id) in effective_test_type_ids
+    (
+        _raw_test_type_ids,
+        effective_test_type_ids,
+    ) = await _resolve_test_type_filters(
+        test_type_ids,
+        test_type_id,
+    )
 
-
-@router.get("", response_model=list[TestCaseRead])
-async def list_test_cases(
-    project_id: int | None = Query(default=None),
-    category_ids: list[int] | None = Query(default=None),
-    test_type_ids: list[int] | None = Query(default=None),
-    category_id: int | None = Query(default=None, deprecated=True),
-    test_type_id: int | None = Query(default=None, deprecated=True),
-):
-
-    effective_category_ids = _effective_ids(category_ids, category_id)
-    effective_test_type_ids = _effective_ids(test_type_ids, test_type_id)
-
-    #
-    # Handle BOTH wildcard
-    #
-    if await _is_both_wildcard(effective_test_type_ids):
-        effective_test_type_ids = []
-
-    where_clause = {}
+    where_clause: dict[str, Any] = {
+        "deleted_at": None,
+    }
 
     if effective_category_ids:
         where_clause["category_id"] = {
-            "in": effective_category_ids
+            "in": effective_category_ids,
         }
 
     if effective_test_type_ids:
         where_clause["test_type_id"] = {
-            "in": effective_test_type_ids
+            "in": effective_test_type_ids,
         }
 
     test_cases = await db.test_cases.find_many(
         where=where_clause,
-        include=_INCLUDES,
+        include=TEST_CASE_INCLUDE,
         order={
-            "id": "asc"
-        }
+            "id": "asc",
+        },
     )
 
     return await map_test_cases(project_id, test_cases)
@@ -233,58 +390,117 @@ async def list_test_cases(
 
 @router.get("/export/pdf")
 async def export_test_cases_to_pdf(
-    project_id: int = Query(...),
-    category_ids: list[int] | None = Query(default=None),
-    test_type_ids: list[int] | None = Query(default=None),
-    category_id: int | None = Query(default=None, deprecated=True),
-    test_type_id: int | None = Query(default=None, deprecated=True),
+    project_id: int = Query(
+        ...,
+        gt=0,
+    ),
+    test_case_ids: list[int] | None = Query(
+        default=None,
+    ),
+    category_ids: list[int] | None = Query(
+        default=None,
+    ),
+    test_type_ids: list[int] | None = Query(
+        default=None,
+    ),
+    category_id: int | None = Query(
+        default=None,
+        deprecated=True,
+    ),
+    test_type_id: int | None = Query(
+        default=None,
+        deprecated=True,
+    ),
+    _current_user=Depends(
+        get_current_user
+    ),
 ) -> Response:
+    """
+    Generate a PDF for an authenticated user's project
+    and selected active test cases.
+    """
 
     project = await db.projects.find_unique(
         where={
-            "id": project_id
+            "id": project_id,
         }
     )
 
     if project is None:
         raise HTTPException(
-            status_code=404,
+            status_code=status.HTTP_404_NOT_FOUND,
             detail="Project not found",
         )
 
-    ecu_detail = await db.project_ecu_details.find_first(
-        where={
-            "project_id": project_id
-        }
+    ecu_detail = (
+        await db.project_ecu_details.find_first(
+            where={
+                "project_id": project_id,
+            }
+        )
     )
 
     if ecu_detail is None:
         raise HTTPException(
-            status_code=400,
+            status_code=status.HTTP_400_BAD_REQUEST,
             detail=(
-                "ECU details have not been added for this project yet. "
-                "Please add ECU details before generating the test plan PDF."
+                "ECU details have not been added "
+                "for this project yet. Please add "
+                "ECU details before generating the "
+                "test plan PDF."
             ),
         )
 
-    effective_category_ids = _effective_ids(category_ids, category_id)
-    raw_test_type_ids = _effective_ids(test_type_ids, test_type_id)
+    effective_category_ids = (
+        _resolve_category_filters(
+            category_ids,
+            category_id,
+        )
+    )
 
-    effective_test_type_ids = list(raw_test_type_ids)
+    (
+        raw_test_type_ids,
+        effective_test_type_ids,
+    ) = await _resolve_test_type_filters(
+        test_type_ids,
+        test_type_id,
+    )
 
-    if await _is_both_wildcard(effective_test_type_ids):
-        effective_test_type_ids = []
+    effective_test_case_ids = (
+        _normalize_test_case_ids(
+            test_case_ids
+        )
+    )
 
-    where_clause = {}
+    if (
+        test_case_ids is not None
+        and not effective_test_case_ids
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=(
+                "No test cases were selected "
+                "for PDF generation"
+            ),
+        )
+
+    where_clause: dict[str, Any] = {
+        "deleted_at": None,
+    }
+
+    if test_case_ids is not None:
+        where_clause["id"] = {
+            "in": effective_test_case_ids,
+        }
 
     if effective_category_ids:
         where_clause["category_id"] = {
-            "in": effective_category_ids
+            "in": effective_category_ids,
         }
 
     if effective_test_type_ids:
         where_clause["test_type_id"] = {
-            "in": effective_test_type_ids
+            "in": effective_test_type_ids,
         }
 
     rows = await _load_test_cases_for_pdf(
@@ -293,101 +509,301 @@ async def export_test_cases_to_pdf(
 
     if not rows:
         raise HTTPException(
-            status_code=404,
-            detail="No test cases found matching the specified filters",
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=(
+                "No test cases found matching "
+                "the specified filters"
+            ),
         )
+
+    if test_case_ids is not None:
+        returned_test_case_ids = {
+            int(row.id)
+            for row in rows
+        }
+
+        requested_test_case_ids = set(
+            effective_test_case_ids
+        )
+
+        unavailable_test_case_ids = sorted(
+            requested_test_case_ids
+            - returned_test_case_ids
+        )
+
+        if unavailable_test_case_ids:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=(
+                    "One or more selected test cases "
+                    "are no longer available or no "
+                    "longer match the selected filters. "
+                    "Refresh the dashboard and try again."
+                ),
+            )
 
     #
     # Merge each project's overrides over the master catalogue.
     #
     test_cases = await map_test_cases(project_id, rows)
 
-    category_names = []
+    category_names: list[str] = []
 
     if effective_category_ids:
-
-        categories = await db.categories.find_many(
-            where={
-                "id": {
-                    "in": effective_category_ids
-                }
-            }
+        categories = (
+            await db.categories.find_many(
+                where={
+                    "id": {
+                        "in": (
+                            effective_category_ids
+                        ),
+                    }
+                },
+                order={
+                    "name": "asc",
+                },
+            )
         )
 
         category_names = [
-            item.name
-            for item in categories
+            category.name
+            for category in categories
         ]
 
-    test_type_names = []
+    test_type_names: list[str] = []
 
     if raw_test_type_ids:
-
-        test_types = await db.test_types.find_many(
-            where={
-                "id": {
-                    "in": raw_test_type_ids
-                }
-            }
+        test_types = (
+            await db.test_types.find_many(
+                where={
+                    "id": {
+                        "in": (
+                            raw_test_type_ids
+                        ),
+                    }
+                },
+                order={
+                    "name": "asc",
+                },
+            )
         )
 
         test_type_names = [
-            item.name
-            for item in test_types
+            test_type.name
+            for test_type in test_types
         ]
 
     pdf_bytes = await asyncio.to_thread(
         build_pdf,
         test_cases,
         ecu_detail,
-        category_names if category_names else None,
-        test_type_names if test_type_names else None,
+        (
+            category_names
+            if category_names
+            else None
+        ),
+        (
+            test_type_names
+            if test_type_names
+            else None
+        ),
     )
 
     timestamp = datetime.now().strftime(
         "%Y%m%d_%H%M%S"
     )
 
-    filename = f"test_plan_{timestamp}.pdf"
+    filename = (
+        f"test_plan_{timestamp}.pdf"
+    )
 
     return Response(
         content=pdf_bytes,
         media_type="application/pdf",
         headers={
-            "Content-Disposition":
-                f"attachment; filename={filename}"
+            "Content-Disposition": (
+                "attachment; "
+                f'filename="{filename}"'
+            )
         },
     )
 
 
-@router.get("/{test_case_id}", response_model=TestCaseRead)
+@router.get(
+    "/{test_case_id}",
+    response_model=TestCaseRead,
+)
 async def get_test_case(
     test_case_id: int,
-    project_id: int | None = Query(default=None),
+    project_id: int | None = Query(
+        default=None,
+    ),
+    _current_user=Depends(
+        get_current_user
+    ),
 ):
-    """Get a specific test case by ID, with project overrides merged when given."""
+    """
+    Return a specific active test case, with project overrides merged when given.
+    """
 
-    test_case = await _fetch_test_case(test_case_id)
+    test_case = await db.test_cases.find_first(
+        where={
+            "id": test_case_id,
+            "deleted_at": None,
+        },
+        include=TEST_CASE_INCLUDE,
+    )
 
     if test_case is None:
         raise HTTPException(
-            status_code=404,
+            status_code=status.HTTP_404_NOT_FOUND,
             detail="Test case not found",
         )
 
     return await _merged_test_case(project_id, test_case)
 
 
+def _optional_int(
+    value,
+) -> int | None:
+    """
+    Convert an optional Prisma BigInt value into a JSON-safe int.
+    """
+
+    if value is None:
+        return None
+
+    return int(value)
+
+
+def _map_test_case(
+    test_case,
+) -> dict[str, Any]:
+    """
+    Map a Prisma test-case record to the API response structure.
+
+    Kept for the admin router import; dashboard reads use the
+    override-aware mapper in app.test_case_overrides.
+    """
+
+    return {
+        "id": int(
+            test_case.id
+        ),
+        "category_id": int(
+            test_case.category_id
+        ),
+        "objective_id": int(
+            test_case.objective_id
+        ),
+        "protocol_id": _optional_int(
+            test_case.protocol_id
+        ),
+        "attack_vector_id": _optional_int(
+            test_case.attack_vector_id
+        ),
+        "test_type_id": _optional_int(
+            test_case.test_type_id
+        ),
+        "severity_id": _optional_int(
+            test_case.severity_id
+        ),
+        "threat_id": _optional_int(
+            test_case.threat_id
+        ),
+        "asset_id": _optional_int(
+            test_case.asset_id
+        ),
+        "action_test_case": (
+            test_case.action_test_case
+        ),
+        "source_scope_status": (
+            test_case.source_scope_status
+        ),
+        "description": (
+            test_case.description
+        ),
+        "attack_path": (
+            test_case.attack_path
+        ),
+        "test_steps": (
+            test_case.test_steps
+        ),
+        "expected_output": (
+            test_case.expected_output
+        ),
+        "attack_feasibility": (
+            test_case.attack_feasibility
+        ),
+        "cia_impact": (
+            test_case.cia_impact
+        ),
+        "safety_impact": (
+            test_case.safety_impact
+        ),
+        "automation_possible": (
+            test_case.automation_possible
+        ),
+        "created_at": (
+            test_case.created_at
+        ),
+        "category": (
+            test_case.categories
+        ),
+        "objective": (
+            test_case.objectives
+        ),
+        "protocol": (
+            test_case.protocols
+        ),
+        "attack_vector": (
+            test_case.attack_vectors
+        ),
+        "test_type": (
+            test_case.test_types
+        ),
+        "severity": (
+            test_case.severities
+        ),
+        "threat": (
+            test_case.threats
+        ),
+        "asset": (
+            test_case.assets
+        ),
+        "test_case_tools": [
+            {
+                "tool": (
+                    item.tools_master
+                ),
+            }
+            for item in (
+                test_case.test_case_tools
+            )
+        ],
+        "test_case_references": [
+            {
+                "reference": (
+                    item.references_master
+                ),
+            }
+            for item in (
+                test_case.test_case_references
+            )
+        ],
+    }
+
+
 async def _ensure_project(project_id: int) -> None:
     project = await db.projects.find_unique(
         where={
-            "id": project_id
+            "id": project_id,
         }
     )
 
     if project is None:
         raise HTTPException(
-            status_code=404,
+            status_code=status.HTTP_404_NOT_FOUND,
             detail="Project not found",
         )
 
@@ -406,7 +822,7 @@ async def _ensure_ids_exist(
     rows = await model.find_many(
         where={
             "id": {
-                "in": unique_ids
+                "in": unique_ids,
             }
         }
     )
@@ -418,30 +834,43 @@ async def _ensure_ids_exist(
 
     if set(unique_ids) != found:
         raise HTTPException(
-            status_code=400,
+            status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"One or more {label} do not exist",
         )
 
 
-@overrides_router.put("/{test_case_id}", response_model=TestCaseRead)
+@overrides_router.put(
+    "/{test_case_id}",
+    response_model=TestCaseRead,
+)
 async def update_test_case_override(
     project_id: int,
     test_case_id: int,
     payload: TestCaseOverrideUpdate,
+    _current_user=Depends(
+        get_current_user
+    ),
 ):
-    """Create or update this project's override for a test case.
+    """
+    Create or update this project's override for a test case.
 
-    Writes to ``project_test_case_overrides`` only; the master ``test_cases`` row is
-    never touched.
+    Writes to ``project_test_case_overrides`` only; the master
+    ``test_cases`` row is never touched.
     """
 
     await _ensure_project(project_id)
 
-    test_case = await _fetch_test_case(test_case_id)
+    test_case = await db.test_cases.find_first(
+        where={
+            "id": test_case_id,
+            "deleted_at": None,
+        },
+        include=TEST_CASE_INCLUDE,
+    )
 
     if test_case is None:
         raise HTTPException(
-            status_code=404,
+            status_code=status.HTTP_404_NOT_FOUND,
             detail="Test case not found",
         )
 
@@ -473,7 +902,7 @@ async def update_test_case_override(
 
     update_data = {
         **text_data,
-        "updated_at": datetime.now(),
+        "updated_at": datetime.now(timezone.utc),
     }
 
     if payload.tools is not None:
@@ -549,12 +978,20 @@ async def update_test_case_override(
     return await _merged_test_case(project_id, test_case)
 
 
-@overrides_router.delete("/{test_case_id}", status_code=204)
+@overrides_router.delete(
+    "/{test_case_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
 async def reset_test_case_override(
     project_id: int,
     test_case_id: int,
+    _current_user=Depends(
+        get_current_user
+    ),
 ):
-    """Delete this project's override so the master values apply again."""
+    """
+    Delete this project's override so the master values apply again.
+    """
 
     await _ensure_project(project_id)
 
@@ -569,7 +1006,7 @@ async def reset_test_case_override(
 
     if existing is None:
         raise HTTPException(
-            status_code=404,
+            status_code=status.HTTP_404_NOT_FOUND,
             detail="No override exists for this test case",
         )
 

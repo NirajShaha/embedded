@@ -1,0 +1,6304 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+app/
+  routers/
+    __init__.py
+    admin_test_cases.py
+    auth.py
+    ecu_details.py
+    pages.py
+    projects.py
+    test_cases.py
+  schema/
+    load_excel.py
+    schema.sql
+  __init__.py
+  auth.py
+  config.py
+  database.py
+  main.py
+  models.py
+  pdf_generator.py
+  prisma_client.py
+  schemas.py
+  seed.py
+prisma/
+  migrations/
+    20260907092929_init/
+      migration.sql
+    20260907120838_add_users_and_audit_columns/
+      migration.sql
+    20260908115216_add_test_case_soft_delete/
+      migration.sql
+    migration_lock.toml
+  schema.prisma
+.env.example
+.gitignore
+requirements.txt
+run.py
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="app/routers/__init__.py">
+
+</file>
+
+<file path="app/routers/admin_test_cases.py">
+from datetime import datetime, timedelta, timezone
+
+from fastapi import APIRouter, Depends, HTTPException, Response, status
+
+from app.auth import require_admin
+from app.prisma_client import db
+from app.schemas import (
+    AdminStatsRead,
+    TestCaseCreate,
+    TestCaseLookups,
+    TestCaseRead,
+    TestCaseUpdate,
+)
+from app.routers.test_cases import _map_test_case
+
+
+router = APIRouter(
+    prefix="/admin",
+    tags=["administration"],
+)
+
+
+TEST_CASE_INCLUDE = {
+    "categories": True,
+    "objectives": True,
+    "protocols": True,
+    "attack_vectors": True,
+    "test_types": True,
+    "severities": True,
+    "threats": True,
+    "assets": True,
+    "test_case_tools": {
+        "include": {
+            "tools_master": True,
+        }
+    },
+    "test_case_references": {
+        "include": {
+            "references_master": True,
+        }
+    },
+}
+
+
+def _clean_optional_text(
+    value: str | None,
+) -> str | None:
+    if value is None:
+        return None
+
+    cleaned = value.strip()
+
+    return cleaned or None
+
+
+async def _ensure_record_exists(
+    *,
+    client,
+    record_id: int | None,
+    label: str,
+) -> None:
+    if record_id is None:
+        return
+
+    record = await client.find_unique(
+        where={
+            "id": record_id,
+        }
+    )
+
+    if record is None:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"{label} does not exist",
+        )
+
+
+async def _validate_relations(
+    *,
+    category_id: int,
+    objective_id: int,
+    protocol_id: int | None,
+    attack_vector_id: int | None,
+    test_type_id: int | None,
+    severity_id: int | None,
+    threat_id: int | None,
+    asset_id: int | None,
+    tool_ids: list[int],
+    reference_ids: list[int],
+) -> None:
+    category = await db.categories.find_unique(
+        where={
+            "id": category_id,
+        }
+    )
+
+    if category is None:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Category does not exist",
+        )
+
+    objective = await db.objectives.find_unique(
+        where={
+            "id": objective_id,
+        }
+    )
+
+    if objective is None:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Objective does not exist",
+        )
+
+    if int(objective.category_id) != category_id:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=(
+                "Selected objective does not belong "
+                "to the selected category"
+            ),
+        )
+
+    await _ensure_record_exists(
+        client=db.protocols,
+        record_id=protocol_id,
+        label="Protocol",
+    )
+
+    await _ensure_record_exists(
+        client=db.attack_vectors,
+        record_id=attack_vector_id,
+        label="Attack vector",
+    )
+
+    await _ensure_record_exists(
+        client=db.test_types,
+        record_id=test_type_id,
+        label="Test type",
+    )
+
+    await _ensure_record_exists(
+        client=db.severities,
+        record_id=severity_id,
+        label="Severity",
+    )
+
+    await _ensure_record_exists(
+        client=db.threats,
+        record_id=threat_id,
+        label="Threat",
+    )
+
+    await _ensure_record_exists(
+        client=db.assets,
+        record_id=asset_id,
+        label="Asset",
+    )
+
+    unique_tool_ids = sorted(
+        set(tool_ids)
+    )
+
+    if unique_tool_ids:
+        tools = await db.tools_master.find_many(
+            where={
+                "id": {
+                    "in": unique_tool_ids,
+                }
+            }
+        )
+
+        found_ids = {
+            int(tool.id)
+            for tool in tools
+        }
+
+        if found_ids != set(unique_tool_ids):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="One or more selected tools do not exist",
+            )
+
+    unique_reference_ids = sorted(
+        set(reference_ids)
+    )
+
+    if unique_reference_ids:
+        references = await db.references_master.find_many(
+            where={
+                "id": {
+                    "in": unique_reference_ids,
+                }
+            }
+        )
+
+        found_ids = {
+            int(reference.id)
+            for reference in references
+        }
+
+        if found_ids != set(unique_reference_ids):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=(
+                    "One or more selected references "
+                    "do not exist"
+                ),
+            )
+
+
+async def _get_active_test_case(
+    test_case_id: int,
+):
+    test_case = await db.test_cases.find_first(
+        where={
+            "id": test_case_id,
+            "deleted_at": None,
+        },
+        include=TEST_CASE_INCLUDE,
+    )
+
+    if test_case is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Test case not found",
+        )
+
+    return test_case
+
+
+async def _ensure_not_duplicate(
+    *,
+    objective_id: int,
+    action_test_case: str,
+    excluding_test_case_id: int | None = None,
+) -> None:
+    conditions: dict = {
+        "objective_id": objective_id,
+        "action_test_case": action_test_case,
+        "deleted_at": None,
+    }
+
+    if excluding_test_case_id is not None:
+        conditions["id"] = {
+            "not": excluding_test_case_id,
+        }
+
+    duplicate = await db.test_cases.find_first(
+        where=conditions
+    )
+
+    if duplicate is not None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                "A test case with this objective and "
+                "action already exists"
+            ),
+        )
+
+
+@router.get(
+    "/lookups",
+    response_model=TestCaseLookups,
+)
+async def get_test_case_lookups(
+    _current_admin=Depends(require_admin),
+):
+    categories = await db.categories.find_many(
+        order={
+            "name": "asc",
+        }
+    )
+
+    objectives = await db.objectives.find_many(
+        order={
+            "id": "asc",
+        }
+    )
+
+    protocols = await db.protocols.find_many(
+        order={
+            "name": "asc",
+        }
+    )
+
+    attack_vectors = await db.attack_vectors.find_many(
+        order={
+            "name": "asc",
+        }
+    )
+
+    test_types = await db.test_types.find_many(
+        order={
+            "name": "asc",
+        }
+    )
+
+    severities = await db.severities.find_many(
+        order={
+            "severity_rank": "asc",
+        }
+    )
+
+    threats = await db.threats.find_many(
+        order={
+            "id": "asc",
+        }
+    )
+
+    assets = await db.assets.find_many(
+        order={
+            "asset_name": "asc",
+        }
+    )
+
+    tools = await db.tools_master.find_many(
+        order={
+            "tool_name": "asc",
+        }
+    )
+
+    references = await db.references_master.find_many(
+        order={
+            "id": "asc",
+        }
+    )
+
+    return {
+        "categories": [
+            {
+                "id": int(item.id),
+                "name": item.name,
+            }
+            for item in categories
+        ],
+        "objectives": [
+            {
+                "id": int(item.id),
+                "name": item.name,
+                "category_id": int(item.category_id),
+            }
+            for item in objectives
+        ],
+        "protocols": [
+            {
+                "id": int(item.id),
+                "name": item.name,
+            }
+            for item in protocols
+        ],
+        "attack_vectors": [
+            {
+                "id": int(item.id),
+                "name": item.name,
+            }
+            for item in attack_vectors
+        ],
+        "test_types": [
+            {
+                "id": int(item.id),
+                "name": item.name,
+            }
+            for item in test_types
+        ],
+        "severities": [
+            {
+                "id": int(item.id),
+                "name": item.name,
+                "severity_rank": item.severity_rank,
+            }
+            for item in severities
+        ],
+        "threats": [
+            {
+                "id": int(item.id),
+                "name": item.threat_text,
+            }
+            for item in threats
+        ],
+        "assets": [
+            {
+                "id": int(item.id),
+                "name": item.asset_name,
+            }
+            for item in assets
+        ],
+        "tools": [
+            {
+                "id": int(item.id),
+                "name": item.tool_name,
+            }
+            for item in tools
+        ],
+        "references": [
+            {
+                "id": int(item.id),
+                "name": item.ref_text,
+            }
+            for item in references
+        ],
+    }
+
+
+@router.get(
+    "/test-cases",
+    response_model=list[TestCaseRead],
+)
+async def list_admin_test_cases(
+    _current_admin=Depends(require_admin),
+):
+    test_cases = await db.test_cases.find_many(
+        where={
+            "deleted_at": None,
+        },
+        include=TEST_CASE_INCLUDE,
+        order={
+            "id": "desc",
+        },
+    )
+
+    return [
+        _map_test_case(test_case)
+        for test_case in test_cases
+    ]
+
+
+@router.get(
+    "/test-cases/{test_case_id}",
+    response_model=TestCaseRead,
+)
+async def get_admin_test_case(
+    test_case_id: int,
+    _current_admin=Depends(require_admin),
+):
+    test_case = await _get_active_test_case(
+        test_case_id
+    )
+
+    return _map_test_case(test_case)
+
+
+@router.post(
+    "/test-cases",
+    response_model=TestCaseRead,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_admin_test_case(
+    payload: TestCaseCreate,
+    current_admin=Depends(require_admin),
+):
+    action_test_case = payload.action_test_case.strip()
+
+    if not action_test_case:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Action/Test Case is required",
+        )
+
+    tool_ids = sorted(
+        set(payload.tool_ids)
+    )
+
+    reference_ids = sorted(
+        set(payload.reference_ids)
+    )
+
+    await _validate_relations(
+        category_id=payload.category_id,
+        objective_id=payload.objective_id,
+        protocol_id=payload.protocol_id,
+        attack_vector_id=payload.attack_vector_id,
+        test_type_id=payload.test_type_id,
+        severity_id=payload.severity_id,
+        threat_id=payload.threat_id,
+        asset_id=payload.asset_id,
+        tool_ids=tool_ids,
+        reference_ids=reference_ids,
+    )
+
+    await _ensure_not_duplicate(
+        objective_id=payload.objective_id,
+        action_test_case=action_test_case,
+    )
+
+    async with db.tx() as transaction:
+        created = await transaction.test_cases.create(
+            data={
+                "category_id": payload.category_id,
+                "objective_id": payload.objective_id,
+                "protocol_id": payload.protocol_id,
+                "attack_vector_id": payload.attack_vector_id,
+                "test_type_id": payload.test_type_id,
+                "severity_id": payload.severity_id,
+                "threat_id": payload.threat_id,
+                "asset_id": payload.asset_id,
+                "action_test_case": action_test_case,
+                "source_scope_status": _clean_optional_text(
+                    payload.source_scope_status
+                ),
+                "description": _clean_optional_text(
+                    payload.description
+                ),
+                "attack_path": _clean_optional_text(
+                    payload.attack_path
+                ),
+                "test_steps": _clean_optional_text(
+                    payload.test_steps
+                ),
+                "expected_output": _clean_optional_text(
+                    payload.expected_output
+                ),
+                "attack_feasibility": _clean_optional_text(
+                    payload.attack_feasibility
+                ),
+                "cia_impact": _clean_optional_text(
+                    payload.cia_impact
+                ),
+                "safety_impact": _clean_optional_text(
+                    payload.safety_impact
+                ),
+                "automation_possible": (
+                    payload.automation_possible
+                ),
+                "created_by": int(current_admin.id),
+                "updated_by": int(current_admin.id),
+            }
+        )
+
+        for tool_id in tool_ids:
+            await transaction.test_case_tools.create(
+                data={
+                    "test_case_id": created.id,
+                    "tool_id": tool_id,
+                }
+            )
+
+        for reference_id in reference_ids:
+            await transaction.test_case_references.create(
+                data={
+                    "test_case_id": created.id,
+                    "reference_id": reference_id,
+                }
+            )
+
+    saved = await _get_active_test_case(
+        int(created.id)
+    )
+
+    return _map_test_case(saved)
+
+
+@router.put(
+    "/test-cases/{test_case_id}",
+    response_model=TestCaseRead,
+)
+async def update_admin_test_case(
+    test_case_id: int,
+    payload: TestCaseUpdate,
+    current_admin=Depends(require_admin),
+):
+    existing = await _get_active_test_case(
+        test_case_id
+    )
+
+    supplied = payload.model_dump(
+        exclude_unset=True
+    )
+
+    category_id = supplied.get(
+        "category_id",
+        int(existing.category_id),
+    )
+
+    objective_id = supplied.get(
+        "objective_id",
+        int(existing.objective_id),
+    )
+
+    action_test_case = supplied.get(
+        "action_test_case",
+        existing.action_test_case,
+    )
+
+    action_test_case = action_test_case.strip()
+
+    if not action_test_case:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Action/Test Case is required",
+        )
+
+    if payload.tool_ids is None:
+        tool_ids = [
+            int(item.tool_id)
+            for item in existing.test_case_tools
+        ]
+    else:
+        tool_ids = sorted(
+            set(payload.tool_ids)
+        )
+
+    if payload.reference_ids is None:
+        reference_ids = [
+            int(item.reference_id)
+            for item in existing.test_case_references
+        ]
+    else:
+        reference_ids = sorted(
+            set(payload.reference_ids)
+        )
+
+    final_protocol_id = (
+        supplied["protocol_id"]
+        if "protocol_id" in supplied
+        else existing.protocol_id
+    )
+
+    final_attack_vector_id = (
+        supplied["attack_vector_id"]
+        if "attack_vector_id" in supplied
+        else existing.attack_vector_id
+    )
+
+    final_test_type_id = (
+        supplied["test_type_id"]
+        if "test_type_id" in supplied
+        else existing.test_type_id
+    )
+
+    final_severity_id = (
+        supplied["severity_id"]
+        if "severity_id" in supplied
+        else existing.severity_id
+    )
+
+    final_threat_id = (
+        supplied["threat_id"]
+        if "threat_id" in supplied
+        else existing.threat_id
+    )
+
+    final_asset_id = (
+        supplied["asset_id"]
+        if "asset_id" in supplied
+        else existing.asset_id
+    )
+
+    await _validate_relations(
+        category_id=category_id,
+        objective_id=objective_id,
+        protocol_id=final_protocol_id,
+        attack_vector_id=final_attack_vector_id,
+        test_type_id=final_test_type_id,
+        severity_id=final_severity_id,
+        threat_id=final_threat_id,
+        asset_id=final_asset_id,
+        tool_ids=tool_ids,
+        reference_ids=reference_ids,
+    )
+
+    await _ensure_not_duplicate(
+        objective_id=objective_id,
+        action_test_case=action_test_case,
+        excluding_test_case_id=test_case_id,
+    )
+
+    scalar_fields = {
+        "category_id",
+        "objective_id",
+        "protocol_id",
+        "attack_vector_id",
+        "test_type_id",
+        "severity_id",
+        "threat_id",
+        "asset_id",
+        "action_test_case",
+        "source_scope_status",
+        "description",
+        "attack_path",
+        "test_steps",
+        "expected_output",
+        "attack_feasibility",
+        "cia_impact",
+        "safety_impact",
+        "automation_possible",
+    }
+
+    text_fields = {
+        "source_scope_status",
+        "description",
+        "attack_path",
+        "test_steps",
+        "expected_output",
+        "attack_feasibility",
+        "cia_impact",
+        "safety_impact",
+    }
+
+    update_data: dict = {}
+
+    for field_name, value in supplied.items():
+        if field_name not in scalar_fields:
+            continue
+
+        if field_name == "action_test_case":
+            update_data[field_name] = action_test_case
+        elif field_name in text_fields:
+            update_data[field_name] = _clean_optional_text(
+                value
+            )
+        else:
+            update_data[field_name] = value
+
+    update_data["updated_by"] = int(
+        current_admin.id
+    )
+
+    async with db.tx() as transaction:
+        await transaction.test_cases.update(
+            where={
+                "id": test_case_id,
+            },
+            data=update_data,
+        )
+
+        if payload.tool_ids is not None:
+            await transaction.test_case_tools.delete_many(
+                where={
+                    "test_case_id": test_case_id,
+                }
+            )
+
+            for tool_id in tool_ids:
+                await transaction.test_case_tools.create(
+                    data={
+                        "test_case_id": test_case_id,
+                        "tool_id": tool_id,
+                    }
+                )
+
+        if payload.reference_ids is not None:
+            await transaction.test_case_references.delete_many(
+                where={
+                    "test_case_id": test_case_id,
+                }
+            )
+
+            for reference_id in reference_ids:
+                await transaction.test_case_references.create(
+                    data={
+                        "test_case_id": test_case_id,
+                        "reference_id": reference_id,
+                    }
+                )
+
+    updated = await _get_active_test_case(
+        test_case_id
+    )
+
+    return _map_test_case(updated)
+
+
+@router.delete(
+    "/test-cases/{test_case_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def delete_admin_test_case(
+    test_case_id: int,
+    current_admin=Depends(require_admin),
+):
+    await _get_active_test_case(
+        test_case_id
+    )
+
+    await db.test_cases.update(
+        where={
+            "id": test_case_id,
+        },
+        data={
+            "deleted_at": datetime.now(timezone.utc),
+            "deleted_by": int(current_admin.id),
+            "updated_by": int(current_admin.id),
+        },
+    )
+
+    return Response(
+        status_code=status.HTTP_204_NO_CONTENT
+    )
+
+
+@router.get(
+    "/stats",
+    response_model=AdminStatsRead,
+)
+async def get_admin_stats(
+    _current_admin=Depends(require_admin),
+):
+    seven_days_ago = (
+        datetime.now(timezone.utc)
+        - timedelta(days=7)
+    )
+
+    total_test_cases = await db.test_cases.count(
+        where={
+            "deleted_at": None,
+        }
+    )
+
+    total_users = await db.users.count()
+
+    recent_updates = await db.test_cases.count(
+        where={
+            "deleted_at": None,
+            "updated_at": {
+                "gte": seven_days_ago,
+            },
+        }
+    )
+
+    return {
+        "total_test_cases": total_test_cases,
+        "total_users": total_users,
+        "recent_updates": recent_updates,
+    }
+</file>
+
+<file path="app/routers/auth.py">
+from fastapi import APIRouter, Depends, HTTPException, status
+
+from app.auth import (
+    create_access_token,
+    get_current_user,
+    verify_password,
+)
+from app.prisma_client import db
+from app.schemas import (
+    AuthUserRead,
+    LoginRequest,
+    LoginResponse,
+)
+
+
+router = APIRouter(
+    prefix="/auth",
+    tags=["authentication"],
+)
+
+
+def _map_user(user) -> AuthUserRead:
+    return AuthUserRead(
+        id=int(user.id),
+        username=user.username,
+        role=user.role,
+    )
+
+
+@router.post(
+    "/login",
+    response_model=LoginResponse,
+)
+async def login(
+    payload: LoginRequest,
+):
+    username = payload.username.strip()
+
+    user = await db.users.find_unique(
+        where={
+            "username": username,
+        }
+    )
+
+    if user is None or not verify_password(
+        payload.password,
+        user.password,
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid username or password",
+            headers={
+                "WWW-Authenticate": "Bearer",
+            },
+        )
+
+    access_token = create_access_token(
+        user_id=int(user.id),
+        username=user.username,
+        role=user.role,
+    )
+
+    return LoginResponse(
+        access_token=access_token,
+        user=_map_user(user),
+    )
+
+
+@router.get(
+    "/me",
+    response_model=AuthUserRead,
+)
+async def get_me(
+    current_user=Depends(get_current_user),
+):
+    return _map_user(current_user)
+</file>
+
+<file path="app/routers/ecu_details.py">
+from datetime import date, datetime
+from typing import Any
+
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException,
+    status,
+)
+
+from app.auth import get_current_user
+from app.prisma_client import db
+from app.schemas import (
+    ProjectEcuDetailCreate,
+    ProjectEcuDetailRead,
+    ProjectEcuDetailUpdate,
+)
+
+
+router = APIRouter(
+    prefix="/projects/{project_id}/ecu-detail",
+    tags=["ecu-details"],
+)
+
+
+def _convert_dates(
+    data: dict[str, Any],
+):
+    """
+    Convert Pydantic date values into datetime values
+    supported by Prisma DateTime fields.
+
+    Existing datetime values are preserved.
+    None values are preserved so nullable fields can be cleared.
+    """
+
+    result: dict[str, Any] = {}
+
+    for key, value in data.items():
+        if value is None:
+            result[key] = None
+
+        elif isinstance(
+            value,
+            datetime,
+        ):
+            result[key] = value
+
+        elif isinstance(
+            value,
+            date,
+        ):
+            result[key] = datetime.combine(
+                value,
+                datetime.min.time(),
+            )
+
+        else:
+            result[key] = value
+
+    return result
+
+
+async def _ensure_project_exists(
+    project_id: int,
+):
+    """
+    Return the requested project.
+
+    Raise 404 when the project does not exist.
+    """
+
+    project = await db.projects.find_unique(
+        where={
+            "id": project_id,
+        }
+    )
+
+    if project is None:
+        raise HTTPException(
+            status_code=(
+                status.HTTP_404_NOT_FOUND
+            ),
+            detail="Project not found",
+        )
+
+    return project
+
+
+async def _get_project_ecu_detail(
+    project_id: int,
+):
+    """
+    Return the ECU detail associated with the project.
+
+    Raise 404 when ECU details do not exist.
+    """
+
+    ecu_detail = (
+        await db.project_ecu_details.find_first(
+            where={
+                "project_id": project_id,
+            }
+        )
+    )
+
+    if ecu_detail is None:
+        raise HTTPException(
+            status_code=(
+                status.HTTP_404_NOT_FOUND
+            ),
+            detail=(
+                "ECU detail not found "
+                "for this project"
+            ),
+        )
+
+    return ecu_detail
+
+
+@router.get(
+    "",
+    response_model=ProjectEcuDetailRead,
+)
+async def get_ecu_detail(
+    project_id: int,
+    _current_user=Depends(
+        get_current_user
+    ),
+):
+    """
+    Return ECU details for an authenticated user's project.
+    """
+
+    await _ensure_project_exists(
+        project_id
+    )
+
+    ecu_detail = (
+        await _get_project_ecu_detail(
+            project_id
+        )
+    )
+
+    return ecu_detail
+
+
+@router.post(
+    "",
+    response_model=ProjectEcuDetailRead,
+    status_code=(
+        status.HTTP_201_CREATED
+    ),
+)
+async def create_ecu_detail(
+    project_id: int,
+    payload: ProjectEcuDetailCreate,
+    _current_user=Depends(
+        get_current_user
+    ),
+):
+    """
+    Create ECU details for an authenticated user's project.
+
+    Each project can have only one ECU-detail record.
+    """
+
+    await _ensure_project_exists(
+        project_id
+    )
+
+    existing = (
+        await db.project_ecu_details.find_first(
+            where={
+                "project_id": project_id,
+            }
+        )
+    )
+
+    if existing is not None:
+        raise HTTPException(
+            status_code=(
+                status.HTTP_409_CONFLICT
+            ),
+            detail=(
+                "ECU detail already exists "
+                "for this project"
+            ),
+        )
+
+    payload_data = _convert_dates(
+        payload.model_dump()
+    )
+
+    ecu_detail = (
+        await db.project_ecu_details.create(
+            data={
+                "project_id": project_id,
+                **payload_data,
+            }
+        )
+    )
+
+    return ecu_detail
+
+
+@router.put(
+    "",
+    response_model=ProjectEcuDetailRead,
+)
+async def update_ecu_detail(
+    project_id: int,
+    payload: ProjectEcuDetailUpdate,
+    _current_user=Depends(
+        get_current_user
+    ),
+):
+    """
+    Update only the supplied ECU-detail fields.
+
+    An authenticated ADMIN or USER can update ECU details.
+    """
+
+    await _ensure_project_exists(
+        project_id
+    )
+
+    existing = (
+        await _get_project_ecu_detail(
+            project_id
+        )
+    )
+
+    payload_data = _convert_dates(
+        payload.model_dump(
+            exclude_unset=True
+        )
+    )
+
+    if not payload_data:
+        raise HTTPException(
+            status_code=(
+                status.HTTP_422_UNPROCESSABLE_ENTITY
+            ),
+            detail=(
+                "At least one ECU detail field "
+                "must be provided for update"
+            ),
+        )
+
+    updated = (
+        await db.project_ecu_details.update(
+            where={
+                "id": existing.id,
+            },
+            data=payload_data,
+        )
+    )
+
+    return updated
+</file>
+
+<file path="app/routers/pages.py">
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException,
+    status,
+)
+
+from app.auth import get_current_user
+from app.prisma_client import db
+from app.schemas import (
+    AttributeGroupRead,
+    SelectionsRead,
+    SelectionsUpdate,
+)
+
+
+router = APIRouter(
+    tags=["pages"],
+)
+
+
+MIN_PAGE = 1
+MAX_PAGE = 4
+
+
+def _guard_page(
+    page: int,
+) -> None:
+    """
+    Ensure that the requested page is part of the
+    supported embedded configuration workflow.
+    """
+
+    if (
+        page < MIN_PAGE
+        or page > MAX_PAGE
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=(
+                f"Page must be between "
+                f"{MIN_PAGE} and {MAX_PAGE}"
+            ),
+        )
+
+
+async def _ensure_project_exists(
+    project_id: int,
+):
+    """
+    Return the requested project or raise 404.
+    """
+
+    project = await db.projects.find_unique(
+        where={
+            "id": project_id,
+        }
+    )
+
+    if project is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Project not found",
+        )
+
+    return project
+
+
+def _normalize_attribute_ids(
+    attribute_ids: list[int],
+) -> list[int]:
+    """
+    Remove duplicate IDs, reject invalid IDs,
+    and return a deterministic sorted list.
+    """
+
+    if any(
+        attribute_id <= 0
+        for attribute_id
+        in attribute_ids
+    ):
+        raise HTTPException(
+            status_code=(
+                status.HTTP_422_UNPROCESSABLE_ENTITY
+            ),
+            detail=(
+                "Attribute IDs must be "
+                "positive integers"
+            ),
+        )
+
+    return sorted(
+        set(attribute_ids)
+    )
+
+
+@router.get(
+    "/pages/{page}/attributes",
+    response_model=list[
+        AttributeGroupRead
+    ],
+)
+async def page_attributes(
+    page: int,
+    _current_user=Depends(
+        get_current_user
+    ),
+):
+    """
+    Return attribute groups and attributes for
+    an authenticated user's configuration page.
+    """
+
+    _guard_page(page)
+
+    groups = (
+        await db.attribute_groups.find_many(
+            where={
+                "page": page,
+            },
+            include={
+                "attributes": True,
+            },
+            order={
+                "id": "asc",
+            },
+        )
+    )
+
+    return groups
+
+
+@router.get(
+    "/projects/{project_id}/page/{page}/selections",
+    response_model=SelectionsRead,
+)
+async def get_selections(
+    project_id: int,
+    page: int,
+    _current_user=Depends(
+        get_current_user
+    ),
+):
+    """
+    Return the saved attribute selections for
+    an authenticated user's project and page.
+    """
+
+    _guard_page(page)
+
+    await _ensure_project_exists(
+        project_id
+    )
+
+    selections = (
+        await db.project_selections.find_many(
+            where={
+                "project_id": project_id,
+                "page": page,
+            },
+            order={
+                "attribute_id": "asc",
+            },
+        )
+    )
+
+    return SelectionsRead(
+        page=page,
+        attribute_ids=[
+            int(
+                selection.attribute_id
+            )
+            for selection
+            in selections
+        ],
+    )
+
+
+@router.put(
+    "/projects/{project_id}/page/{page}/selections",
+    response_model=SelectionsRead,
+)
+async def update_selections(
+    project_id: int,
+    page: int,
+    payload: SelectionsUpdate,
+    _current_user=Depends(
+        get_current_user
+    ),
+):
+    """
+    Replace the saved selections for the requested
+    project and configuration page.
+
+    An empty attribute_ids list clears all selections
+    for the requested page.
+    """
+
+    _guard_page(page)
+
+    await _ensure_project_exists(
+        project_id
+    )
+
+    attribute_ids = (
+        _normalize_attribute_ids(
+            payload.attribute_ids
+        )
+    )
+
+    if attribute_ids:
+        attributes = (
+            await db.attributes.find_many(
+                where={
+                    "id": {
+                        "in": (
+                            attribute_ids
+                        ),
+                    },
+                },
+                include={
+                    "attribute_groups": True,
+                },
+            )
+        )
+
+        found_attribute_ids = {
+            int(attribute.id)
+            for attribute in attributes
+        }
+
+        requested_attribute_ids = set(
+            attribute_ids
+        )
+
+        missing_attribute_ids = sorted(
+            requested_attribute_ids
+            - found_attribute_ids
+        )
+
+        if missing_attribute_ids:
+            raise HTTPException(
+                status_code=(
+                    status.HTTP_422_UNPROCESSABLE_ENTITY
+                ),
+                detail=(
+                    "One or more selected "
+                    "attributes do not exist"
+                ),
+            )
+
+        attributes_from_other_pages = [
+            int(attribute.id)
+            for attribute in attributes
+            if (
+                attribute.attribute_groups
+                is None
+                or int(
+                    attribute
+                    .attribute_groups
+                    .page
+                )
+                != page
+            )
+        ]
+
+        if attributes_from_other_pages:
+            raise HTTPException(
+                status_code=(
+                    status.HTTP_422_UNPROCESSABLE_ENTITY
+                ),
+                detail=(
+                    "One or more selected "
+                    "attributes do not belong "
+                    "to the requested page"
+                ),
+            )
+
+    async with db.tx() as transaction:
+        await (
+            transaction
+            .project_selections
+            .delete_many(
+                where={
+                    "project_id": (
+                        project_id
+                    ),
+                    "page": page,
+                }
+            )
+        )
+
+        for attribute_id in (
+            attribute_ids
+        ):
+            await (
+                transaction
+                .project_selections
+                .create(
+                    data={
+                        "project_id": (
+                            project_id
+                        ),
+                        "attribute_id": (
+                            attribute_id
+                        ),
+                        "page": page,
+                    }
+                )
+            )
+
+    return SelectionsRead(
+        page=page,
+        attribute_ids=attribute_ids,
+    )
+</file>
+
+<file path="app/routers/projects.py">
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException,
+    status,
+)
+
+from app.auth import get_current_user
+from app.prisma_client import db
+from app.schemas import (
+    ProjectCreate,
+    ProjectRead,
+)
+
+
+router = APIRouter(
+    prefix="/projects",
+    tags=["projects"],
+)
+
+
+@router.get(
+    "",
+    response_model=list[ProjectRead],
+)
+async def list_projects(
+    _current_user=Depends(
+        get_current_user
+    ),
+):
+    """
+    Return all projects to an authenticated user.
+    """
+
+    projects = await db.projects.find_many(
+        order={
+            "created_at": "desc",
+        }
+    )
+
+    return [
+        ProjectRead.model_validate(
+            project
+        )
+        for project in projects
+    ]
+
+
+@router.post(
+    "",
+    response_model=ProjectRead,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_project(
+    payload: ProjectCreate,
+    _current_user=Depends(
+        get_current_user
+    ),
+):
+    """
+    Create a project for an authenticated user.
+    """
+
+    project_name = (
+        payload.name.strip()
+    )
+
+    if not project_name:
+        raise HTTPException(
+            status_code=(
+                status.HTTP_422_UNPROCESSABLE_ENTITY
+            ),
+            detail=(
+                "Project name is required"
+            ),
+        )
+
+    project_description = (
+        payload.description.strip()
+        if payload.description
+        else None
+    )
+
+    project = await db.projects.create(
+        data={
+            "name": project_name,
+            "description": (
+                project_description
+                or None
+            ),
+        }
+    )
+
+    return ProjectRead.model_validate(
+        project
+    )
+
+
+@router.get(
+    "/{project_id}",
+    response_model=ProjectRead,
+)
+async def get_project(
+    project_id: int,
+    _current_user=Depends(
+        get_current_user
+    ),
+):
+    """
+    Return a specific project to an authenticated user.
+    """
+
+    project = await db.projects.find_unique(
+        where={
+            "id": project_id,
+        }
+    )
+
+    if project is None:
+        raise HTTPException(
+            status_code=(
+                status.HTTP_404_NOT_FOUND
+            ),
+            detail="Project not found",
+        )
+
+    return ProjectRead.model_validate(
+        project
+    )
+</file>
+
+<file path="app/routers/test_cases.py">
+import asyncio
+from datetime import datetime
+from typing import Any
+
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException,
+    Query,
+    Response,
+    status,
+)
+
+from app.auth import get_current_user
+from app.pdf_generator import build_pdf
+from app.prisma_client import db
+from app.schemas import TestCaseRead
+
+
+router = APIRouter(
+    prefix="/test-cases",
+    tags=["test-cases"],
+)
+
+
+TEST_CASE_INCLUDE = {
+    "categories": True,
+    "objectives": True,
+    "protocols": True,
+    "attack_vectors": True,
+    "test_types": True,
+    "severities": True,
+    "threats": True,
+    "assets": True,
+    "test_case_tools": {
+        "include": {
+            "tools_master": True,
+        }
+    },
+    "test_case_references": {
+        "include": {
+            "references_master": True,
+        }
+    },
+}
+
+
+async def _load_test_cases_for_pdf(
+    where_clause: dict[str, Any],
+):
+    """
+    Load test cases and all relationships required
+    for PDF generation.
+    """
+
+    return await db.test_cases.find_many(
+        where=where_clause,
+        include=TEST_CASE_INCLUDE,
+        order={
+            "id": "asc",
+        },
+    )
+
+
+async def _resolve_test_type_filters(
+    test_type_ids: list[int] | None,
+    legacy_test_type_id: int | None,
+) -> tuple[list[int], list[int]]:
+    """
+    Resolve raw and effective test-type filters.
+
+    raw_test_type_ids:
+        Original normalized IDs used for PDF metadata.
+
+    effective_test_type_ids:
+        IDs actually used to filter test cases.
+
+    If the test type named 'Both' is selected, the effective
+    filter is cleared so test cases from all test types are returned.
+    """
+
+    raw_test_type_ids = sorted(
+        {
+            current_test_type_id
+            for current_test_type_id in (
+                test_type_ids or []
+            )
+            if current_test_type_id > 0
+        }
+    )
+
+    if (
+        legacy_test_type_id is not None
+        and legacy_test_type_id > 0
+        and legacy_test_type_id
+        not in raw_test_type_ids
+    ):
+        raw_test_type_ids.append(
+            legacy_test_type_id
+        )
+
+    raw_test_type_ids.sort()
+
+    effective_test_type_ids = list(
+        raw_test_type_ids
+    )
+
+    if effective_test_type_ids:
+        both_row = (
+            await db.test_types.find_first(
+                where={
+                    "name": {
+                        "equals": "Both",
+                    }
+                }
+            )
+        )
+
+        if (
+            both_row is not None
+            and int(both_row.id)
+            in effective_test_type_ids
+        ):
+            effective_test_type_ids = []
+
+    return (
+        raw_test_type_ids,
+        effective_test_type_ids,
+    )
+
+
+def _resolve_category_filters(
+    category_ids: list[int] | None,
+    legacy_category_id: int | None,
+) -> list[int]:
+    """
+    Normalize, deduplicate, and sort category filter IDs.
+    """
+
+    effective_category_ids = sorted(
+        {
+            current_category_id
+            for current_category_id in (
+                category_ids or []
+            )
+            if current_category_id > 0
+        }
+    )
+
+    if (
+        legacy_category_id is not None
+        and legacy_category_id > 0
+        and legacy_category_id
+        not in effective_category_ids
+    ):
+        effective_category_ids.append(
+            legacy_category_id
+        )
+
+    effective_category_ids.sort()
+
+    return effective_category_ids
+
+
+def _normalize_test_case_ids(
+    test_case_ids: list[int] | None,
+) -> list[int]:
+    """
+    Normalize, deduplicate, and sort selected test-case IDs.
+    """
+
+    return sorted(
+        {
+            test_case_id
+            for test_case_id in (
+                test_case_ids or []
+            )
+            if test_case_id > 0
+        }
+    )
+
+
+@router.get(
+    "/categories",
+    response_model=list[dict],
+)
+async def get_categories(
+    _current_user=Depends(
+        get_current_user
+    ),
+):
+    """
+    Return all test categories to an authenticated user.
+    """
+
+    categories = await db.categories.find_many(
+        order={
+            "name": "asc",
+        }
+    )
+
+    return [
+        {
+            "id": int(category.id),
+            "name": category.name,
+        }
+        for category in categories
+    ]
+
+
+@router.get(
+    "/types",
+    response_model=list[dict],
+)
+async def get_test_types(
+    _current_user=Depends(
+        get_current_user
+    ),
+):
+    """
+    Return all test types to an authenticated user.
+    """
+
+    test_types = await db.test_types.find_many(
+        order={
+            "name": "asc",
+        }
+    )
+
+    return [
+        {
+            "id": int(test_type.id),
+            "name": test_type.name,
+        }
+        for test_type in test_types
+    ]
+
+
+@router.get(
+    "",
+    response_model=list[TestCaseRead],
+)
+async def list_test_cases(
+    category_ids: list[int] | None = Query(
+        default=None,
+    ),
+    test_type_ids: list[int] | None = Query(
+        default=None,
+    ),
+    category_id: int | None = Query(
+        default=None,
+        deprecated=True,
+    ),
+    test_type_id: int | None = Query(
+        default=None,
+        deprecated=True,
+    ),
+    _current_user=Depends(
+        get_current_user
+    ),
+):
+    """
+    Return active test cases matching the supplied filters.
+    """
+
+    effective_category_ids = (
+        _resolve_category_filters(
+            category_ids,
+            category_id,
+        )
+    )
+
+    (
+        _raw_test_type_ids,
+        effective_test_type_ids,
+    ) = await _resolve_test_type_filters(
+        test_type_ids,
+        test_type_id,
+    )
+
+    where_clause: dict[str, Any] = {
+        "deleted_at": None,
+    }
+
+    if effective_category_ids:
+        where_clause["category_id"] = {
+            "in": effective_category_ids,
+        }
+
+    if effective_test_type_ids:
+        where_clause["test_type_id"] = {
+            "in": effective_test_type_ids,
+        }
+
+    test_cases = await db.test_cases.find_many(
+        where=where_clause,
+        include=TEST_CASE_INCLUDE,
+        order={
+            "id": "asc",
+        },
+    )
+
+    return [
+        _map_test_case(test_case)
+        for test_case in test_cases
+    ]
+
+
+@router.get("/export/pdf")
+async def export_test_cases_to_pdf(
+    project_id: int = Query(
+        ...,
+        gt=0,
+    ),
+    test_case_ids: list[int] | None = Query(
+        default=None,
+    ),
+    category_ids: list[int] | None = Query(
+        default=None,
+    ),
+    test_type_ids: list[int] | None = Query(
+        default=None,
+    ),
+    category_id: int | None = Query(
+        default=None,
+        deprecated=True,
+    ),
+    test_type_id: int | None = Query(
+        default=None,
+        deprecated=True,
+    ),
+    _current_user=Depends(
+        get_current_user
+    ),
+) -> Response:
+    """
+    Generate a PDF for an authenticated user's project
+    and selected active test cases.
+    """
+
+    project = await db.projects.find_unique(
+        where={
+            "id": project_id,
+        }
+    )
+
+    if project is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Project not found",
+        )
+
+    ecu_detail = (
+        await db.project_ecu_details.find_first(
+            where={
+                "project_id": project_id,
+            }
+        )
+    )
+
+    if ecu_detail is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=(
+                "ECU details have not been added "
+                "for this project yet. Please add "
+                "ECU details before generating the "
+                "test plan PDF."
+            ),
+        )
+
+    effective_category_ids = (
+        _resolve_category_filters(
+            category_ids,
+            category_id,
+        )
+    )
+
+    (
+        raw_test_type_ids,
+        effective_test_type_ids,
+    ) = await _resolve_test_type_filters(
+        test_type_ids,
+        test_type_id,
+    )
+
+    effective_test_case_ids = (
+        _normalize_test_case_ids(
+            test_case_ids
+        )
+    )
+
+    if (
+        test_case_ids is not None
+        and not effective_test_case_ids
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=(
+                "No test cases were selected "
+                "for PDF generation"
+            ),
+        )
+
+    where_clause: dict[str, Any] = {
+        "deleted_at": None,
+    }
+
+    if test_case_ids is not None:
+        where_clause["id"] = {
+            "in": effective_test_case_ids,
+        }
+
+    if effective_category_ids:
+        where_clause["category_id"] = {
+            "in": effective_category_ids,
+        }
+
+    if effective_test_type_ids:
+        where_clause["test_type_id"] = {
+            "in": effective_test_type_ids,
+        }
+
+    test_cases = await _load_test_cases_for_pdf(
+        where_clause
+    )
+
+    if not test_cases:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=(
+                "No test cases found matching "
+                "the specified filters"
+            ),
+        )
+
+    if test_case_ids is not None:
+        returned_test_case_ids = {
+            int(test_case.id)
+            for test_case in test_cases
+        }
+
+        requested_test_case_ids = set(
+            effective_test_case_ids
+        )
+
+        unavailable_test_case_ids = sorted(
+            requested_test_case_ids
+            - returned_test_case_ids
+        )
+
+        if unavailable_test_case_ids:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=(
+                    "One or more selected test cases "
+                    "are no longer available or no "
+                    "longer match the selected filters. "
+                    "Refresh the dashboard and try again."
+                ),
+            )
+
+    category_names: list[str] = []
+
+    if effective_category_ids:
+        categories = (
+            await db.categories.find_many(
+                where={
+                    "id": {
+                        "in": (
+                            effective_category_ids
+                        ),
+                    }
+                },
+                order={
+                    "name": "asc",
+                },
+            )
+        )
+
+        category_names = [
+            category.name
+            for category in categories
+        ]
+
+    test_type_names: list[str] = []
+
+    if raw_test_type_ids:
+        test_types = (
+            await db.test_types.find_many(
+                where={
+                    "id": {
+                        "in": (
+                            raw_test_type_ids
+                        ),
+                    }
+                },
+                order={
+                    "name": "asc",
+                },
+            )
+        )
+
+        test_type_names = [
+            test_type.name
+            for test_type in test_types
+        ]
+
+    pdf_bytes = await asyncio.to_thread(
+        build_pdf,
+        test_cases,
+        ecu_detail,
+        (
+            category_names
+            if category_names
+            else None
+        ),
+        (
+            test_type_names
+            if test_type_names
+            else None
+        ),
+    )
+
+    timestamp = datetime.now().strftime(
+        "%Y%m%d_%H%M%S"
+    )
+
+    filename = (
+        f"test_plan_{timestamp}.pdf"
+    )
+
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": (
+                "attachment; "
+                f'filename="{filename}"'
+            )
+        },
+    )
+
+
+@router.get(
+    "/{test_case_id}",
+    response_model=TestCaseRead,
+)
+async def get_test_case(
+    test_case_id: int,
+    _current_user=Depends(
+        get_current_user
+    ),
+):
+    """
+    Return a specific active test case to an authenticated user.
+    """
+
+    test_case = await db.test_cases.find_first(
+        where={
+            "id": test_case_id,
+            "deleted_at": None,
+        },
+        include=TEST_CASE_INCLUDE,
+    )
+
+    if test_case is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Test case not found",
+        )
+
+    return _map_test_case(test_case)
+
+
+def _optional_int(
+    value,
+) -> int | None:
+    """
+    Convert an optional Prisma BigInt value into a JSON-safe int.
+    """
+
+    if value is None:
+        return None
+
+    return int(value)
+
+
+def _map_test_case(
+    test_case,
+) -> dict[str, Any]:
+    """
+    Map a Prisma test-case record to the API response structure.
+    """
+
+    return {
+        "id": int(
+            test_case.id
+        ),
+        "category_id": int(
+            test_case.category_id
+        ),
+        "objective_id": int(
+            test_case.objective_id
+        ),
+        "protocol_id": _optional_int(
+            test_case.protocol_id
+        ),
+        "attack_vector_id": _optional_int(
+            test_case.attack_vector_id
+        ),
+        "test_type_id": _optional_int(
+            test_case.test_type_id
+        ),
+        "severity_id": _optional_int(
+            test_case.severity_id
+        ),
+        "threat_id": _optional_int(
+            test_case.threat_id
+        ),
+        "asset_id": _optional_int(
+            test_case.asset_id
+        ),
+        "action_test_case": (
+            test_case.action_test_case
+        ),
+        "source_scope_status": (
+            test_case.source_scope_status
+        ),
+        "description": (
+            test_case.description
+        ),
+        "attack_path": (
+            test_case.attack_path
+        ),
+        "test_steps": (
+            test_case.test_steps
+        ),
+        "expected_output": (
+            test_case.expected_output
+        ),
+        "attack_feasibility": (
+            test_case.attack_feasibility
+        ),
+        "cia_impact": (
+            test_case.cia_impact
+        ),
+        "safety_impact": (
+            test_case.safety_impact
+        ),
+        "automation_possible": (
+            test_case.automation_possible
+        ),
+        "created_at": (
+            test_case.created_at
+        ),
+        "category": (
+            test_case.categories
+        ),
+        "objective": (
+            test_case.objectives
+        ),
+        "protocol": (
+            test_case.protocols
+        ),
+        "attack_vector": (
+            test_case.attack_vectors
+        ),
+        "test_type": (
+            test_case.test_types
+        ),
+        "severity": (
+            test_case.severities
+        ),
+        "threat": (
+            test_case.threats
+        ),
+        "asset": (
+            test_case.assets
+        ),
+        "test_case_tools": [
+            {
+                "tool": (
+                    item.tools_master
+                ),
+            }
+            for item in (
+                test_case.test_case_tools
+            )
+        ],
+        "test_case_references": [
+            {
+                "reference": (
+                    item.references_master
+                ),
+            }
+            for item in (
+                test_case.test_case_references
+            )
+        ],
+    }
+</file>
+
+<file path="app/schema/load_excel.py">
+import pandas as pd
+from sqlalchemy import create_engine, text
+
+# ==========================================================
+# CONFIG
+# ==========================================================
+
+MYSQL_USER = "root"
+MYSQL_PWD = "manager"
+MYSQL_HOST = "localhost"
+MYSQL_PORT = "3306"
+MYSQL_DB = "embedded_db"
+
+EXCEL_FILE = "test.xlsx"
+
+# ==========================================================
+# DB
+# ==========================================================
+
+engine = create_engine(
+    f"mysql+pymysql://{MYSQL_USER}:{MYSQL_PWD}@"
+    f"{MYSQL_HOST}:{MYSQL_PORT}/{MYSQL_DB}",
+    pool_pre_ping=True,
+)
+
+# ==========================================================
+# HELPERS
+# ==========================================================
+
+def clean(value):
+    if pd.isna(value):
+        return None
+
+    value = str(value).strip()
+
+    if value == "":
+        return None
+
+    return value
+
+
+def get_or_create(conn, table, column, value):
+    if value is None:
+        return None
+
+    row = conn.execute(
+        text(
+            f"""
+            SELECT id
+            FROM {table}
+            WHERE {column} = :value
+            LIMIT 1
+            """
+        ),
+        {"value": value},
+    ).fetchone()
+
+    if row:
+        return row[0]
+
+    conn.execute(
+        text(
+            f"""
+            INSERT INTO {table}
+            ({column})
+            VALUES (:value)
+            """
+        ),
+        {"value": value},
+    )
+
+    row = conn.execute(
+        text(
+            f"""
+            SELECT id
+            FROM {table}
+            WHERE {column} = :value
+            LIMIT 1
+            """
+        ),
+        {"value": value},
+    ).fetchone()
+
+    return row[0]
+
+
+# ==========================================================
+# LOAD EXCEL
+# ==========================================================
+
+print("Reading workbook...")
+
+df = pd.read_excel(
+    EXCEL_FILE,
+    sheet_name="ECU_PenTest_Master",
+    header=1,
+)
+
+print(f"Rows loaded from Excel: {len(df)}")
+print()
+
+# ==========================================================
+# IMPORT
+# ==========================================================
+
+with engine.begin() as conn:
+
+    for idx, row in df.iterrows():
+
+        print(
+            f"Processing {idx + 1}/{len(df)}",
+            end="\r",
+        )
+
+        category = clean(row["Category"])
+        objective = clean(row["Objective"])
+        action_test_case = clean(row["Action / Test Case"])
+        test_type = clean(row["Test Type"])
+        source_scope_status = clean(row["Source Scope Status"])
+        attack_vector = clean(row["Attack Vector"])
+        protocol = clean(row["Protocol"])
+        description = clean(row["Description"])
+        threat = clean(row["Threat"])
+        attack_path = clean(row["Attack Path"])
+        tool_used = clean(row["Tool Used"])
+        test_steps = clean(row["Test Steps"])
+        expected_output = clean(row["Expected Output"])
+        reference = clean(row["Reference"])
+        severity = clean(row["Severity"])
+        asset = clean(row["Asset"])
+        attack_feasibility = clean(row["Attack Feasibility"])
+        cia_impact = clean(row["CIA Impact"])
+        safety_impact = clean(row["Safety Impact"])
+        automation_possible = clean(row["Automation Possible"])
+
+        # ==================================================
+        # MASTER TABLES
+        # ==================================================
+
+        category_id = get_or_create(
+            conn,
+            "categories",
+            "name",
+            category,
+        )
+
+        protocol_id = get_or_create(
+            conn,
+            "protocols",
+            "name",
+            protocol,
+        )
+
+        attack_vector_id = get_or_create(
+            conn,
+            "attack_vectors",
+            "name",
+            attack_vector,
+        )
+
+        test_type_id = get_or_create(
+            conn,
+            "test_types",
+            "name",
+            test_type,
+        )
+
+        threat_id = get_or_create(
+            conn,
+            "threats",
+            "threat_text",
+            threat,
+        )
+
+        asset_id = get_or_create(
+            conn,
+            "assets",
+            "asset_name",
+            asset,
+        )
+
+        severity_row = conn.execute(
+            text(
+                """
+                SELECT id
+                FROM severities
+                WHERE name = :name
+                """
+            ),
+            {"name": severity},
+        ).fetchone()
+
+        if not severity_row:
+            raise Exception(
+                f"Severity not found: {severity}"
+            )
+
+        severity_id = severity_row[0]
+
+        # ==================================================
+        # OBJECTIVE
+        # ==================================================
+
+        objective_row = conn.execute(
+            text(
+                """
+                SELECT id
+                FROM objectives
+                WHERE category_id = :category_id
+                AND name = :name
+                """
+            ),
+            {
+                "category_id": category_id,
+                "name": objective,
+            },
+        ).fetchone()
+
+        if objective_row:
+            objective_id = objective_row[0]
+        else:
+            conn.execute(
+                text(
+                    """
+                    INSERT INTO objectives
+                    (
+                        category_id,
+                        name
+                    )
+                    VALUES
+                    (
+                        :category_id,
+                        :name
+                    )
+                    """
+                ),
+                {
+                    "category_id": category_id,
+                    "name": objective,
+                },
+            )
+
+            objective_id = conn.execute(
+                text(
+                    """
+                    SELECT id
+                    FROM objectives
+                    WHERE category_id=:category_id
+                    AND name=:name
+                    """
+                ),
+                {
+                    "category_id": category_id,
+                    "name": objective,
+                },
+            ).fetchone()[0]
+
+        # ==================================================
+        # DUPLICATE CHECK
+        # ==================================================
+
+        exists = conn.execute(
+            text(
+                """
+                SELECT id
+                FROM test_cases
+                WHERE objective_id = :objective_id
+                AND action_test_case = :action_test_case
+                LIMIT 1
+                """
+            ),
+            {
+                "objective_id": objective_id,
+                "action_test_case": action_test_case,
+            },
+        ).fetchone()
+
+        if exists:
+            continue
+
+        # ==================================================
+        # INSERT TEST CASE
+        # ==================================================
+
+        conn.execute(
+            text(
+                """
+                INSERT INTO test_cases
+                (
+                    category_id,
+                    objective_id,
+                    protocol_id,
+                    attack_vector_id,
+                    test_type_id,
+                    severity_id,
+                    threat_id,
+                    asset_id,
+
+                    action_test_case,
+                    source_scope_status,
+
+                    description,
+                    attack_path,
+
+                    test_steps,
+                    expected_output,
+
+                    attack_feasibility,
+                    cia_impact,
+                    safety_impact,
+                    automation_possible
+                )
+                VALUES
+                (
+                    :category_id,
+                    :objective_id,
+                    :protocol_id,
+                    :attack_vector_id,
+                    :test_type_id,
+                    :severity_id,
+                    :threat_id,
+                    :asset_id,
+
+                    :action_test_case,
+                    :source_scope_status,
+
+                    :description,
+                    :attack_path,
+
+                    :test_steps,
+                    :expected_output,
+
+                    :attack_feasibility,
+                    :cia_impact,
+                    :safety_impact,
+                    :automation_possible
+                )
+                """
+            ),
+            {
+                "category_id": category_id,
+                "objective_id": objective_id,
+                "protocol_id": protocol_id,
+                "attack_vector_id": attack_vector_id,
+                "test_type_id": test_type_id,
+                "severity_id": severity_id,
+                "threat_id": threat_id,
+                "asset_id": asset_id,
+
+                "action_test_case": action_test_case,
+                "source_scope_status": source_scope_status,
+
+                "description": description,
+                "attack_path": attack_path,
+
+                "test_steps": test_steps,
+                "expected_output": expected_output,
+
+                "attack_feasibility": attack_feasibility,
+                "cia_impact": cia_impact,
+                "safety_impact": safety_impact,
+                "automation_possible": automation_possible,
+            },
+        )
+
+print()
+print("===================================")
+print("Import completed successfully")
+print("===================================")
+print(f"Rows processed : {len(df)}")
+</file>
+
+<file path="app/schema/schema.sql">
+CREATE DATABASE IF NOT EXISTS embedded_db
+CHARACTER SET utf8mb4
+COLLATE utf8mb4_unicode_ci;
+
+USE embedded_db;
+
+CREATE TABLE categories (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(255) NOT NULL UNIQUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE objectives (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    category_id BIGINT NOT NULL,
+    name TEXT NOT NULL,
+    UNIQUE KEY uk_obj(category_id, name(255)),
+    FOREIGN KEY (category_id) REFERENCES categories(id)
+);
+
+CREATE TABLE protocols (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(255) NOT NULL UNIQUE
+);
+
+CREATE TABLE attack_vectors (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(255) NOT NULL UNIQUE
+);
+
+CREATE TABLE test_types (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(100) NOT NULL UNIQUE
+);
+
+CREATE TABLE severities (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(50) NOT NULL UNIQUE,
+    severity_rank INT NOT NULL
+);
+
+CREATE TABLE threats (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    threat_text TEXT NOT NULL,
+    UNIQUE KEY uk_threat(threat_text(255))
+);
+
+CREATE TABLE assets (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    asset_name VARCHAR(500) NOT NULL UNIQUE
+);
+
+CREATE TABLE tools_master (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    tool_name VARCHAR(1000) NOT NULL,
+    UNIQUE KEY uk_tool(tool_name(255))
+);
+
+CREATE TABLE references_master (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    ref_text TEXT NOT NULL,
+    UNIQUE KEY uk_ref(ref_text(255))
+);
+
+CREATE TABLE test_cases (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+
+    category_id BIGINT NOT NULL,
+    objective_id BIGINT NOT NULL,
+    protocol_id BIGINT,
+    attack_vector_id BIGINT,
+    test_type_id BIGINT,
+    severity_id BIGINT,
+    threat_id BIGINT,
+    asset_id BIGINT,
+
+    action_test_case LONGTEXT NOT NULL,
+    source_scope_status VARCHAR(100),
+
+    description LONGTEXT,
+    attack_path LONGTEXT,
+
+    test_steps LONGTEXT,
+    expected_output LONGTEXT,
+
+    attack_feasibility TEXT,
+    cia_impact TEXT,
+    safety_impact TEXT,
+    automation_possible VARCHAR(50),
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (category_id) REFERENCES categories(id),
+    FOREIGN KEY (objective_id) REFERENCES objectives(id),
+    FOREIGN KEY (protocol_id) REFERENCES protocols(id),
+    FOREIGN KEY (attack_vector_id) REFERENCES attack_vectors(id),
+    FOREIGN KEY (test_type_id) REFERENCES test_types(id),
+    FOREIGN KEY (severity_id) REFERENCES severities(id),
+    FOREIGN KEY (threat_id) REFERENCES threats(id),
+    FOREIGN KEY (asset_id) REFERENCES assets(id)
+);
+
+CREATE TABLE test_case_tools (
+    test_case_id BIGINT NOT NULL,
+    tool_id BIGINT NOT NULL,
+    PRIMARY KEY(test_case_id, tool_id),
+    FOREIGN KEY(test_case_id) REFERENCES test_cases(id),
+    FOREIGN KEY(tool_id) REFERENCES tools_master(id)
+);
+
+CREATE TABLE test_case_references (
+    test_case_id BIGINT NOT NULL,
+    reference_id BIGINT NOT NULL,
+    PRIMARY KEY(test_case_id, reference_id),
+    FOREIGN KEY(test_case_id) REFERENCES test_cases(id),
+    FOREIGN KEY(reference_id) REFERENCES references_master(id)
+);
+
+INSERT INTO severities(name,severity_rank)
+VALUES
+('Informational',1),
+('Low',2),
+('Medium',3),
+('High',4),
+('Critical',5);
+</file>
+
+<file path="app/__init__.py">
+
+</file>
+
+<file path="app/auth.py">
+from datetime import datetime, timedelta, timezone
+from typing import Annotated
+
+import jwt
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from jwt import InvalidTokenError
+from pwdlib import PasswordHash
+
+from app.config import settings
+from app.prisma_client import db
+
+
+password_hash = PasswordHash.recommended()
+
+bearer_scheme = HTTPBearer(
+    auto_error=False,
+)
+
+
+def hash_password(password: str) -> str:
+    """Hash a password using the configured secure password hasher."""
+
+    return password_hash.hash(password)
+
+
+def verify_password(
+    plain_password: str,
+    hashed_password: str,
+) -> bool:
+    """Verify a plaintext password against a stored password hash."""
+
+    try:
+        return password_hash.verify(
+            plain_password,
+            hashed_password,
+        )
+    except Exception:
+        return False
+
+
+def create_access_token(
+    *,
+    user_id: int,
+    username: str,
+    role: str,
+) -> str:
+    """Create a signed JWT access token."""
+
+    now = datetime.now(timezone.utc)
+
+    expires_at = now + timedelta(
+        minutes=settings.access_token_expire_minutes,
+    )
+
+    payload = {
+        "sub": str(user_id),
+        "username": username,
+        "role": role,
+        "iat": now,
+        "exp": expires_at,
+    }
+
+    return jwt.encode(
+        payload,
+        settings.jwt_secret_key,
+        algorithm=settings.jwt_algorithm,
+    )
+
+
+async def get_current_user(
+    credentials: Annotated[
+        HTTPAuthorizationCredentials | None,
+        Depends(bearer_scheme),
+    ],
+):
+    """Return the database user represented by a valid bearer token."""
+
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Authentication required",
+        headers={
+            "WWW-Authenticate": "Bearer",
+        },
+    )
+
+    if credentials is None:
+        raise credentials_exception
+
+    if credentials.scheme.lower() != "bearer":
+        raise credentials_exception
+
+    try:
+        payload = jwt.decode(
+            credentials.credentials,
+            settings.jwt_secret_key,
+            algorithms=[settings.jwt_algorithm],
+        )
+
+        subject = payload.get("sub")
+
+        if subject is None:
+            raise credentials_exception
+
+        user_id = int(subject)
+
+    except (
+        InvalidTokenError,
+        ValueError,
+        TypeError,
+    ):
+        raise credentials_exception
+
+    user = await db.users.find_unique(
+        where={
+            "id": user_id,
+        }
+    )
+
+    if user is None:
+        raise credentials_exception
+
+    if user.role not in {
+        "ADMIN",
+        "USER",
+    }:
+        raise credentials_exception
+
+    return user
+
+
+async def require_admin(
+    current_user=Depends(get_current_user),
+):
+    """Allow only authenticated ADMIN users."""
+
+    if current_user.role != "ADMIN":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required",
+        )
+
+    return current_user
+</file>
+
+<file path="app/config.py">
+from pathlib import Path
+from typing import Literal
+
+from pydantic import (
+    Field,
+    field_validator,
+    model_validator,
+)
+from pydantic_settings import (
+    BaseSettings,
+    SettingsConfigDict,
+)
+
+
+ENV_FILE = (
+    Path(__file__).resolve().parent.parent
+    / ".env"
+)
+
+
+class Settings(BaseSettings):
+    """
+    Application configuration loaded from environment variables.
+
+    Security-sensitive values must be supplied through environment
+    variables or the backend .env file.
+    """
+
+    model_config = SettingsConfigDict(
+        env_file=ENV_FILE,
+        env_file_encoding="utf-8",
+        extra="ignore",
+        case_sensitive=False,
+    )
+
+    environment: Literal[
+        "development",
+        "test",
+        "production",
+    ] = "development"
+
+    database_url: str = Field(
+        min_length=1,
+    )
+
+    cors_origins: list[str] = Field(
+        default_factory=lambda: [
+            "http://localhost:3000",
+        ]
+    )
+
+    jwt_secret_key: str = Field(
+        min_length=32,
+    )
+
+    jwt_algorithm: str = "HS256"
+
+    access_token_expire_minutes: int = Field(
+        default=60,
+        gt=0,
+        le=1440,
+    )
+
+    seed_default_users: bool = True
+
+    initial_admin_username: str = Field(
+        default="admin",
+        min_length=1,
+        max_length=255,
+    )
+
+    initial_admin_password: str = Field(
+        min_length=12,
+    )
+
+    initial_user_username: str = Field(
+        default="user",
+        min_length=1,
+        max_length=255,
+    )
+
+    initial_user_password: str = Field(
+        min_length=12,
+    )
+
+    @field_validator(
+        "database_url",
+    )
+    @classmethod
+    def validate_database_url(
+        cls,
+        value: str,
+    ):
+        normalized_value = value.strip()
+
+        if not normalized_value:
+            raise ValueError(
+                "DATABASE_URL is required"
+            )
+
+        if not normalized_value.startswith(
+            "mysql://"
+        ):
+            raise ValueError(
+                "DATABASE_URL must use the "
+                "mysql:// Prisma connection format"
+            )
+
+        return normalized_value
+
+    @field_validator(
+        "cors_origins",
+        mode="before",
+    )
+    @classmethod
+    def parse_cors_origins(
+        cls,
+        value,
+    ):
+        """
+        Accept either a JSON array from .env or a comma-separated string.
+        """
+
+        if isinstance(value, str):
+            stripped_value = value.strip()
+
+            if (
+                stripped_value.startswith("[")
+                and stripped_value.endswith("]")
+            ):
+                return value
+
+            return [
+                origin.strip()
+                for origin in value.split(",")
+                if origin.strip()
+            ]
+
+        return value
+
+    @field_validator(
+        "cors_origins",
+    )
+    @classmethod
+    def normalize_cors_origins(
+        cls,
+        values: list[str],
+    ):
+        normalized_origins = sorted(
+            {
+                origin.strip().rstrip("/")
+                for origin in values
+                if origin.strip()
+            }
+        )
+
+        if not normalized_origins:
+            raise ValueError(
+                "At least one CORS origin is required"
+            )
+
+        if "*" in normalized_origins:
+            raise ValueError(
+                "Wildcard CORS origins are not allowed "
+                "when credentials are enabled"
+            )
+
+        return normalized_origins
+
+    @field_validator(
+        "jwt_secret_key",
+    )
+    @classmethod
+    def validate_jwt_secret(
+        cls,
+        value: str,
+    ):
+        normalized_value = value.strip()
+
+        weak_values = {
+            "change-this-development-secret-before-deployment",
+            "replace-this-with-a-long-random-secret",
+            "replace-with-a-long-random-secret",
+            "replace-with-a-random-secret-of-at-least-32-characters",
+            "replace_with_a_random_secret_of_at_least_32_characters",
+            "replace_with_a_random_secret_of_at_least_32_characters_here",
+            "paste_a_real_random_secret_here",
+            "secret",
+            "password",
+        }
+
+        if (
+            normalized_value.lower()
+            in weak_values
+        ):
+            raise ValueError(
+                "JWT_SECRET_KEY must be replaced "
+                "with a strong random secret"
+            )
+
+        return normalized_value
+
+    @field_validator(
+        "jwt_algorithm",
+    )
+    @classmethod
+    def validate_jwt_algorithm(
+        cls,
+        value: str,
+    ):
+        normalized_value = (
+            value.strip().upper()
+        )
+
+        allowed_algorithms = {
+            "HS256",
+            "HS384",
+            "HS512",
+        }
+
+        if (
+            normalized_value
+            not in allowed_algorithms
+        ):
+            raise ValueError(
+                "JWT_ALGORITHM must be one of: "
+                "HS256, HS384, or HS512"
+            )
+
+        return normalized_value
+
+    @field_validator(
+        "initial_admin_username",
+        "initial_user_username",
+    )
+    @classmethod
+    def normalize_username(
+        cls,
+        value: str,
+    ):
+        normalized_value = value.strip()
+
+        if not normalized_value:
+            raise ValueError(
+                "Initial usernames cannot be blank"
+            )
+
+        return normalized_value
+
+    @field_validator(
+        "initial_admin_password",
+        "initial_user_password",
+    )
+    @classmethod
+    def validate_initial_password(
+        cls,
+        value: str,
+    ):
+        if value != value.strip():
+            raise ValueError(
+                "Initial passwords cannot start "
+                "or end with spaces"
+            )
+
+        return value
+
+    @model_validator(
+        mode="after",
+    )
+    def validate_environment_security(
+        self,
+    ):
+        if (
+            self.initial_admin_username
+            == self.initial_user_username
+        ):
+            raise ValueError(
+                "The initial admin and user "
+                "usernames must be different"
+            )
+
+        if (
+            self.initial_admin_password
+            == self.initial_user_password
+        ):
+            raise ValueError(
+                "The initial admin and user "
+                "passwords must be different"
+            )
+
+        if (
+            self.initial_admin_password
+            == self.initial_admin_username
+        ):
+            raise ValueError(
+                "The initial admin password cannot "
+                "match the admin username"
+            )
+
+        if (
+            self.initial_user_password
+            == self.initial_user_username
+        ):
+            raise ValueError(
+                "The initial user password cannot "
+                "match the user username"
+            )
+
+        if (
+            self.environment
+            == "production"
+        ):
+            if self.seed_default_users:
+                raise ValueError(
+                    "SEED_DEFAULT_USERS must be false "
+                    "in production"
+                )
+
+            local_origins = {
+                "http://localhost:3000",
+                "http://127.0.0.1:3000",
+            }
+
+            if any(
+                origin in local_origins
+                for origin
+                in self.cors_origins
+            ):
+                raise ValueError(
+                    "Production CORS_ORIGINS cannot "
+                    "contain localhost addresses"
+                )
+
+        return self
+
+
+settings = Settings()
+</file>
+
+<file path="app/database.py">
+from sqlalchemy.engine import make_url
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.orm import DeclarativeBase
+
+from app.config import settings
+
+engine = create_async_engine(settings.database_url, echo=False)
+
+async_session_factory = async_sessionmaker(
+    engine, class_=AsyncSession, expire_on_commit=False
+)
+
+
+async def ensure_database() -> None:
+    """Create the target MySQL database if it doesn't exist yet."""
+    import aiomysql
+
+    url = make_url(settings.database_url)
+    dbname = url.database
+    admin = await aiomysql.connect(
+        host=url.host or "localhost",
+        port=url.port or 3306,
+        user=url.username,
+        password=url.password,
+    )
+    try:
+        async with admin.cursor() as cursor:
+            await cursor.execute(
+                "SELECT SCHEMA_NAME FROM information_schema.SCHEMATA "
+                "WHERE SCHEMA_NAME = %s",
+                (dbname,),
+            )
+            exists = await cursor.fetchone()
+            if not exists and dbname:
+                await cursor.execute(
+                    f"CREATE DATABASE `{dbname}` "
+                    "CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
+                )
+    finally:
+        admin.close()
+
+
+class Base(DeclarativeBase):
+    pass
+
+
+async def get_db() -> AsyncSession:
+    async with async_session_factory() as session:
+        yield session
+</file>
+
+<file path="app/main.py">
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+from app.config import settings
+from app.prisma_client import db
+from app.routers import (
+    admin_test_cases,
+    auth,
+    ecu_details,
+    pages,
+    projects,
+    test_cases,
+)
+from app.seed import (
+    ensure_attributes,
+    ensure_users,
+)
+
+
+@asynccontextmanager
+async def lifespan(
+    app: FastAPI,
+):
+    await db.connect()
+
+    await ensure_attributes()
+    await ensure_users()
+
+    yield
+
+    await db.disconnect()
+
+
+app = FastAPI(
+    title="Embedded Config API",
+    lifespan=lifespan,
+)
+
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.cors_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+    expose_headers=[
+        "Content-Disposition",
+    ],
+)
+
+
+api_prefix = "/api"
+
+app.include_router(
+    auth.router,
+    prefix=api_prefix,
+)
+
+app.include_router(
+    admin_test_cases.router,
+    prefix=api_prefix,
+)
+
+app.include_router(
+    projects.router,
+    prefix=api_prefix,
+)
+
+app.include_router(
+    ecu_details.router,
+    prefix=api_prefix,
+)
+
+app.include_router(
+    pages.router,
+    prefix=api_prefix,
+)
+
+app.include_router(
+    test_cases.router,
+    prefix=api_prefix,
+)
+
+
+@app.get("/api/health")
+async def health() -> dict[str, str]:
+    return {
+        "status": "ok",
+    }
+</file>
+
+<file path="app/models.py">
+from datetime import date, datetime
+
+from sqlalchemy import (
+    Column,
+    Date,
+    DateTime,
+    ForeignKey,
+    Integer,
+    PrimaryKeyConstraint,
+    String,
+    Table,
+    Text,
+    UniqueConstraint,
+    func,
+)
+from sqlalchemy.dialects.mysql import LONGTEXT
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from app.database import Base
+
+
+class Project(Base):
+    __tablename__ = "projects"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+    selections: Mapped[list["ProjectSelection"]] = relationship(
+        back_populates="project", cascade="all, delete-orphan"
+    )
+    ecu_detail: Mapped["ProjectEcuDetail | None"] = relationship(
+        back_populates="project", cascade="all, delete-orphan", uselist=False
+    )
+
+
+class AttributeGroup(Base):
+    """A 'main attribute' belonging to a single selection page."""
+
+    __tablename__ = "attribute_groups"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    page: Mapped[int] = mapped_column(nullable=False, index=True)
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+
+    attributes: Mapped[list["Attribute"]] = relationship(
+        back_populates="group", cascade="all, delete-orphan", order_by="Attribute.id"
+    )
+
+
+class Attribute(Base):
+    """A 'sub attribute' under a main attribute (AttributeGroup)."""
+
+    __tablename__ = "attributes"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    group_id: Mapped[int] = mapped_column(ForeignKey("attribute_groups.id"), nullable=False)
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+
+    group: Mapped["AttributeGroup"] = relationship(back_populates="attributes")
+
+
+class ProjectSelection(Base):
+    """One chosen sub-attribute for a project on a given page."""
+
+    __tablename__ = "project_selections"
+    __table_args__ = (
+        UniqueConstraint("project_id", "attribute_id", name="uq_project_attribute"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    project_id: Mapped[int] = mapped_column(
+        ForeignKey("projects.id"), nullable=False, index=True
+    )
+    attribute_id: Mapped[int] = mapped_column(
+        ForeignKey("attributes.id"), nullable=False, index=True
+    )
+    page: Mapped[int] = mapped_column(nullable=False, index=True)
+
+    project: Mapped["Project"] = relationship(back_populates="selections")
+
+
+class ProjectEcuDetail(Base):
+    """ECU Details for a project."""
+
+    __tablename__ = "project_ecu_details"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    project_id: Mapped[int] = mapped_column(
+        ForeignKey("projects.id"), nullable=False, index=True, unique=True
+    )
+    ecu_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    part_number: Mapped[str] = mapped_column(String(255), nullable=False)
+    ecu_risk_rating: Mapped[str] = mapped_column(String(100), nullable=False)
+    architecture: Mapped[str] = mapped_column(String(255), nullable=False)
+    vehicle_line: Mapped[str] = mapped_column(String(255), nullable=False)
+    year: Mapped[int] = mapped_column(Integer, nullable=False)
+    microcontroller_cpu_provider: Mapped[str] = mapped_column(String(255), nullable=False)
+    date_hardware_b_sample_available: Mapped[date | None] = mapped_column(Date, nullable=True)
+    date_harness_available: Mapped[date | None] = mapped_column(Date, nullable=True)
+    date_production_intent_software_available: Mapped[date | None] = mapped_column(
+        Date, nullable=True
+    )
+    export_control_classification: Mapped[str] = mapped_column(String(255), nullable=False)
+    pentest_provider_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+    project: Mapped["Project"] = relationship(back_populates="ecu_detail")
+
+
+# Test Case Related Models
+class Category(Base):
+    """Test category."""
+
+    __tablename__ = "categories"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+    objectives: Mapped[list["Objective"]] = relationship(
+        back_populates="category", cascade="all, delete-orphan"
+    )
+    test_cases: Mapped[list["TestCase"]] = relationship(
+        back_populates="category", cascade="all, delete-orphan"
+    )
+
+
+class Objective(Base):
+    """Test objective under a category."""
+
+    __tablename__ = "objectives"
+    __table_args__ = (UniqueConstraint("category_id", "name", name="uk_obj"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    category_id: Mapped[int] = mapped_column(
+        ForeignKey("categories.id"), nullable=False, index=True
+    )
+    name: Mapped[str] = mapped_column(Text, nullable=False)
+
+    category: Mapped["Category"] = relationship(back_populates="objectives")
+    test_cases: Mapped[list["TestCase"]] = relationship(
+        back_populates="objective", cascade="all, delete-orphan"
+    )
+
+
+class Protocol(Base):
+    """Communication protocol."""
+
+    __tablename__ = "protocols"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
+
+    test_cases: Mapped[list["TestCase"]] = relationship(
+        back_populates="protocol", cascade="all, delete-orphan"
+    )
+
+
+class AttackVector(Base):
+    """Attack vector."""
+
+    __tablename__ = "attack_vectors"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
+
+    test_cases: Mapped[list["TestCase"]] = relationship(
+        back_populates="attack_vector", cascade="all, delete-orphan"
+    )
+
+
+class TestType(Base):
+    """Test type."""
+
+    __tablename__ = "test_types"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(100), nullable=False, unique=True)
+
+    test_cases: Mapped[list["TestCase"]] = relationship(
+        back_populates="test_type", cascade="all, delete-orphan"
+    )
+
+
+class Severity(Base):
+    """Severity level."""
+
+    __tablename__ = "severities"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(50), nullable=False, unique=True)
+    severity_rank: Mapped[int] = mapped_column(Integer, nullable=False)
+
+    test_cases: Mapped[list["TestCase"]] = relationship(
+        back_populates="severity", cascade="all, delete-orphan"
+    )
+
+
+class Threat(Base):
+    """Threat."""
+
+    __tablename__ = "threats"
+    __table_args__ = (UniqueConstraint("threat_text", name="uk_threat"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    threat_text: Mapped[str] = mapped_column(Text, nullable=False)
+
+    test_cases: Mapped[list["TestCase"]] = relationship(
+        back_populates="threat", cascade="all, delete-orphan"
+    )
+
+
+class Asset(Base):
+    """Asset."""
+
+    __tablename__ = "assets"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    asset_name: Mapped[str] = mapped_column(String(500), nullable=False, unique=True)
+
+    test_cases: Mapped[list["TestCase"]] = relationship(
+        back_populates="asset", cascade="all, delete-orphan"
+    )
+
+
+class ToolMaster(Base):
+    """Tool master."""
+
+    __tablename__ = "tools_master"
+    __table_args__ = (UniqueConstraint("tool_name", name="uk_tool"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    tool_name: Mapped[str] = mapped_column(String(1000), nullable=False)
+
+    test_case_tools: Mapped[list["TestCaseTool"]] = relationship(
+        back_populates="tool", cascade="all, delete-orphan"
+    )
+
+
+class ReferenceMaster(Base):
+    """Reference master."""
+
+    __tablename__ = "references_master"
+    __table_args__ = (UniqueConstraint("ref_text", name="uk_ref"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    ref_text: Mapped[str] = mapped_column(Text, nullable=False)
+
+    test_case_references: Mapped[list["TestCaseReference"]] = relationship(
+        back_populates="reference", cascade="all, delete-orphan"
+    )
+
+
+class TestCase(Base):
+    """Test case."""
+
+    __tablename__ = "test_cases"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    category_id: Mapped[int] = mapped_column(
+        ForeignKey("categories.id"), nullable=False, index=True
+    )
+    objective_id: Mapped[int] = mapped_column(
+        ForeignKey("objectives.id"), nullable=False, index=True
+    )
+    protocol_id: Mapped[int | None] = mapped_column(ForeignKey("protocols.id"), nullable=True)
+    attack_vector_id: Mapped[int | None] = mapped_column(
+        ForeignKey("attack_vectors.id"), nullable=True
+    )
+    test_type_id: Mapped[int | None] = mapped_column(ForeignKey("test_types.id"), nullable=True)
+    severity_id: Mapped[int | None] = mapped_column(ForeignKey("severities.id"), nullable=True)
+    threat_id: Mapped[int | None] = mapped_column(ForeignKey("threats.id"), nullable=True)
+    asset_id: Mapped[int | None] = mapped_column(ForeignKey("assets.id"), nullable=True)
+
+    action_test_case: Mapped[str] = mapped_column(LONGTEXT, nullable=False)
+    source_scope_status: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    description: Mapped[str | None] = mapped_column(LONGTEXT, nullable=True)
+    attack_path: Mapped[str | None] = mapped_column(LONGTEXT, nullable=True)
+    test_steps: Mapped[str | None] = mapped_column(LONGTEXT, nullable=True)
+    expected_output: Mapped[str | None] = mapped_column(LONGTEXT, nullable=True)
+    attack_feasibility: Mapped[str | None] = mapped_column(Text, nullable=True)
+    cia_impact: Mapped[str | None] = mapped_column(Text, nullable=True)
+    safety_impact: Mapped[str | None] = mapped_column(Text, nullable=True)
+    automation_possible: Mapped[str | None] = mapped_column(String(50), nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+    category: Mapped["Category"] = relationship(back_populates="test_cases")
+    objective: Mapped["Objective"] = relationship(back_populates="test_cases")
+    protocol: Mapped["Protocol | None"] = relationship(back_populates="test_cases")
+    attack_vector: Mapped["AttackVector | None"] = relationship(back_populates="test_cases")
+    test_type: Mapped["TestType | None"] = relationship(back_populates="test_cases")
+    severity: Mapped["Severity | None"] = relationship(back_populates="test_cases")
+    threat: Mapped["Threat | None"] = relationship(back_populates="test_cases")
+    asset: Mapped["Asset | None"] = relationship(back_populates="test_cases")
+
+    test_case_tools: Mapped[list["TestCaseTool"]] = relationship(
+        back_populates="test_case", cascade="all, delete-orphan"
+    )
+    test_case_references: Mapped[list["TestCaseReference"]] = relationship(
+        back_populates="test_case", cascade="all, delete-orphan"
+    )
+
+
+class TestCaseTool(Base):
+    """Junction table for test cases and tools."""
+
+    __tablename__ = "test_case_tools"
+    __table_args__ = (PrimaryKeyConstraint("test_case_id", "tool_id"),)
+
+    test_case_id: Mapped[int] = mapped_column(ForeignKey("test_cases.id"), nullable=False)
+    tool_id: Mapped[int] = mapped_column(ForeignKey("tools_master.id"), nullable=False)
+
+    test_case: Mapped["TestCase"] = relationship(back_populates="test_case_tools")
+    tool: Mapped["ToolMaster"] = relationship(back_populates="test_case_tools")
+
+
+class TestCaseReference(Base):
+    """Junction table for test cases and references."""
+
+    __tablename__ = "test_case_references"
+    __table_args__ = (PrimaryKeyConstraint("test_case_id", "reference_id"),)
+
+    test_case_id: Mapped[int] = mapped_column(ForeignKey("test_cases.id"), nullable=False)
+    reference_id: Mapped[int] = mapped_column(ForeignKey("references_master.id"), nullable=False)
+
+    test_case: Mapped["TestCase"] = relationship(back_populates="test_case_references")
+    reference: Mapped["ReferenceMaster"] = relationship(back_populates="test_case_references")
+</file>
+
+<file path="app/pdf_generator.py">
+"""Minimal PDF generator for the ECU Penetration Testing Test Plan.
+
+This module is intentionally simple. The previous version used ReportLab's
+``BaseDocTemplate`` with a custom page template, custom canvas, table of
+contents, repeated base64 image decoding, and per-row ``Paragraph``
+construction. That pipeline is slow and was the reason the dashboard
+appeared to freeze while a PDF was being generated.
+
+This rewrite:
+
+* uses the plain ``SimpleDocTemplate`` (no TOC, no custom canvas) so the
+  only state ReportLab keeps is the story itself;
+* renders the section 4 "Test scope" table as a single ``Table`` per
+  page, splitting rows by hand only when the row count would overflow the
+  available height;
+* does the CPU-heavy ``build`` call inside ``asyncio.to_thread`` from the
+  caller so the FastAPI event loop is never blocked.
+
+The output mirrors the structure of ``pdf.html`` at the repository root:
+
+* cover page (page 1) — uses the project's ECU detail;
+* distribution list + document history (page 2);
+* table of contents (page 3);
+* section 1 "Introduction" — table populated from the ECU detail (page 4);
+* section 1.1 "Supporting documentation" + section 1.2 "Roles and
+  responsibilities" (page 5);
+* section 2 "Testing approach" — attacker model, type of testing driven by
+  the test-type filter, assumptions (page 6);
+* section 3 "Schedules and deliverables" (page 7);
+* section 4 "Test scope" — populated from the filtered test-case
+  catalogue, grouped by category then objective (pages 8+);
+* references (page 13-ish);
+* appendices A, B, C (last three pages).
+
+Only sections 1, 2.2 and 4 are dynamic; the rest use static content from
+the source template because the application has no data model for them.
+"""
+
+from __future__ import annotations
+
+from datetime import date
+from io import BytesIO
+
+from reportlab.lib import colors
+from reportlab.lib.enums import TA_CENTER
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+from reportlab.lib.units import mm
+from reportlab.pdfgen import canvas
+from reportlab.platypus import (
+    PageBreak,
+    Paragraph,
+    SimpleDocTemplate,
+    Spacer,
+    Table,
+    TableStyle,
+)
+
+from typing import Any
+
+
+# ---------------------------------------------------------------------------
+# Page geometry and palette (matches pdf.html)
+# ---------------------------------------------------------------------------
+PAGE_WIDTH, PAGE_HEIGHT = A4
+
+MARGIN_LEFT = 17 * mm
+MARGIN_RIGHT = 17 * mm
+MARGIN_TOP = 26 * mm
+MARGIN_BOTTOM = 20 * mm
+CONTENT_WIDTH = PAGE_WIDTH - MARGIN_LEFT - MARGIN_RIGHT
+CONTENT_HEIGHT = PAGE_HEIGHT - MARGIN_TOP - MARGIN_BOTTOM
+
+INK = colors.HexColor("#1a1a1a")
+MUTED = colors.HexColor("#5f5f5f")
+TAN = colors.HexColor("#d2aa82")
+TAN_LIGHT = colors.HexColor("#f1e8df")
+TEAL = colors.HexColor("#a3c2c2")
+TEAL_LIGHT = colors.HexColor("#e5eeee")
+GRID = colors.HexColor("#737373")
+FOOTER_GREY = colors.HexColor("#333333")
+
+# DOC_TEMPLATE_CODE = "JLR-TMP-568088"
+DOC_TEMPLATE_CODE = "COMP-TMP-483921"
+
+
+# ---------------------------------------------------------------------------
+# Static template content (no application data model for these)
+# ---------------------------------------------------------------------------
+# DISTRIBUTION = [
+#     ("Robert Aidi", "raidi1", "PO"),
+#     ("Harikrishnan Unnikrishnan", "Hunnikri", "Project Lead"),
+#     ("Jagadeesh Ram Chilla", "Jchilla", "Cybersecurity Engineer"),
+#     ("Hari Bhagavathi Ramian Monimekalai", "Hramianm", "Cyber Compliance Engineer"),
+# ]
+
+DISTRIBUTION = [
+    ("John Doe", "jdoe01", "Program Security Manager"),
+    ("Sarah Miller", "smiller02", "Principal Security Engineer"),
+    ("Michael Brown", "mbrown03", "Lead Penetration Tester"),
+    ("Emily Wilson", "ewilson04", "Compliance Specialist"),
+]
+
+# HISTORY = [
+#     ("1", "18/06/2025", "Ashwin Sasi & Bhagirath", "First issue"),
+# ]
+
+HISTORY = [
+    ("1.0", "14/03/2026", "John Doe", "Initial release"),
+    ("1.1", "20/03/2026", "Sarah Miller", "Updated review comments"),
+    ("2.0", "05/04/2026", "Security Team", "Approved baseline version"),
+]
+
+# DOCS_PROVIDED = [
+#     ("Item Definition (JLR-TMP-568088)", "Y"),
+#     ("TARA", "Y"),
+#     ("PCB schematics", "Y"),
+#     ("Sequence diagram for ECU boot process", ""),
+#     ("Back-end infrastructure related specifications", ""),
+# ]
+
+DOCS_PROVIDED = [
+    ("System Architecture Specification", "Y"),
+    ("Threat Assessment Report", "Y"),
+    ("Hardware Design Package", "Y"),
+    ("Boot Sequence Documentation", "Y"),
+    ("Cloud Connectivity Specification", "N"),
+]
+
+# ROLES = [
+#     ("JLR ECU team", ""),
+#     ("Robert Aidi", "PO"),
+#     ("Harikrishnan Unnikrishnan", "Project Lead"),
+#     ("Jagadeesh Ram Chilla", "Cybersecurity Engineer"),
+#     ("Hari Bhagavathi Ramian Monimekalai", "Cyber Compliance Engineer"),
+#     ("[Pentest partner]", ""),
+#     ("Name 1", ""),
+#     ("Name 2", ""),
+# ]
+
+ROLES = [
+    ("John Doe", "Program Security Manager"),
+    ("Sarah Miller", "Principal Security Engineer"),
+    ("Michael Brown", "Lead Penetration Tester"),
+    ("Emily Wilson", "Compliance Specialist"),
+    ("David Taylor", "Systems Architect"),
+    ("Jessica Moore", "Software Engineering Lead"),
+    ("Christopher Anderson", "Hardware Engineering Lead"),
+    ("Secure Testing Group", "External Security Partner"),
+]
+
+# ATTACKERS = [
+#     ("JLR insiders", "N"),
+#     ("JLR third parties", "Y"),
+#     ("JLR vehicle users", "Y"),
+#     ("JLR vehicle non-users - low capabilities", "Y"),
+#     ("JLR vehicle non-users - high capabilities", "N"),
+# ]
+
+ATTACKERS = [
+    ("Internal employees", "Y"),
+    ("External vendors", "Y"),
+    ("System operators", "Y"),
+    ("External attackers - low capability", "Y"),
+    ("External attackers - high capability", "Y"),
+]
+
+# LIMITATIONS = [
+#     (
+#         "The attacker cannot compromise the backend servers and infrastructure. "
+#         "However, they may control any communication channel towards the ECU.",
+#         "Offboard elements out of scope.",
+#     ),
+#     ("{other limitations}", ""),
+# ]
+
+LIMITATIONS = [
+    (
+        "Cloud infrastructure is outside the scope of this assessment.",
+        "Testing focuses on the embedded controller and its interfaces.",
+    ),
+    (
+        "Physical hardware destruction attacks are excluded.",
+        "Not considered practical cybersecurity attack scenarios.",
+    ),
+    (
+        "Attacks against enterprise networks are out of scope.",
+        "Assessment targets only the system under review.",
+    ),
+]
+
+# ASSUMPTIONS = [
+#     ("Vehicle communication is secured", ""),
+# ]
+
+ASSUMPTIONS = [
+    (
+        "Secure boot is enabled on all test units",
+        "Confirmed by engineering team",
+    ),
+    (
+        "Production firmware is installed",
+        "Release candidate build supplied",
+    ),
+    (
+        "Diagnostic access credentials are available",
+        "Required for authenticated testing",
+    ),
+]
+
+# SCHEDULES = [
+#     (
+#         "Intermediary pentesting reports",
+#         "{weekly/fortnightly?}",
+#         "Draft pentesting reports with information on status and findings.",
+#     ),
+#     (
+#         "Final pentesting report",
+#         "{tbc}",
+#         "Final pentesting report in JLR approved template, containing all required "
+#         "information about tests conducted, findings, replication steps and "
+#         "remediation suggestions, etc (as per info required in template).",
+#     ),
+#     (
+#         "Log artifacts",
+#         "{tbc}",
+#         "Logfiles for all tests performed, including tests with no findings. For "
+#         "findings, logs showing successful exploitation are required.",
+#     ),
+#     ("{other deliverables}", "", ""),
+# ]
+
+SCHEDULES = [
+    (
+        "Weekly Status Report",
+        "Every Friday",
+        "Summary of progress, risks and findings.",
+    ),
+    (
+        "Final Assessment Report",
+        "30/06/2026",
+        "Comprehensive report including findings and remediation guidance.",
+    ),
+    (
+        "Evidence Package",
+        "30/06/2026",
+        "Logs, screenshots and verification data.",
+    ),
+    (
+        "Executive Summary",
+        "01/07/2026",
+        "High-level overview for management.",
+    ),
+]
+
+# REFERENCES = [
+#     "Hu, Vincent C., Rick Kuhn, and Dylan Yaga. \u201cVerification and test methods "
+#     "for access control policies/models.\u201d NIST Special Publication 800 (2017): 192.",
+#     "Joint Task Force. \u201cAssessing security and privacy controls in information "
+#     "systems and organizations.\u201d NIST Special Publication (2021).",
+#     "Scarfone, Karen, et al. \u201cTechnical guide to information security testing and "
+#     "assessment.\u201d NIST Special Publication 800.115 (2008): 2-25.",
+#     "ISO/SAE 21434 Road vehicles - Cybersecurity engineering: First edition 2021-08.",
+# ]
+
+REFERENCES = [
+    "Anderson, Michael and Rebecca Hayes. "
+    "Modern Embedded Security Assessment Techniques. "
+    "Journal of Secure Systems Engineering, Vol. 18, No. 4, 2023.",
+
+    "Parker, William. "
+    "Practical Approaches to Vehicle Network Hardening. "
+    "International Conference on Connected Systems Security, 2024.",
+
+    "Thompson, Kevin, Laura Evans and Samuel Price. "
+    "Secure Firmware Validation and Update Strategies. "
+    "Advanced Embedded Computing Review, Vol. 11, Issue 2, 2022.",
+
+    "Carter, James and Olivia Reed. "
+    "Defensive Design Patterns for Connected Devices. "
+    "Secure Computing Press, Second Edition, 2025.",
+
+    "Global Cyber Systems Consortium. "
+    "Connected Device Security Framework. "
+    "Version 3.1, 2024.",
+]
+
+# ATTACKER_MODEL_APPENDIX = [
+#     (
+#         "JLR insiders",
+#         "Software developer, system designer, tester, quality engineer, project "
+#         "manager, production engineer",
+#         "Leak confidential information, introduce vulnerabilities, use insider knowledge",
+#     ),
+#     (
+#         "JLR third parties",
+#         "Supplier, service provider, dealership, repair garage, data analyst, remote "
+#         "diagnostic user, certificate authority",
+#         "Introduce malicious software, delay patching, steal information, access "
+#         "vehicle network",
+#     ),
+#     (
+#         "JLR vehicle users",
+#         "Driver, vehicle owner",
+#         "Activate paid-for features, customise vehicle features",
+#     ),
+#     (
+#         "JLR vehicle non-users - low capability",
+#         "Cyber criminals, competitor, pirate software seller, malicious web designer, "
+#         "insurer",
+#         "Steal vehicle or data, control vehicle, steal IP, create counterfeit products",
+#     ),
+#     (
+#         "JLR vehicle non-users - high capability",
+#         "Nation state hacker, hostile government, terrorist",
+#         "Crash, steal or control vehicle; large-scale disruption; steal data",
+#     ),
+# ]
+
+ATTACKER_MODEL_APPENDIX = [
+    (
+        "Internal employees",
+        "Developer, tester, project manager, administrator",
+        "Privilege misuse, information disclosure, configuration manipulation",
+    ),
+    (
+        "External vendors",
+        "Suppliers, contractors, maintenance providers",
+        "Introduction of insecure software or hardware",
+    ),
+    (
+        "Authorized end users",
+        "Operators and system owners",
+        "Unauthorized feature enablement or configuration changes",
+    ),
+    (
+        "External attackers - low capability",
+        "Cyber criminals, hobbyists, competitors",
+        "Data theft, denial of service, unauthorized access",
+    ),
+    (
+        "External attackers - high capability",
+        "Organized groups, nation-state actors",
+        "Persistent compromise, credential theft, large-scale disruption",
+    ),
+]
+
+# TESTING_TYPE_APPENDIX = [
+#     (
+#         "Blackbox testing",
+#         "Testing without access to internal structures or workings. The analyst "
+#         "simulates a real-world attacker with no or limited system knowledge and may "
+#         "use public information.",
+#     ),
+#     (
+#         "Whitebox Testing",
+#         "Testing with full access to internal structures, technical information, "
+#         "source code and architecture.",
+#     ),
+#     (
+#         "Greybox Testing",
+#         "A combination of black-box and white-box testing. The analyst has some "
+#         "implementation details and binaries but no source code.",
+#     ),
+# ]
+
+TESTING_TYPE_APPENDIX = [
+    (
+        "Black-box Testing",
+        "Assessment performed without access to internal design documentation or implementation details.",
+    ),
+    (
+        "White-box Testing",
+        "Assessment performed with complete access to source code, architecture and technical documentation.",
+    ),
+    (
+        "Gray-box Testing",
+        "Assessment performed with partial knowledge of system internals and limited documentation.",
+    ),
+]
+
+RISK_MATRIX = [
+    ("QM", "x", "", "", ""),
+    ("Low", "x", "", "", ""),
+    ("Medium", "x", "x", "", ""),
+    ("High", "x", "x", "x", ""),
+    ("Critical", "x", "x", "x", "x"),
+]
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+def _esc(value: object) -> str:
+    if value is None:
+        return ""
+    return (
+        str(value)
+        .replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+    )
+
+
+def _fmt_date(value: date | None) -> str:
+    return value.strftime("%d/%m/%Y") if value else "\u2014"
+
+
+def _platform_label(ecu: Any) -> str:
+    return f"{ecu.architecture} \u2013 {ecu.vehicle_line} ({ecu.year})"
+
+
+def _header_footer(canv: canvas.Canvas, doc) -> None:
+    """Draw the running header and footer on every page."""
+    canv.saveState()
+
+    # Footer: classification, page number, template code.
+    canv.setFont("Helvetica", 7)
+    canv.setFillColor(FOOTER_GREY)
+
+    foot_y = 14 * mm
+    canv.drawString(
+        MARGIN_LEFT, foot_y,
+        # "JLR-RMP: This shall be retained for 10 years after the End of life of",
+        "COMP-RMP: This shall be retained for 10 years after the End of life of",
+    )
+    canv.drawString(
+        MARGIN_LEFT, foot_y - 3.2 * mm,
+        "vehicle product or component in production and service.",
+    )
+    # canv.drawString(MARGIN_LEFT, foot_y - 8 * mm, "JLR-RMP Classification: Confidential")
+    canv.drawString(MARGIN_LEFT, foot_y - 8 * mm, "COMP-RMP Classification: Confidential")
+
+    canv.setFont("Helvetica-Bold", 7)
+    canv.drawRightString(PAGE_WIDTH - MARGIN_RIGHT, foot_y, "CONFIDENTIAL")
+    canv.setFont("Helvetica", 7)
+    canv.drawRightString(
+        PAGE_WIDTH - MARGIN_RIGHT, foot_y - 3.2 * mm,
+        f"Page {canv.getPageNumber()}",
+    )
+    canv.drawRightString(
+        PAGE_WIDTH - MARGIN_RIGHT, foot_y - 6.4 * mm, DOC_TEMPLATE_CODE,
+    )
+
+    canv.restoreState()
+
+
+def _cell_styles(font_size: float = 8.5):
+    base = getSampleStyleSheet()["Normal"]
+    label = ParagraphStyle(
+        "Label", parent=base, fontSize=font_size, fontName="Helvetica-Bold",
+        textColor=INK, leading=font_size + 2.5,
+    )
+    value = ParagraphStyle(
+        "Value", parent=base, fontSize=font_size, fontName="Helvetica",
+        textColor=INK, leading=font_size + 2.5,
+    )
+    section = ParagraphStyle(
+        "Section", parent=base, fontSize=font_size + 0.5, fontName="Helvetica-Bold",
+        textColor=INK, leading=font_size + 3,
+    )
+    return label, value, section
+
+
+def _simple_table(
+    rows: list[list[str]],
+    col_widths: list[float],
+    header: list[str] | None = None,
+    font_size: float = 8.5,
+) -> Table:
+    """A two-tone table: the first column uses tan-light, the rest teal-light."""
+    label, value, _ = _cell_styles(font_size)
+    data: list[list] = []
+    if header:
+        data.append([Paragraph(_esc(h), label) for h in header])
+    for row in rows:
+        data.append(
+            [
+                Paragraph(_esc(v), label if c == 0 else value)
+                for c, v in enumerate(row)
+            ]
+        )
+
+    cmds = [
+        ("GRID", (0, 0), (-1, -1), 0.4, GRID),
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("LEFTPADDING", (0, 0), (-1, -1), 4),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 4),
+        ("TOPPADDING", (0, 0), (-1, -1), 3),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+    ]
+    if header:
+        cmds.append(("BACKGROUND", (0, 0), (-1, 0), TAN))
+        first_data_row = 1
+    else:
+        first_data_row = 0
+
+    for r in range(first_data_row, len(data)):
+        cmds.append(("BACKGROUND", (0, r), (0, r), TAN_LIGHT))
+        for c in range(1, len(col_widths)):
+            cmds.append(("BACKGROUND", (c, r), (c, r), TEAL_LIGHT))
+
+    table = Table(data, colWidths=col_widths, repeatRows=1 if header else 0)
+    table.setStyle(TableStyle(cmds))
+    return table
+
+
+# ---------------------------------------------------------------------------
+# Section content builders
+# ---------------------------------------------------------------------------
+def _intro_rows(ecu: Any) -> list[list[str]]:
+    return [
+        ["ECU name", ecu.ecu_name],
+        ["Part number", ecu.part_number],
+        ["ECU risk rating", ecu.ecu_risk_rating],
+        ["Architecture", ecu.architecture],
+        ["Vehicle line", ecu.vehicle_line],
+        ["Year", str(ecu.year)],
+        ["Microcontroller/CPU provider", ecu.microcontroller_cpu_provider],
+        ["Date hardware B-sample available", _fmt_date(ecu.date_hardware_b_sample_available)],
+        ["Date harnesses available", _fmt_date(ecu.date_harness_available)],
+        [
+            "Date production-intent software available (inc all cybersecurity controls)",
+            _fmt_date(ecu.date_production_intent_software_available),
+        ],
+        ["Export control classification", ecu.export_control_classification],
+        ["Pentest provider name", ecu.pentest_provider_name],
+    ]
+
+
+def _testing_type_rows(selected_test_type_names: list[str] | None) -> list[list[str]]:
+    names = {n.strip().lower() for n in (selected_test_type_names or [])}
+    wildcard = not names or "both" in names
+
+    def yn(key: str) -> str:
+        return "Y" if wildcard or key in names else "N"
+
+    return [
+        ["White-box testing", yn("white-box")],
+        ["Gray-box testing", yn("gray-box")],
+        ["Black-box testing", yn("black-box")],
+    ]
+
+
+def _build_scope_rows(
+    test_cases: list[Any],
+) -> list[tuple[bool, str, str, str]]:
+    """
+    Convert the test-case catalogue into the section 4 row format.
+
+    Returns a list of (is_section_banner, objective, action, comment) tuples
+    where ``is_section_banner`` is True for category headers. The objective
+    column is shown only on the first row of each objective group, matching
+    the source template's visual style.
+    """
+
+    ordered = sorted(
+        test_cases,
+        key=lambda tc: (
+            tc.categories.id if tc.categories else 0,
+            tc.objectives.id if tc.objectives else 0,
+            tc.id,
+        ),
+    )
+
+    rows: list[tuple[bool, str, str, str]] = []
+
+    current_category: str | None = None
+    current_objective: str | None = None
+
+    for tc in ordered:
+
+        category_name = (
+            tc.categories.name
+            if tc.categories
+            else "Uncategorised"
+        )
+
+        if category_name != current_category:
+            rows.append(
+                (
+                    True,
+                    category_name,
+                    "",
+                    "",
+                )
+            )
+
+            current_category = category_name
+            current_objective = None
+
+        objective_name = (
+            tc.objectives.name
+            if tc.objectives
+            else ""
+        )
+
+        show_objective = (
+            objective_name != current_objective
+        )
+
+        current_objective = objective_name
+
+        status = (
+            tc.source_scope_status
+            if tc.source_scope_status
+            else "—"
+        )
+
+        rows.append(
+            (
+                False,
+                objective_name if show_objective else "",
+                tc.action_test_case,
+                status,
+            )
+        )
+
+    return rows
+
+
+def _scope_table(scope_rows: list[tuple[bool, str, str, str]], font_size: float = 7.5) -> Table:
+    label, value, section = _cell_styles(font_size)
+
+    data: list[list] = [
+        [Paragraph(_esc(h), label) for h in ("Objective", "Actions/Tests", "Comments")]
+    ]
+    section_rows: set[int] = set()
+    for is_section, col0, col1, col2 in scope_rows:
+        r = len(data)
+        if is_section:
+            section_rows.add(r)
+            data.append([Paragraph(_esc(col0), section), "", ""])
+        else:
+            data.append(
+                [
+                    Paragraph(_esc(col0), label),
+                    Paragraph(_esc(col1), value),
+                    Paragraph(_esc(col2), value),
+                ]
+            )
+
+    cmds = [
+        ("GRID", (0, 0), (-1, -1), 0.4, GRID),
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("LEFTPADDING", (0, 0), (-1, -1), 3),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 3),
+        ("TOPPADDING", (0, 0), (-1, -1), 2),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
+        ("BACKGROUND", (0, 0), (-1, 0), TAN),
+    ]
+    for r in range(1, len(data)):
+        if r in section_rows:
+            cmds.append(("BACKGROUND", (0, r), (-1, r), TEAL))
+            cmds.append(("SPAN", (0, r), (-1, r)))
+        else:
+            cmds.append(("BACKGROUND", (0, r), (0, r), TAN_LIGHT))
+            cmds.append(("BACKGROUND", (1, r), (2, r), TEAL_LIGHT))
+
+    table = Table(
+        data,
+        colWidths=[CONTENT_WIDTH * 0.30, CONTENT_WIDTH * 0.50, CONTENT_WIDTH * 0.20],
+        repeatRows=1,
+    )
+    table.setStyle(TableStyle(cmds))
+    return table
+
+
+# ---------------------------------------------------------------------------
+# Page-level builders
+# ---------------------------------------------------------------------------
+def _build_cover_page(ecu: Any) -> list:
+    base = getSampleStyleSheet()["Normal"]
+    kicker = ParagraphStyle(
+        "Kicker", parent=base, fontSize=18, fontName="Helvetica-Bold",
+        alignment=TA_CENTER, textColor=INK, spaceAfter=10,
+    )
+    title = ParagraphStyle(
+        "Title", parent=base, fontSize=24, fontName="Helvetica-Bold",
+        alignment=TA_CENTER, textColor=INK, spaceAfter=8,
+    )
+    for_ = ParagraphStyle(
+        "For", parent=base, fontSize=14, fontName="Helvetica-Bold",
+        alignment=TA_CENTER, textColor=INK, spaceAfter=6,
+    )
+    value = ParagraphStyle(
+        "Value", parent=base, fontSize=15, fontName="Helvetica-Bold",
+        alignment=TA_CENTER, textColor=INK, spaceAfter=4,
+    )
+    copyright = ParagraphStyle(
+        "Copyright", parent=base, fontName="Helvetica-Bold",
+        alignment=TA_CENTER, fontSize=9, textColor=INK,
+    )
+
+    story = [
+        Spacer(1, 24 * mm),
+        Paragraph("ECU PENETRATION TESTING", kicker),
+        Paragraph("TEST PLAN", title),
+        Paragraph("for", for_),
+        Paragraph(_esc(ecu.ecu_name), value),
+        Paragraph(_esc(_platform_label(ecu)), value),
+        Paragraph(_esc(date.today().strftime("%d/%m/%Y")), value),
+        Spacer(1, 18 * mm),
+        _simple_table(
+            rows=[["Owner", "PO", "Robert Aidi"], ["Reviewer", "Role Title", "Name"]],
+            col_widths=[CONTENT_WIDTH * 0.18, CONTENT_WIDTH * 0.22, CONTENT_WIDTH * 0.60],
+            font_size=9,
+        ),
+        Spacer(1, 12 * mm),
+        # Paragraph("Jaguar Land Rover Proprietary and Confidential", copyright),
+        Paragraph("Example Corporation Proprietary and Confidential", copyright),
+        Paragraph(_esc(f"Copyright \u00a9 {date.today().year}"), copyright),
+        # Paragraph("Jaguar Land Rover Ltd.", copyright),
+        Paragraph("Example Corporation", copyright),
+        PageBreak(),
+    ]
+    return story
+
+
+def _build_distribution_and_history() -> list:
+    base = getSampleStyleSheet()["Normal"]
+    h1 = ParagraphStyle("H1", parent=base, fontSize=14, fontName="Helvetica-Bold",
+                        textColor=INK, spaceAfter=4)
+    story = [
+        Paragraph("Distribution List", h1),
+        _simple_table(
+            rows=[list(r) for r in DISTRIBUTION],
+            col_widths=[CONTENT_WIDTH * 0.46, CONTENT_WIDTH * 0.24, CONTENT_WIDTH * 0.30],
+            header=["Name", "CDSID", "Role title"],
+        ),
+        Spacer(1, 8 * mm),
+        Paragraph("Document Change History", h1),
+        _simple_table(
+            rows=[list(r) for r in HISTORY],
+            col_widths=[
+                CONTENT_WIDTH * 0.14, CONTENT_WIDTH * 0.20,
+                CONTENT_WIDTH * 0.28, CONTENT_WIDTH * 0.38,
+            ],
+            header=["Revision", "Date", "Author(s)", "Details of changes"],
+        ),
+        PageBreak(),
+    ]
+    return story
+
+
+def _build_table_of_contents() -> list:
+    base = getSampleStyleSheet()["Normal"]
+    h1 = ParagraphStyle("H1", parent=base, fontSize=14, fontName="Helvetica-Bold",
+                        textColor=INK, spaceAfter=6)
+    item = ParagraphStyle("TocItem", parent=base, fontSize=10, textColor=INK,
+                          leading=14, spaceAfter=3)
+    subitem = ParagraphStyle("TocSub", parent=item, leftIndent=14, fontSize=9,
+                             leading=12, spaceAfter=2)
+
+    entries = [
+        ("Distribution List", 2, False),
+        ("Document Change History", 2, False),
+        ("Contents", 3, False),
+        ("1 Introduction", 4, True),
+        ("1.1 Supporting documentation", 4, False),
+        ("1.2 Roles and responsibilities", 5, False),
+        ("2 Testing approach", 6, True),
+        ("2.1 Attacker model", 6, False),
+        ("2.2 Type of testing", 6, False),
+        ("2.3 Assumptions", 6, False),
+        ("3 Schedules and deliverables", 7, False),
+        ("4 Test scope", 8, True),
+        ("References", None, True),
+        ("Appendix A. Attacker model", None, True),
+        ("Appendix B. Type of testing", None, True),
+        ("Appendix C. High level penetration testing requirements", None, True),
+    ]
+    story = [Paragraph("Contents", h1)]
+    for title, _page, is_top in entries:
+        story.append(Paragraph(_esc(title), item if is_top else subitem))
+    story.append(PageBreak())
+    return story
+
+
+def _build_introduction(ecu: Any) -> list:
+    base = getSampleStyleSheet()["Normal"]
+    h1 = ParagraphStyle("H1", parent=base, fontSize=14, fontName="Helvetica-Bold",
+                        textColor=INK, spaceAfter=4)
+    h2 = ParagraphStyle("H2", parent=base, fontSize=11, fontName="Helvetica-Bold",
+                        textColor=INK, spaceBefore=6, spaceAfter=4)
+    instruction = ParagraphStyle("Instruction", parent=base, fontSize=9,
+                                 fontName="Helvetica-Oblique", textColor=MUTED,
+                                 leading=12)
+    footnote = ParagraphStyle("Footnote", parent=base, fontSize=7, textColor=MUTED,
+                              leading=10)
+
+    return [
+        Paragraph("1 Introduction", h1),
+        _simple_table(
+            _intro_rows(ecu),
+            col_widths=[CONTENT_WIDTH * 0.42, CONTENT_WIDTH * 0.58],
+            font_size=8.5,
+        ),
+        Spacer(1, 4 * mm),
+        Paragraph("1.1 Supporting documentation", h2),
+        Paragraph(
+            "List of documents consulted during creation/validation of the test plan. "
+            "Please send these documents to the penetration testing team with the test plan.",
+            instruction,
+        ),
+        Spacer(1, 2 * mm),
+        _simple_table(
+            [list(r) for r in DOCS_PROVIDED],
+            col_widths=[CONTENT_WIDTH * 0.76, CONTENT_WIDTH * 0.24],
+            header=["Document", "Provided? Y/N"],
+        ),
+        Spacer(1, 4 * mm),
+        Paragraph("1.2 Roles and responsibilities", h2),
+        Paragraph(
+            "The ECU team should provide software, hardware and cybersecurity engineering "
+            "contacts as a minimum.",
+            instruction,
+        ),
+        Spacer(1, 2 * mm),
+        _simple_table(
+            [list(r) for r in ROLES],
+            col_widths=[CONTENT_WIDTH * 0.4, CONTENT_WIDTH * 0.6],
+            header=["Name", "Role & responsibility"],
+        ),
+        Spacer(1, 2 * mm),
+        Paragraph(
+            "\u00b9 If not known, please input \u201cUnknown\u201d and contact the pentesting team asap.",
+            footnote,
+        ),
+        PageBreak(),
+    ]
+
+
+def _build_testing_approach(selected_test_type_names: list[str] | None) -> list:
+    base = getSampleStyleSheet()["Normal"]
+    h1 = ParagraphStyle("H1", parent=base, fontSize=14, fontName="Helvetica-Bold",
+                        textColor=INK, spaceAfter=4)
+    h2 = ParagraphStyle("H2", parent=base, fontSize=11, fontName="Helvetica-Bold",
+                        textColor=INK, spaceBefore=6, spaceAfter=4)
+    h4 = ParagraphStyle("H4", parent=base, fontSize=9.5, fontName="Helvetica-Bold",
+                        textColor=INK, spaceBefore=4, spaceAfter=3)
+    body = ParagraphStyle("Body", parent=base, fontSize=9, textColor=INK, leading=12)
+    instruction = ParagraphStyle("Instruction", parent=base, fontSize=9,
+                                 fontName="Helvetica-Oblique", textColor=MUTED,
+                                 leading=12)
+    footnote = ParagraphStyle("Footnote", parent=base, fontSize=7, textColor=MUTED,
+                              leading=10)
+
+    return [
+        Paragraph("2 Testing approach", h1),
+        Paragraph(
+            "Before penetration testing begins, the in-scope and out-of-scope system "
+            "components and the attack boundary shall be agreed.",
+            instruction,
+        ),
+        Spacer(1, 3 * mm),
+        Paragraph("2.1 Attacker model", h2),
+        Paragraph("Attackers relevant for the ECU under test:", body),
+        _simple_table(
+            [list(r) for r in ATTACKERS],
+            col_widths=[CONTENT_WIDTH * 0.83, CONTENT_WIDTH * 0.17],
+            header=["Attacker type", "Y/N"],
+        ),
+        Spacer(1, 3 * mm),
+        Paragraph("Attacker Limitations", h4),
+        _simple_table(
+            [list(r) for r in LIMITATIONS],
+            col_widths=[CONTENT_WIDTH * 0.66, CONTENT_WIDTH * 0.34],
+            header=["Limitation", "Rationale"],
+        ),
+        Spacer(1, 3 * mm),
+        Paragraph("2.2 Type of testing", h2),
+        _simple_table(
+            _testing_type_rows(selected_test_type_names),
+            col_widths=[CONTENT_WIDTH * 0.83, CONTENT_WIDTH * 0.17],
+            header=["Type of testing", "Y/N"],
+        ),
+        Spacer(1, 3 * mm),
+        Paragraph("2.3 Assumptions", h2),
+        _simple_table(
+            [list(r) for r in ASSUMPTIONS],
+            col_widths=[CONTENT_WIDTH * 0.66, CONTENT_WIDTH * 0.34],
+            header=["Assumption", "Rationale"],
+        ),
+        Spacer(1, 2 * mm),
+        # Paragraph(
+        #     "\u00b2 If JLR insiders or high-capability non-users are in scope, provide "
+        #     "additional justification to the pentesting team.",
+        #     footnote,
+        # ),
+        Paragraph(
+                    "\u00b2 If COMP insiders or high-capability non-users are in scope, provide "
+                    "additional justification to the pentesting team.",
+                    footnote,
+                ),
+        PageBreak(),
+    ]
+
+
+def _build_schedules() -> list:
+    base = getSampleStyleSheet()["Normal"]
+    h1 = ParagraphStyle("H1", parent=base, fontSize=14, fontName="Helvetica-Bold",
+                        textColor=INK, spaceAfter=4)
+    instruction = ParagraphStyle("Instruction", parent=base, fontSize=9,
+                                 fontName="Helvetica-Oblique", textColor=MUTED,
+                                 leading=12)
+    return [
+        Paragraph("3 Schedules and deliverables", h1),
+        Paragraph(
+            "This section will be completed after discussion with the pentest partner. "
+            "It lists deliverables, time frames and expected content.",
+            instruction,
+        ),
+        Spacer(1, 3 * mm),
+        _simple_table(
+            [list(r) for r in SCHEDULES],
+            col_widths=[CONTENT_WIDTH * 0.28, CONTENT_WIDTH * 0.20, CONTENT_WIDTH * 0.52],
+            header=["Deliverable", "Date", "Description"],
+        ),
+        PageBreak(),
+    ]
+
+
+def _build_test_scope(
+    test_cases: list[Any],
+    selected_category_names: list[str] | None,
+    selected_test_type_names: list[str] | None,
+) -> list:
+    base = getSampleStyleSheet()["Normal"]
+    h1 = ParagraphStyle("H1", parent=base, fontSize=14, fontName="Helvetica-Bold",
+                        textColor=INK, spaceAfter=4)
+    body = ParagraphStyle("Body", parent=base, fontSize=9, textColor=INK, leading=12)
+    note = ParagraphStyle("Note", parent=body, fontName="Helvetica-Bold",
+                          spaceBefore=2, spaceAfter=4)
+
+    scope_rows = _build_scope_rows(test_cases)
+    note_text = (
+        f"Categories in scope: {', '.join(selected_category_names)}"
+        if selected_category_names
+        else "Categories in scope: All categories"
+    )
+    note_text += " | " + (
+        f"Test types in scope: {', '.join(selected_test_type_names)}"
+        if selected_test_type_names
+        else "Test types in scope: All test types"
+    )
+
+    return [
+        Paragraph("4 Test scope", h1),
+        Paragraph(
+            "The following scoping tests are agreed between the EE Owner, Penetration "
+            "Test Manager and penetration test partner. The proposed tests are generic "
+            "and non-applicable items should be marked accordingly.",
+            body,
+        ),
+        Paragraph(_esc(note_text), note),
+        _scope_table(scope_rows),
+        PageBreak(),
+    ]
+
+
+def _build_references() -> list:
+    base = getSampleStyleSheet()["Normal"]
+    h1 = ParagraphStyle("H1", parent=base, fontSize=14, fontName="Helvetica-Bold",
+                        textColor=INK, spaceAfter=4)
+    body = ParagraphStyle("Body", parent=base, fontSize=9, textColor=INK, leading=12)
+    return [
+        Paragraph("References", h1),
+        *(Paragraph(_esc(ref), body) for ref in REFERENCES),
+        PageBreak(),
+    ]
+
+
+def _build_appendices() -> list:
+    base = getSampleStyleSheet()["Normal"]
+    h1 = ParagraphStyle("H1", parent=base, fontSize=14, fontName="Helvetica-Bold",
+                        textColor=INK, spaceAfter=4)
+    body = ParagraphStyle("Body", parent=base, fontSize=9, textColor=INK, leading=12)
+    story = [
+        Paragraph("Appendix A. Attacker model", h1),
+        # Paragraph("Please use the following definitions for attacker models, as per JLR-PRD-569408:", body),
+        Paragraph("Please use the following definitions for attacker models, as per COMP-PRD-569408:", body),
+        _simple_table(
+            [list(r) for r in ATTACKER_MODEL_APPENDIX],
+            col_widths=[CONTENT_WIDTH * 0.24, CONTENT_WIDTH * 0.33, CONTENT_WIDTH * 0.43],
+            header=["Attacker model categories", "Attacker examples", "Example attacks"],
+            font_size=7.5,
+        ),
+        PageBreak(),
+        Paragraph("Appendix B. Type of testing", h1),
+        Paragraph("Black, White and Grey-box testing are defined by adapting NIST definitions:", body),
+        _simple_table(
+            [list(r) for r in TESTING_TYPE_APPENDIX],
+            col_widths=[CONTENT_WIDTH * 0.25, CONTENT_WIDTH * 0.75],
+            header=["Type of testing", "Description"],
+        ),
+        PageBreak(),
+        Paragraph("Appendix C. High level penetration testing requirements", h1),
+        # Paragraph("For more information, refer to process JLR-PRD-569408.", body),
+        Paragraph("For more information, refer to process COMP-PRD-569408.", body),
+        _simple_table(
+            [list(r) for r in RISK_MATRIX],
+            col_widths=[CONTENT_WIDTH * 0.20] * 5,
+            header=[
+                "ECU risk rating",
+                "ECU/System interfaces",
+                "Secure software downloads",
+                "In-vehicle communication and secure boot",
+                "Cryptographic material and memory",
+            ],
+            font_size=7.5,
+        ),
+    ]
+    return story
+
+
+# ---------------------------------------------------------------------------
+# Public entry point
+# ---------------------------------------------------------------------------
+def build_pdf(
+    test_cases: list[Any],
+    ecu_detail: Any,
+    selected_category_names: list[str] | None = None,
+    selected_test_type_names: list[str] | None = None,
+) -> bytes:
+    """Build the test plan PDF in-memory and return the raw bytes.
+
+    This function is intentionally synchronous and CPU-bound; callers in
+    async code should wrap it with ``asyncio.to_thread``.
+    """
+    if ecu_detail is None:
+        raise ValueError("ecu_detail is required to generate the test plan PDF")
+
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=A4,
+        leftMargin=MARGIN_LEFT,
+        rightMargin=MARGIN_RIGHT,
+        topMargin=MARGIN_TOP,
+        bottomMargin=MARGIN_BOTTOM,
+        title="ECU Penetration Testing - Test Plan",
+        author="ECU Penetration Testing Tool",
+    )
+
+    story: list = []
+    story += _build_cover_page(ecu_detail)
+    story += _build_distribution_and_history()
+    story += _build_table_of_contents()
+    story += _build_introduction(ecu_detail)
+    story += _build_testing_approach(selected_test_type_names)
+    story += _build_schedules()
+    story += _build_test_scope(test_cases, selected_category_names, selected_test_type_names)
+    story += _build_references()
+    story += _build_appendices()
+
+    # ``build`` runs the story through ReportLab and writes the PDF to the
+    # underlying buffer. ``onFirstPage`` and ``onLaterPages`` are not used;
+    # the header/footer is drawn per-page from a single callback that reads
+    # the current page number directly.
+    doc.build(
+        story,
+        onFirstPage=_header_footer,
+        onLaterPages=_header_footer,
+    )
+    return buffer.getvalue()
+</file>
+
+<file path="app/prisma_client.py">
+from prisma import Prisma
+db = Prisma()
+</file>
+
+<file path="app/schemas.py">
+from datetime import date, datetime
+from typing import Literal
+
+from pydantic import BaseModel, ConfigDict, Field
+
+
+class ProjectBase(BaseModel):
+    name: str = Field(min_length=1, max_length=200)
+    description: str | None = None
+
+
+class ProjectCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=200)
+    description: str | None = None
+
+
+class ProjectRead(ProjectBase):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    created_at: datetime
+
+
+class AttributeRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    name: str
+
+
+class AttributeGroupRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    name: str
+    attributes: list[AttributeRead]
+
+
+class SelectionsRead(BaseModel):
+    page: int
+    attribute_ids: list[int]
+
+
+class SelectionsUpdate(BaseModel):
+    attribute_ids: list[int]
+
+
+# ECU Detail Schemas
+class ProjectEcuDetailCreate(BaseModel):
+    ecu_name: str = Field(min_length=1, max_length=255)
+    part_number: str = Field(min_length=1, max_length=255)
+    ecu_risk_rating: str = Field(min_length=1, max_length=100)
+    architecture: str = Field(min_length=1, max_length=255)
+    vehicle_line: str = Field(min_length=1, max_length=255)
+    year: int = Field(ge=1900, le=2100)
+    microcontroller_cpu_provider: str = Field(min_length=1, max_length=255)
+    date_hardware_b_sample_available: date | None = None
+    date_harness_available: date | None = None
+    date_production_intent_software_available: date | None = None
+    export_control_classification: str = Field(min_length=1, max_length=255)
+    pentest_provider_name: str = Field(min_length=1, max_length=255)
+
+
+class ProjectEcuDetailUpdate(BaseModel):
+    ecu_name: str | None = None
+    part_number: str | None = None
+    ecu_risk_rating: str | None = None
+    architecture: str | None = None
+    vehicle_line: str | None = None
+    year: int | None = None
+    microcontroller_cpu_provider: str | None = None
+    date_hardware_b_sample_available: date | None = None
+    date_harness_available: date | None = None
+    date_production_intent_software_available: date | None = None
+    export_control_classification: str | None = None
+    pentest_provider_name: str | None = None
+
+
+class ProjectEcuDetailRead(ProjectEcuDetailCreate):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    project_id: int
+    created_at: datetime
+    updated_at: datetime
+
+
+# Test Case Related Schemas
+class CategoryRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    name: str
+
+
+class ObjectiveRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    name: str
+    category_id: int
+
+
+class ProtocolRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    name: str
+
+
+class AttackVectorRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    name: str
+
+
+class TestTypeRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    name: str
+
+
+class SeverityRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    name: str
+    severity_rank: int
+
+
+class ThreatRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    threat_text: str
+
+
+class AssetRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    asset_name: str
+
+
+class ToolRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    tool_name: str
+
+
+class ReferenceRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    ref_text: str
+
+
+class TestCaseToolRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    tool: ToolRead
+
+
+class TestCaseReferenceRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    reference: ReferenceRead
+
+
+class TestCaseRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    category_id: int
+    objective_id: int
+    protocol_id: int | None
+    attack_vector_id: int | None
+    test_type_id: int | None
+    severity_id: int | None
+    threat_id: int | None
+    asset_id: int | None
+
+    action_test_case: str
+    source_scope_status: str | None
+    description: str | None
+    attack_path: str | None
+    test_steps: str | None
+    expected_output: str | None
+    attack_feasibility: str | None
+    cia_impact: str | None
+    safety_impact: str | None
+    automation_possible: str | None
+
+    created_at: datetime
+
+    category: CategoryRead | None
+    objective: ObjectiveRead | None
+    protocol: ProtocolRead | None
+    attack_vector: AttackVectorRead | None
+    test_type: TestTypeRead | None
+    severity: SeverityRead | None
+    threat: ThreatRead | None
+    asset: AssetRead | None
+    test_case_tools: list[TestCaseToolRead]
+    test_case_references: list[TestCaseReferenceRead]
+
+# Authentication schemas
+
+UserRole = Literal[
+    "ADMIN",
+    "USER",
+]
+
+
+class LoginRequest(BaseModel):
+    username: str = Field(
+        min_length=1,
+        max_length=255,
+    )
+
+    password: str = Field(
+        min_length=1,
+        max_length=255,
+    )
+
+
+class AuthUserRead(BaseModel):
+    id: int
+    username: str
+    role: UserRole
+
+
+class LoginResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    user: AuthUserRead
+
+
+# Admin test-case write schemas
+
+AutomationOption = Literal[
+    "Yes",
+    "No",
+    "Partial",
+]
+
+
+class TestCaseCreate(BaseModel):
+    category_id: int = Field(gt=0)
+    objective_id: int = Field(gt=0)
+
+    protocol_id: int | None = Field(
+        default=None,
+        gt=0,
+    )
+
+    attack_vector_id: int | None = Field(
+        default=None,
+        gt=0,
+    )
+
+    test_type_id: int | None = Field(
+        default=None,
+        gt=0,
+    )
+
+    severity_id: int | None = Field(
+        default=None,
+        gt=0,
+    )
+
+    threat_id: int | None = Field(
+        default=None,
+        gt=0,
+    )
+
+    asset_id: int | None = Field(
+        default=None,
+        gt=0,
+    )
+
+    action_test_case: str = Field(
+        min_length=1,
+    )
+
+    source_scope_status: str | None = Field(
+        default=None,
+        max_length=100,
+    )
+
+    description: str | None = None
+    attack_path: str | None = None
+    test_steps: str | None = None
+    expected_output: str | None = None
+    attack_feasibility: str | None = None
+    cia_impact: str | None = None
+    safety_impact: str | None = None
+
+    automation_possible: AutomationOption | None = None
+
+    tool_ids: list[int] = Field(
+        default_factory=list,
+    )
+
+    reference_ids: list[int] = Field(
+        default_factory=list,
+    )
+
+
+class TestCaseUpdate(BaseModel):
+    category_id: int | None = Field(
+        default=None,
+        gt=0,
+    )
+
+    objective_id: int | None = Field(
+        default=None,
+        gt=0,
+    )
+
+    protocol_id: int | None = Field(
+        default=None,
+        gt=0,
+    )
+
+    attack_vector_id: int | None = Field(
+        default=None,
+        gt=0,
+    )
+
+    test_type_id: int | None = Field(
+        default=None,
+        gt=0,
+    )
+
+    severity_id: int | None = Field(
+        default=None,
+        gt=0,
+    )
+
+    threat_id: int | None = Field(
+        default=None,
+        gt=0,
+    )
+
+    asset_id: int | None = Field(
+        default=None,
+        gt=0,
+    )
+
+    action_test_case: str | None = Field(
+        default=None,
+        min_length=1,
+    )
+
+    source_scope_status: str | None = Field(
+        default=None,
+        max_length=100,
+    )
+
+    description: str | None = None
+    attack_path: str | None = None
+    test_steps: str | None = None
+    expected_output: str | None = None
+    attack_feasibility: str | None = None
+    cia_impact: str | None = None
+    safety_impact: str | None = None
+
+    automation_possible: AutomationOption | None = None
+
+    tool_ids: list[int] | None = None
+    reference_ids: list[int] | None = None
+
+
+class LookupItem(BaseModel):
+    id: int
+    name: str
+
+
+class ObjectiveLookupItem(LookupItem):
+    category_id: int
+
+
+class SeverityLookupItem(LookupItem):
+    severity_rank: int
+
+
+class TestCaseLookups(BaseModel):
+    categories: list[LookupItem]
+    objectives: list[ObjectiveLookupItem]
+    protocols: list[LookupItem]
+    attack_vectors: list[LookupItem]
+    test_types: list[LookupItem]
+    severities: list[SeverityLookupItem]
+    threats: list[LookupItem]
+    assets: list[LookupItem]
+    tools: list[LookupItem]
+    references: list[LookupItem]
+
+
+class AdminStatsRead(BaseModel):
+    total_test_cases: int
+    total_users: int
+    recent_updates: int
+</file>
+
+<file path="app/seed.py">
+"""
+Idempotent seed helpers for:
+
+1. The four embedded-system selection pages
+2. Development ADMIN and USER accounts
+
+The seed functions are safe to run repeatedly.
+Existing user passwords are never overwritten automatically.
+"""
+
+from app.auth import hash_password
+from app.config import settings
+from app.prisma_client import db
+
+
+TEMPLATES: dict[
+    int,
+    list[
+        tuple[
+            str,
+            list[str],
+        ]
+    ],
+] = {
+    1: [
+        (
+            "Core Functionality",
+            [
+                "Tracking",
+                "Reporting",
+                "Automation",
+                "Notifications",
+            ],
+        ),
+        (
+            "Integrations",
+            [
+                "REST API",
+                "Webhooks",
+                "Email",
+                "Slack",
+            ],
+        ),
+        (
+            "Deployment",
+            [
+                "Cloud",
+                "On-Premise",
+                "Hybrid",
+                "Edge",
+            ],
+        ),
+        (
+            "Scale",
+            [
+                "Small",
+                "Medium",
+                "Large",
+                "Enterprise",
+            ],
+        ),
+        (
+            "Security",
+            [
+                "SSO",
+                "2FA",
+                "Audit Logs",
+                "Encryption",
+            ],
+        ),
+    ],
+    2: [
+        (
+            "Interface",
+            [
+                "Web",
+                "Mobile",
+                "Desktop",
+                "CLI",
+            ],
+        ),
+        (
+            "Language",
+            [
+                "English",
+                "Spanish",
+                "French",
+                "German",
+            ],
+        ),
+        (
+            "Performance",
+            [
+                "Low Latency",
+                "High Throughput",
+                "Reliable",
+                "Efficient",
+            ],
+        ),
+        (
+            "Data Handling",
+            [
+                "Batch",
+                "Streaming",
+                "Real-time",
+                "Archival",
+            ],
+        ),
+        (
+            "Support",
+            [
+                "Self-service",
+                "Chat",
+                "Phone",
+                "SLA",
+            ],
+        ),
+    ],
+    3: [
+        (
+            "Storage",
+            [
+                "PostgreSQL",
+                "Redis",
+                "S3",
+                "Local Disk",
+            ],
+        ),
+        (
+            "Analytics",
+            [
+                "Dashboards",
+                "Custom Queries",
+                "Export",
+                "Forecasts",
+            ],
+        ),
+        (
+            "Access Control",
+            [
+                "Roles",
+                "Permissions",
+                "Teams",
+                "Whitelist",
+            ],
+        ),
+        (
+            "Notifications",
+            [
+                "Email",
+                "Push",
+                "SMS",
+                "In-app",
+            ],
+        ),
+        (
+            "Compliance",
+            [
+                "GDPR",
+                "SOC2",
+                "ISO 27001",
+                "HIPAA",
+            ],
+        ),
+    ],
+    4: [
+        (
+            "Hardware",
+            [
+                "Sensor",
+                "Controller",
+                "Gateway",
+                "Chip",
+            ],
+        ),
+        (
+            "Protocol",
+            [
+                "MQTT",
+                "Modbus",
+                "HTTP",
+                "BLE",
+            ],
+        ),
+        (
+            "Power",
+            [
+                "Battery",
+                "Mains",
+                "Solar",
+                "PoE",
+            ],
+        ),
+        (
+            "Connectivity",
+            [
+                "Wi-Fi",
+                "Ethernet",
+                "Cellular",
+                "Zigbee",
+            ],
+        ),
+        (
+            "Module",
+            [
+                "Input",
+                "Display",
+                "Actuator",
+                "Communication",
+            ],
+        ),
+    ],
+}
+
+
+async def ensure_attributes() -> None:
+    """
+    Create missing attribute groups and attributes.
+
+    Existing groups and attributes are preserved. If a group exists
+    but one of its expected attributes is missing, only the missing
+    attribute is created.
+    """
+
+    for page, groups in TEMPLATES.items():
+        for group_name, attribute_names in groups:
+            group = (
+                await db.attribute_groups.find_first(
+                    where={
+                        "page": page,
+                        "name": group_name,
+                    }
+                )
+            )
+
+            if group is None:
+                group = (
+                    await db.attribute_groups.create(
+                        data={
+                            "page": page,
+                            "name": group_name,
+                        }
+                    )
+                )
+
+            existing_attributes = (
+                await db.attributes.find_many(
+                    where={
+                        "group_id": group.id,
+                    }
+                )
+            )
+
+            existing_attribute_names = {
+                attribute.name
+                for attribute
+                in existing_attributes
+            }
+
+            for attribute_name in (
+                attribute_names
+            ):
+                if (
+                    attribute_name
+                    in existing_attribute_names
+                ):
+                    continue
+
+                await db.attributes.create(
+                    data={
+                        "group_id": group.id,
+                        "name": attribute_name,
+                    }
+                )
+
+
+async def ensure_users() -> None:
+    """
+    Create initial development ADMIN and USER accounts.
+
+    User creation is skipped completely when SEED_DEFAULT_USERS=false.
+
+    Existing users are not recreated and their password hashes are not
+    overwritten. This prevents every backend restart from resetting a
+    user's password.
+    """
+
+    if not settings.seed_default_users:
+        return
+
+    default_users = [
+        {
+            "username": (
+                settings
+                .initial_admin_username
+            ),
+            "password": (
+                settings
+                .initial_admin_password
+            ),
+            "role": "ADMIN",
+        },
+        {
+            "username": (
+                settings
+                .initial_user_username
+            ),
+            "password": (
+                settings
+                .initial_user_password
+            ),
+            "role": "USER",
+        },
+    ]
+
+    for user_data in default_users:
+        username = (
+            user_data["username"]
+            .strip()
+        )
+
+        existing_user = (
+            await db.users.find_unique(
+                where={
+                    "username": username,
+                }
+            )
+        )
+
+        if existing_user is not None:
+            continue
+
+        await db.users.create(
+            data={
+                "username": username,
+                "password": hash_password(
+                    user_data["password"]
+                ),
+                "role": user_data["role"],
+            }
+        )
+</file>
+
+<file path="prisma/migrations/20260907092929_init/migration.sql">
+-- CreateTable
+CREATE TABLE `assets` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT,
+    `asset_name` VARCHAR(500) NOT NULL,
+
+    UNIQUE INDEX `asset_name`(`asset_name`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `attack_vectors` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT,
+    `name` VARCHAR(255) NOT NULL,
+
+    UNIQUE INDEX `name`(`name`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `attribute_groups` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `page` INTEGER NOT NULL,
+    `name` VARCHAR(200) NOT NULL,
+
+    INDEX `ix_attribute_groups_page`(`page`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `attributes` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `group_id` INTEGER NOT NULL,
+    `name` VARCHAR(200) NOT NULL,
+
+    INDEX `group_id`(`group_id`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `categories` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT,
+    `name` VARCHAR(255) NOT NULL,
+    `created_at` TIMESTAMP(0) NULL DEFAULT CURRENT_TIMESTAMP(0),
+
+    UNIQUE INDEX `name`(`name`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `objectives` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT,
+    `category_id` BIGINT NOT NULL,
+    `name` TEXT NOT NULL,
+
+    UNIQUE INDEX `uk_obj`(`category_id`, `name`(255)),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `project_ecu_details` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `project_id` INTEGER NOT NULL,
+    `ecu_name` VARCHAR(255) NOT NULL,
+    `part_number` VARCHAR(255) NOT NULL,
+    `ecu_risk_rating` VARCHAR(100) NOT NULL,
+    `architecture` VARCHAR(255) NOT NULL,
+    `vehicle_line` VARCHAR(255) NOT NULL,
+    `year` INTEGER NOT NULL,
+    `microcontroller_cpu_provider` VARCHAR(255) NOT NULL,
+    `date_hardware_b_sample_available` DATE NULL,
+    `date_harness_available` DATE NULL,
+    `date_production_intent_software_available` DATE NULL,
+    `export_control_classification` VARCHAR(255) NOT NULL,
+    `pentest_provider_name` VARCHAR(255) NOT NULL,
+    `created_at` DATETIME(0) NOT NULL DEFAULT (now()),
+    `updated_at` DATETIME(0) NOT NULL DEFAULT (now()),
+
+    UNIQUE INDEX `ix_project_ecu_details_project_id`(`project_id`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `project_selections` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `project_id` INTEGER NOT NULL,
+    `attribute_id` INTEGER NOT NULL,
+    `page` INTEGER NOT NULL,
+
+    INDEX `ix_project_selections_attribute_id`(`attribute_id`),
+    INDEX `ix_project_selections_page`(`page`),
+    INDEX `ix_project_selections_project_id`(`project_id`),
+    UNIQUE INDEX `uq_project_attribute`(`project_id`, `attribute_id`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `projects` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `name` VARCHAR(200) NOT NULL,
+    `description` TEXT NULL,
+    `created_at` DATETIME(0) NOT NULL DEFAULT (now()),
+
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `protocols` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT,
+    `name` VARCHAR(255) NOT NULL,
+
+    UNIQUE INDEX `name`(`name`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `references_master` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT,
+    `ref_text` TEXT NOT NULL,
+
+    UNIQUE INDEX `uk_ref`(`ref_text`(255)),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `severities` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT,
+    `name` VARCHAR(50) NOT NULL,
+    `severity_rank` INTEGER NOT NULL,
+
+    UNIQUE INDEX `name`(`name`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `test_case_references` (
+    `test_case_id` BIGINT NOT NULL,
+    `reference_id` BIGINT NOT NULL,
+
+    INDEX `reference_id`(`reference_id`),
+    PRIMARY KEY (`test_case_id`, `reference_id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `test_case_tools` (
+    `test_case_id` BIGINT NOT NULL,
+    `tool_id` BIGINT NOT NULL,
+
+    INDEX `tool_id`(`tool_id`),
+    PRIMARY KEY (`test_case_id`, `tool_id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `test_cases` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT,
+    `category_id` BIGINT NOT NULL,
+    `objective_id` BIGINT NOT NULL,
+    `protocol_id` BIGINT NULL,
+    `attack_vector_id` BIGINT NULL,
+    `test_type_id` BIGINT NULL,
+    `severity_id` BIGINT NULL,
+    `threat_id` BIGINT NULL,
+    `asset_id` BIGINT NULL,
+    `action_test_case` LONGTEXT NOT NULL,
+    `source_scope_status` VARCHAR(100) NULL,
+    `description` LONGTEXT NULL,
+    `attack_path` LONGTEXT NULL,
+    `test_steps` LONGTEXT NULL,
+    `expected_output` LONGTEXT NULL,
+    `attack_feasibility` TEXT NULL,
+    `cia_impact` TEXT NULL,
+    `safety_impact` TEXT NULL,
+    `automation_possible` VARCHAR(50) NULL,
+    `created_at` TIMESTAMP(0) NULL DEFAULT CURRENT_TIMESTAMP(0),
+
+    INDEX `asset_id`(`asset_id`),
+    INDEX `attack_vector_id`(`attack_vector_id`),
+    INDEX `category_id`(`category_id`),
+    INDEX `objective_id`(`objective_id`),
+    INDEX `protocol_id`(`protocol_id`),
+    INDEX `severity_id`(`severity_id`),
+    INDEX `test_type_id`(`test_type_id`),
+    INDEX `threat_id`(`threat_id`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `test_types` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT,
+    `name` VARCHAR(100) NOT NULL,
+
+    UNIQUE INDEX `name`(`name`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `threats` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT,
+    `threat_text` TEXT NOT NULL,
+
+    UNIQUE INDEX `uk_threat`(`threat_text`(255)),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `tools_master` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT,
+    `tool_name` VARCHAR(1000) NOT NULL,
+
+    UNIQUE INDEX `uk_tool`(`tool_name`(255)),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- AddForeignKey
+ALTER TABLE `attributes` ADD CONSTRAINT `attributes_ibfk_1` FOREIGN KEY (`group_id`) REFERENCES `attribute_groups`(`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+-- AddForeignKey
+ALTER TABLE `objectives` ADD CONSTRAINT `objectives_ibfk_1` FOREIGN KEY (`category_id`) REFERENCES `categories`(`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+-- AddForeignKey
+ALTER TABLE `project_ecu_details` ADD CONSTRAINT `project_ecu_details_ibfk_1` FOREIGN KEY (`project_id`) REFERENCES `projects`(`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+-- AddForeignKey
+ALTER TABLE `project_selections` ADD CONSTRAINT `project_selections_ibfk_1` FOREIGN KEY (`project_id`) REFERENCES `projects`(`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+-- AddForeignKey
+ALTER TABLE `project_selections` ADD CONSTRAINT `project_selections_ibfk_2` FOREIGN KEY (`attribute_id`) REFERENCES `attributes`(`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+-- AddForeignKey
+ALTER TABLE `test_case_references` ADD CONSTRAINT `test_case_references_ibfk_1` FOREIGN KEY (`test_case_id`) REFERENCES `test_cases`(`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+-- AddForeignKey
+ALTER TABLE `test_case_references` ADD CONSTRAINT `test_case_references_ibfk_2` FOREIGN KEY (`reference_id`) REFERENCES `references_master`(`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+-- AddForeignKey
+ALTER TABLE `test_case_tools` ADD CONSTRAINT `test_case_tools_ibfk_1` FOREIGN KEY (`test_case_id`) REFERENCES `test_cases`(`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+-- AddForeignKey
+ALTER TABLE `test_case_tools` ADD CONSTRAINT `test_case_tools_ibfk_2` FOREIGN KEY (`tool_id`) REFERENCES `tools_master`(`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+-- AddForeignKey
+ALTER TABLE `test_cases` ADD CONSTRAINT `test_cases_ibfk_1` FOREIGN KEY (`category_id`) REFERENCES `categories`(`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+-- AddForeignKey
+ALTER TABLE `test_cases` ADD CONSTRAINT `test_cases_ibfk_2` FOREIGN KEY (`objective_id`) REFERENCES `objectives`(`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+-- AddForeignKey
+ALTER TABLE `test_cases` ADD CONSTRAINT `test_cases_ibfk_3` FOREIGN KEY (`protocol_id`) REFERENCES `protocols`(`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+-- AddForeignKey
+ALTER TABLE `test_cases` ADD CONSTRAINT `test_cases_ibfk_4` FOREIGN KEY (`attack_vector_id`) REFERENCES `attack_vectors`(`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+-- AddForeignKey
+ALTER TABLE `test_cases` ADD CONSTRAINT `test_cases_ibfk_5` FOREIGN KEY (`test_type_id`) REFERENCES `test_types`(`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+-- AddForeignKey
+ALTER TABLE `test_cases` ADD CONSTRAINT `test_cases_ibfk_6` FOREIGN KEY (`severity_id`) REFERENCES `severities`(`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+-- AddForeignKey
+ALTER TABLE `test_cases` ADD CONSTRAINT `test_cases_ibfk_7` FOREIGN KEY (`threat_id`) REFERENCES `threats`(`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+-- AddForeignKey
+ALTER TABLE `test_cases` ADD CONSTRAINT `test_cases_ibfk_8` FOREIGN KEY (`asset_id`) REFERENCES `assets`(`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
+</file>
+
+<file path="prisma/migrations/20260907120838_add_users_and_audit_columns/migration.sql">
+-- AlterTable
+ALTER TABLE `test_cases` ADD COLUMN `created_by` BIGINT NULL,
+    ADD COLUMN `deleted_by` BIGINT NULL,
+    ADD COLUMN `updated_at` TIMESTAMP(0) NULL DEFAULT CURRENT_TIMESTAMP(0),
+    ADD COLUMN `updated_by` BIGINT NULL;
+
+-- CreateTable
+CREATE TABLE `users` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT,
+    `username` VARCHAR(255) NOT NULL,
+    `password` VARCHAR(255) NOT NULL,
+    `role` VARCHAR(50) NOT NULL DEFAULT 'USER',
+    `created_at` TIMESTAMP(0) NOT NULL DEFAULT CURRENT_TIMESTAMP(0),
+    `updated_at` TIMESTAMP(0) NOT NULL DEFAULT CURRENT_TIMESTAMP(0),
+
+    UNIQUE INDEX `uk_username`(`username`),
+    INDEX `ix_users_username`(`username`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateIndex
+CREATE INDEX `ix_test_cases_created_by` ON `test_cases`(`created_by`);
+
+-- CreateIndex
+CREATE INDEX `ix_test_cases_updated_by` ON `test_cases`(`updated_by`);
+
+-- CreateIndex
+CREATE INDEX `ix_test_cases_deleted_by` ON `test_cases`(`deleted_by`);
+
+-- AddForeignKey
+ALTER TABLE `test_cases` ADD CONSTRAINT `test_cases_ibfk_created_by` FOREIGN KEY (`created_by`) REFERENCES `users`(`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+-- AddForeignKey
+ALTER TABLE `test_cases` ADD CONSTRAINT `test_cases_ibfk_updated_by` FOREIGN KEY (`updated_by`) REFERENCES `users`(`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+-- AddForeignKey
+ALTER TABLE `test_cases` ADD CONSTRAINT `test_cases_ibfk_deleted_by` FOREIGN KEY (`deleted_by`) REFERENCES `users`(`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
+</file>
+
+<file path="prisma/migrations/20260908115216_add_test_case_soft_delete/migration.sql">
+-- AlterTable
+ALTER TABLE `test_cases` ADD COLUMN `deleted_at` TIMESTAMP(0) NULL;
+
+-- CreateIndex
+CREATE INDEX `ix_test_cases_deleted_at` ON `test_cases`(`deleted_at`);
+</file>
+
+<file path="prisma/migrations/migration_lock.toml">
+# Please do not edit this file manually
+# It should be added in your version-control system (i.e. Git)
+provider = "mysql"
+</file>
+
+<file path="prisma/schema.prisma">
+generator client {
+  provider = "prisma-client-py"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model assets {
+  id         BigInt       @id @default(autoincrement())
+  asset_name String       @unique(map: "asset_name") @db.VarChar(500)
+  test_cases test_cases[]
+}
+
+model attack_vectors {
+  id         BigInt       @id @default(autoincrement())
+  name       String       @unique(map: "name") @db.VarChar(255)
+  test_cases test_cases[]
+}
+
+model attribute_groups {
+  id         Int          @id @default(autoincrement())
+  page       Int
+  name       String       @db.VarChar(200)
+  attributes attributes[]
+
+  @@index([page], map: "ix_attribute_groups_page")
+}
+
+model attributes {
+  id                 Int                  @id @default(autoincrement())
+  group_id           Int
+  name               String               @db.VarChar(200)
+  attribute_groups   attribute_groups     @relation(fields: [group_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "attributes_ibfk_1")
+  project_selections project_selections[]
+
+  @@index([group_id], map: "group_id")
+}
+
+model categories {
+  id         BigInt       @id @default(autoincrement())
+  name       String       @unique(map: "name") @db.VarChar(255)
+  created_at DateTime?    @default(now()) @db.Timestamp(0)
+  objectives objectives[]
+  test_cases test_cases[]
+}
+
+model objectives {
+  id          BigInt       @id @default(autoincrement())
+  category_id BigInt
+  name        String       @db.Text
+  categories  categories   @relation(fields: [category_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "objectives_ibfk_1")
+  test_cases  test_cases[]
+
+  @@unique([category_id, name(length: 255)], map: "uk_obj")
+}
+
+model project_ecu_details {
+  id                                        Int       @id @default(autoincrement())
+  project_id                                Int       @unique(map: "ix_project_ecu_details_project_id")
+  ecu_name                                  String    @db.VarChar(255)
+  part_number                               String    @db.VarChar(255)
+  ecu_risk_rating                           String    @db.VarChar(100)
+  architecture                              String    @db.VarChar(255)
+  vehicle_line                              String    @db.VarChar(255)
+  year                                      Int
+  microcontroller_cpu_provider              String    @db.VarChar(255)
+  date_hardware_b_sample_available          DateTime? @db.Date
+  date_harness_available                    DateTime? @db.Date
+  date_production_intent_software_available DateTime? @db.Date
+  export_control_classification             String    @db.VarChar(255)
+  pentest_provider_name                     String    @db.VarChar(255)
+  created_at                                DateTime  @default(dbgenerated("(now())")) @db.DateTime(0)
+  updated_at                                DateTime  @default(dbgenerated("(now())")) @db.DateTime(0)
+  projects                                  projects  @relation(fields: [project_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "project_ecu_details_ibfk_1")
+}
+
+model project_selections {
+  id           Int        @id @default(autoincrement())
+  project_id   Int
+  attribute_id Int
+  page         Int
+  projects     projects   @relation(fields: [project_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "project_selections_ibfk_1")
+  attributes   attributes @relation(fields: [attribute_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "project_selections_ibfk_2")
+
+  @@unique([project_id, attribute_id], map: "uq_project_attribute")
+  @@index([attribute_id], map: "ix_project_selections_attribute_id")
+  @@index([page], map: "ix_project_selections_page")
+  @@index([project_id], map: "ix_project_selections_project_id")
+}
+
+model projects {
+  id                  Int                  @id @default(autoincrement())
+  name                String               @db.VarChar(200)
+  description         String?              @db.Text
+  created_at          DateTime             @default(dbgenerated("(now())")) @db.DateTime(0)
+  project_ecu_details project_ecu_details?
+  project_selections  project_selections[]
+}
+
+model protocols {
+  id         BigInt       @id @default(autoincrement())
+  name       String       @unique(map: "name") @db.VarChar(255)
+  test_cases test_cases[]
+}
+
+model references_master {
+  id                   BigInt                 @id @default(autoincrement())
+  ref_text             String                 @unique(map: "uk_ref", length: 255) @db.Text
+  test_case_references test_case_references[]
+}
+
+model severities {
+  id            BigInt       @id @default(autoincrement())
+  name          String       @unique(map: "name") @db.VarChar(50)
+  severity_rank Int
+  test_cases    test_cases[]
+}
+
+model test_case_references {
+  test_case_id      BigInt
+  reference_id      BigInt
+  test_cases        test_cases        @relation(fields: [test_case_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "test_case_references_ibfk_1")
+  references_master references_master @relation(fields: [reference_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "test_case_references_ibfk_2")
+
+  @@id([test_case_id, reference_id])
+  @@index([reference_id], map: "reference_id")
+}
+
+model test_case_tools {
+  test_case_id BigInt
+  tool_id      BigInt
+  test_cases   test_cases   @relation(fields: [test_case_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "test_case_tools_ibfk_1")
+  tools_master tools_master @relation(fields: [tool_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "test_case_tools_ibfk_2")
+
+  @@id([test_case_id, tool_id])
+  @@index([tool_id], map: "tool_id")
+}
+
+model users {
+  id          BigInt       @id @default(autoincrement())
+  username    String       @unique(map: "uk_username") @db.VarChar(255)
+  password    String       @db.VarChar(255)
+  role        String       @db.VarChar(50) @default("USER")
+  created_at  DateTime     @default(now()) @db.Timestamp(0)
+  updated_at  DateTime     @default(now()) @updatedAt @db.Timestamp(0)
+  test_cases_created  test_cases[] @relation("created_by_rel")
+  test_cases_updated  test_cases[] @relation("updated_by_rel")
+  test_cases_deleted  test_cases[] @relation("deleted_by_rel")
+
+  @@index([username], map: "ix_users_username")
+}
+
+model test_cases {
+  id                   BigInt                 @id @default(autoincrement())
+  category_id          BigInt
+  objective_id         BigInt
+  protocol_id          BigInt?
+  attack_vector_id     BigInt?
+  test_type_id         BigInt?
+  severity_id          BigInt?
+  threat_id            BigInt?
+  asset_id             BigInt?
+  action_test_case     String                 @db.LongText
+  source_scope_status  String?                @db.VarChar(100)
+  description          String?                @db.LongText
+  attack_path          String?                @db.LongText
+  test_steps           String?                @db.LongText
+  expected_output      String?                @db.LongText
+  attack_feasibility   String?                @db.Text
+  cia_impact           String?                @db.Text
+  safety_impact        String?                @db.Text
+  automation_possible  String?                @db.VarChar(50)
+  created_at           DateTime?              @default(now()) @db.Timestamp(0)
+  updated_at           DateTime?              @default(now()) @updatedAt @db.Timestamp(0)
+  created_by           BigInt?
+  updated_by           BigInt?
+  deleted_by           BigInt?
+  deleted_at DateTime? @db.Timestamp(0)
+  test_case_references test_case_references[]
+  test_case_tools      test_case_tools[]
+  categories           categories             @relation(fields: [category_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "test_cases_ibfk_1")
+  objectives           objectives             @relation(fields: [objective_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "test_cases_ibfk_2")
+  protocols            protocols?             @relation(fields: [protocol_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "test_cases_ibfk_3")
+  attack_vectors       attack_vectors?        @relation(fields: [attack_vector_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "test_cases_ibfk_4")
+  test_types           test_types?            @relation(fields: [test_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "test_cases_ibfk_5")
+  severities           severities?            @relation(fields: [severity_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "test_cases_ibfk_6")
+  threats              threats?               @relation(fields: [threat_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "test_cases_ibfk_7")
+  assets               assets?                @relation(fields: [asset_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "test_cases_ibfk_8")
+  created_by_user      users?                 @relation("created_by_rel", fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "test_cases_ibfk_created_by")
+  updated_by_user      users?                 @relation("updated_by_rel", fields: [updated_by], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "test_cases_ibfk_updated_by")
+  deleted_by_user      users?                 @relation("deleted_by_rel", fields: [deleted_by], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "test_cases_ibfk_deleted_by")
+
+  @@index([asset_id], map: "asset_id")
+  @@index([attack_vector_id], map: "attack_vector_id")
+  @@index([category_id], map: "category_id")
+  @@index([objective_id], map: "objective_id")
+  @@index([protocol_id], map: "protocol_id")
+  @@index([severity_id], map: "severity_id")
+  @@index([test_type_id], map: "test_type_id")
+  @@index([threat_id], map: "threat_id")
+  @@index([created_by], map: "ix_test_cases_created_by")
+  @@index([updated_by], map: "ix_test_cases_updated_by")
+  @@index([deleted_by], map: "ix_test_cases_deleted_by")
+  @@index([deleted_at], map: "ix_test_cases_deleted_at")
+}
+
+model test_types {
+  id         BigInt       @id @default(autoincrement())
+  name       String       @unique(map: "name") @db.VarChar(100)
+  test_cases test_cases[]
+}
+
+model threats {
+  id          BigInt       @id @default(autoincrement())
+  threat_text String       @unique(map: "uk_threat", length: 255) @db.Text
+  test_cases  test_cases[]
+}
+
+model tools_master {
+  id              BigInt            @id @default(autoincrement())
+  tool_name       String            @unique(map: "uk_tool", length: 255) @db.VarChar(1000)
+  test_case_tools test_case_tools[]
+}
+</file>
+
+<file path=".gitignore">
+# venv
+.venv/
+
+# python
+__pycache__/
+*.py[cod]
+
+# env
+.env
+</file>
+
+<file path="requirements.txt">
+fastapi
+uvicorn[standard]
+prisma==0.15.0
+pydantic
+pydantic-settings
+python-dotenv
+pandas
+openpyxl
+cryptography
+reportlab
+pillow
+PyJWT
+pwdlib[argon2]
+</file>
+
+<file path="run.py">
+import uvicorn
+
+if __name__ == "__main__":
+    uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)
+</file>
+
+</files>

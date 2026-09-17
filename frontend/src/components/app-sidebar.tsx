@@ -4,11 +4,13 @@ import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { LayoutDashboard, Cpu, ShieldCheck } from "lucide-react";
+import { LayoutDashboard, Cpu, ShieldCheck, Settings, LogOut } from "lucide-react";
 
 import { getProject } from "@/lib/api";
+import { useAuth } from "@/contexts/auth-context";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 import {
   Sidebar,
   SidebarContent,
@@ -35,6 +37,7 @@ function pageNumberFromPath(pathname: string): number | null {
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname();
+  const { isAdmin, user, logout } = useAuth();
   const currentProjectId = projectIdFromPath(pathname);
   const currentPage = pageNumberFromPath(pathname);
 
@@ -79,6 +82,29 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </SidebarMenu>
         </SidebarGroup>
 
+        {isAdmin && (
+          <>
+            <SidebarSeparator />
+            <SidebarGroup>
+              <SidebarGroupLabel>Administration</SidebarGroupLabel>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname.startsWith("/admin")}
+                    tooltip="Admin Panel"
+                  >
+                    <Link href="/admin">
+                      <Settings />
+                      <span>Admin Panel</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroup>
+          </>
+        )}
+
         {currentProjectId !== null && (
           <>
             <SidebarSeparator />
@@ -121,6 +147,30 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarContent>
 
       <SidebarFooter>
+        <SidebarSeparator />
+        {/* User info + logout */}
+        <div className="flex items-center justify-between gap-2 px-1 py-0.5">
+          <div className="flex min-w-0 flex-col group-data-[collapsible=icon]:hidden">
+            <span className="truncate text-sm font-medium leading-tight">
+              {user?.username ?? "—"}
+            </span>
+            <span className="truncate text-xs text-muted-foreground capitalize">
+              {user?.role?.toLowerCase() ?? ""}
+            </span>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={logout}
+            aria-label="Logout"
+            className="shrink-0 text-muted-foreground hover:text-destructive"
+            title="Logout"
+          >
+            <LogOut className="size-4" />
+          </Button>
+        </div>
+
+        <SidebarSeparator />
         <div className="flex items-center justify-between px-1">
           <span className="text-xs text-muted-foreground group-data-[collapsible=icon]:hidden">
             Appearance

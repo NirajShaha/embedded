@@ -195,6 +195,20 @@ model test_case_tools {
   @@index([tool_id], map: "tool_id")
 }
 
+model users {
+  id          BigInt       @id @default(autoincrement())
+  username    String       @unique(map: "uk_username") @db.VarChar(255)
+  password    String       @db.VarChar(255)
+  role        String       @db.VarChar(50) @default("USER")
+  created_at  DateTime     @default(now()) @db.Timestamp(0)
+  updated_at  DateTime     @default(now()) @updatedAt @db.Timestamp(0)
+  test_cases_created  test_cases[] @relation("created_by_rel")
+  test_cases_updated  test_cases[] @relation("updated_by_rel")
+  test_cases_deleted  test_cases[] @relation("deleted_by_rel")
+
+  @@index([username], map: "ix_users_username")
+}
+
 model test_cases {
   id                   BigInt                 @id @default(autoincrement())
   category_id          BigInt
@@ -216,6 +230,11 @@ model test_cases {
   safety_impact        String?                @db.Text
   automation_possible  String?                @db.VarChar(50)
   created_at           DateTime?              @default(now()) @db.Timestamp(0)
+  updated_at           DateTime?              @default(now()) @updatedAt @db.Timestamp(0)
+  created_by           BigInt?
+  updated_by           BigInt?
+  deleted_by           BigInt?
+  deleted_at DateTime? @db.Timestamp(0)
   test_case_references test_case_references[]
   test_case_tools      test_case_tools[]
   test_case_overrides  project_test_case_overrides[]
@@ -227,6 +246,9 @@ model test_cases {
   severities           severities?            @relation(fields: [severity_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "test_cases_ibfk_6")
   threats              threats?               @relation(fields: [threat_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "test_cases_ibfk_7")
   assets               assets?                @relation(fields: [asset_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "test_cases_ibfk_8")
+  created_by_user      users?                 @relation("created_by_rel", fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "test_cases_ibfk_created_by")
+  updated_by_user      users?                 @relation("updated_by_rel", fields: [updated_by], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "test_cases_ibfk_updated_by")
+  deleted_by_user      users?                 @relation("deleted_by_rel", fields: [deleted_by], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "test_cases_ibfk_deleted_by")
 
   @@index([asset_id], map: "asset_id")
   @@index([attack_vector_id], map: "attack_vector_id")
@@ -236,6 +258,10 @@ model test_cases {
   @@index([severity_id], map: "severity_id")
   @@index([test_type_id], map: "test_type_id")
   @@index([threat_id], map: "threat_id")
+  @@index([created_by], map: "ix_test_cases_created_by")
+  @@index([updated_by], map: "ix_test_cases_updated_by")
+  @@index([deleted_by], map: "ix_test_cases_deleted_by")
+  @@index([deleted_at], map: "ix_test_cases_deleted_at")
 }
 
 model test_types {

@@ -20,6 +20,11 @@ export class ErrorBoundary extends React.Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
+    console.error(
+      "[ErrorBoundary:" + this.props.label + "] caught:",
+      error,
+      info.componentStack,
+    );
     const entry =
       new Date().toISOString() +
       " caught error: " +

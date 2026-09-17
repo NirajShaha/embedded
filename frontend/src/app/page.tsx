@@ -3,10 +3,11 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { FolderPlus, Plus } from "lucide-react";
+import { FolderPlus, LogOut, Plus } from "lucide-react";
 
 import { APP_USER_NAME } from "@/config";
 import { listProjects } from "@/lib/api";
+import { useAuth } from "@/contexts/auth-context";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CreateProjectDialog } from "@/components/create-project-dialog";
@@ -16,6 +17,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = React.useState(false);
+  const { user, logout } = useAuth();
 
   const {
     data: projects,
@@ -44,6 +46,23 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-10">
+      {/* Top bar: user info + logout */}
+      <div className="flex items-center justify-end gap-2">
+        <span className="text-sm text-muted-foreground">
+          Signed in as{" "}
+          <span className="font-medium text-foreground">{user?.username}</span>
+        </span>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={logout}
+          className="gap-1.5 text-destructive hover:text-destructive"
+        >
+          <LogOut className="size-3.5" />
+          Logout
+        </Button>
+      </div>
+
       <section className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
         <div className="space-y-2">
           <p className="text-sm font-medium text-muted-foreground">{greeting},</p>
