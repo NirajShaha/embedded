@@ -515,7 +515,6 @@ export interface TestCaseOverridePayload {
   tools?: number[] | null;
   references?: number[] | null;
 }
-}
 
 
 export const getCategories = () =>

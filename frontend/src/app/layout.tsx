@@ -16,7 +16,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Embedded Config — Security Setup",
-  description: "Configure automotive ECU projects and run security test coverage.",
+  description:
+    "Configure automotive ECU projects and run security test coverage.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -29,9 +30,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full bg-background text-foreground">
         <Providers>
           <AuthLayout>
-            <div className="mx-auto w-full max-w-6xl px-6 py-8 sm:px-8 sm:py-10">
-              {children}
-            </div>
+            {children}
           </AuthLayout>
         </Providers>
       </body>
