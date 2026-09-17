@@ -45,6 +45,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Pagination } from "@/components/pagination";
 import { TestCaseDetailDialog } from "@/components/test-case-detail-dialog";
@@ -288,11 +289,10 @@ export function TestCasesDashboard({
   ] = React.useState(
     PAGE_SIZE_DEFAULT,
   );
-
   const [
-    activeTestCase,
-    setActiveTestCase,
-  ] = React.useState<TestCase | null>(
+    activeTestCaseId,
+    setActiveTestCaseId,
+  ] = React.useState<number | null>(
     null,
   );
 
@@ -330,6 +330,7 @@ export function TestCasesDashboard({
   } = useQuery({
     queryKey: [
       "test-cases",
+      projectId,
       selectedCategories
         .slice()
         .sort(
@@ -353,8 +354,24 @@ export function TestCasesDashboard({
         selectedTestTypes.length > 0
           ? selectedTestTypes
           : undefined,
+        projectId,
       ),
   });
+
+  // Derive the open test case from the query data so edits saved through the
+  // dialog immediately flow back into the row and the detail view.
+  const activeTestCase = React.useMemo(
+    () =>
+      (testCases ?? []).find(
+        (testCase) =>
+          testCase.id ===
+          activeTestCaseId,
+      ) ?? null,
+    [
+      testCases,
+      activeTestCaseId,
+    ],
+  );
 
   const toggleCategory =
     React.useCallback(
@@ -740,15 +757,26 @@ export function TestCasesDashboard({
                   }
                 </div>
 
-                {testCase.objective
-                  ?.name && (
-                    <div className="mt-0.5 line-clamp-1 break-words text-xs text-muted-foreground">
-                      {
-                        testCase.objective
-                          .name
-                      }
-                    </div>
+                <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                  {testCase.objective
+                    ?.name && (
+                      <div className="line-clamp-1 break-words text-xs text-muted-foreground">
+                        {
+                          testCase.objective
+                            .name
+                        }
+                      </div>
+                    )}
+
+                  {testCase.is_overridden && (
+                    <Badge
+                      variant="secondary"
+                      className="text-[10px]"
+                    >
+                      Edited
+                    </Badge>
                   )}
+                </div>
               </>
             );
           },
@@ -855,8 +883,8 @@ export function TestCasesDashboard({
                 onClick={(event) => {
                   event.stopPropagation();
 
-                  setActiveTestCase(
-                    testCase,
+                  setActiveTestCaseId(
+                    testCase.id,
                   );
                 }}
                 aria-label={`View details for ${testCase.action_test_case}`}
@@ -1059,9 +1087,13 @@ export function TestCasesDashboard({
           <>
             <DataTable
               table={table}
-              onRowClick={
-                setActiveTestCase
-              }
+              onRowClick={(
+                testCase,
+              ) => {
+                setActiveTestCaseId(
+                  testCase.id,
+                );
+              }}
             />
 
             <Pagination
@@ -1165,12 +1197,13 @@ export function TestCasesDashboard({
 
       <TestCaseDetailDialog
         testCase={activeTestCase}
+        projectId={projectId}
         open={
           activeTestCase !== null
         }
         onOpenChange={(open) => {
           if (!open) {
-            setActiveTestCase(
+            setActiveTestCaseId(
               null,
             );
           }

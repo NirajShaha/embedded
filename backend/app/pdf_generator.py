@@ -542,11 +542,24 @@ def _testing_type_rows(selected_test_type_names: list[str] | None) -> list[list[
     ]
 
 
+def _rel(obj: Any, field: str, default: Any = None) -> Any:
+    """Read a field from either a mapping or an object (Prisma relation model)."""
+    if obj is None:
+        return default
+    if isinstance(obj, dict):
+        return obj.get(field, default)
+    return getattr(obj, field, default)
+
+
 def _build_scope_rows(
     test_cases: list[Any],
 ) -> list[tuple[bool, str, str, str]]:
     """
     Convert the test-case catalogue into the section 4 row format.
+
+    Each test case is either a Prisma row or the merged mapping produced by
+    ``app.test_case_overrides.map_test_cases`` (master values with this project's
+    overrides applied), so a project sees its own edited text in the report.
 
     Returns a list of (is_section_banner, objective, action, comment) tuples
     where ``is_section_banner`` is True for category headers. The objective
@@ -557,9 +570,9 @@ def _build_scope_rows(
     ordered = sorted(
         test_cases,
         key=lambda tc: (
-            tc.categories.id if tc.categories else 0,
-            tc.objectives.id if tc.objectives else 0,
-            tc.id,
+            _rel(_rel(tc, "category"), "id", 0) or 0,
+            _rel(_rel(tc, "objective"), "id", 0) or 0,
+            _rel(tc, "id", 0) or 0,
         ),
     )
 
@@ -570,9 +583,11 @@ def _build_scope_rows(
 
     for tc in ordered:
 
+        category = _rel(tc, "category")
+
         category_name = (
-            tc.categories.name
-            if tc.categories
+            _rel(category, "name")
+            if category
             else "Uncategorised"
         )
 
@@ -589,9 +604,11 @@ def _build_scope_rows(
             current_category = category_name
             current_objective = None
 
+        objective = _rel(tc, "objective")
+
         objective_name = (
-            tc.objectives.name
-            if tc.objectives
+            _rel(objective, "name") or ""
+            if objective
             else ""
         )
 
@@ -601,17 +618,13 @@ def _build_scope_rows(
 
         current_objective = objective_name
 
-        status = (
-            tc.source_scope_status
-            if tc.source_scope_status
-            else "—"
-        )
+        status = _rel(tc, "source_scope_status") or "—"
 
         rows.append(
             (
                 False,
                 objective_name if show_objective else "",
-                tc.action_test_case,
+                _rel(tc, "action_test_case") or "",
                 status,
             )
         )

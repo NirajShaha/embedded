@@ -207,6 +207,33 @@ class TestCaseRead(BaseModel):
     test_case_tools: list[TestCaseToolRead]
     test_case_references: list[TestCaseReferenceRead]
 
+    is_overridden: bool = False
+
+
+class TestCaseOverrideUpdate(BaseModel):
+    """Per-project edits to a test case.
+
+    ``None`` means "leave as-is". The text fields are written verbatim, so an empty
+    string explicitly clears the master value for this project. ``tools`` and
+    ``references`` are full replacement sets; ``None`` keeps the master links and an
+    empty list removes them all.
+    """
+
+    action_test_case: str | None = None
+    source_scope_status: str | None = None
+    description: str | None = None
+    attack_path: str | None = None
+    test_steps: str | None = None
+    expected_output: str | None = None
+    attack_feasibility: str | None = None
+    cia_impact: str | None = None
+    safety_impact: str | None = None
+    automation_possible: str | None = None
+
+    tools: list[int] | None = None
+    references: list[int] | None = None
+
+
 # Authentication schemas
 
 UserRole = Literal[

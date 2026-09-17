@@ -4,6 +4,7 @@ import * as React from "react";
 
 interface State {
   error: Error | null;
+  eventLog: string[];
 }
 
 interface Props {
@@ -12,10 +13,10 @@ interface Props {
 }
 
 export class ErrorBoundary extends React.Component<Props, State> {
-  state: State = { error: null };
+  state: State = { error: null, eventLog: [] };
 
   static getDerivedStateFromError(error: Error): State {
-    return { error };
+    return { error, eventLog: [] };
   }
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
@@ -24,6 +25,13 @@ export class ErrorBoundary extends React.Component<Props, State> {
       error,
       info.componentStack,
     );
+    const entry =
+      new Date().toISOString() +
+      " caught error: " +
+      error.message +
+      "\n" +
+      (info.componentStack ?? "");
+    this.setState((prev) => ({ eventLog: [...prev.eventLog, entry] }));
   }
 
   render() {
@@ -36,6 +44,11 @@ export class ErrorBoundary extends React.Component<Props, State> {
             {"\n"}
             {this.state.error.stack}
           </pre>
+          {this.state.eventLog.length > 0 ? (
+            <pre style={{ whiteSpace: "pre-wrap" }}>
+              {this.state.eventLog.join("\n---\n")}
+            </pre>
+          ) : null}
         </div>
       );
     }

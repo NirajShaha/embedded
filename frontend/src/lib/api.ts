@@ -433,7 +433,6 @@ export interface TestCase {
   | string
   | null;
   created_at: string;
-
   category: {
     id: number;
     name: string;
@@ -489,6 +488,33 @@ export interface TestCase {
       ref_text: string;
     };
   }>;
+  is_overridden?: boolean;
+}
+
+export interface ToolOption {
+  id: number;
+  tool_name: string;
+}
+
+export interface ReferenceOption {
+  id: number;
+  ref_text: string;
+}
+
+export interface TestCaseOverridePayload {
+  action_test_case?: string | null;
+  source_scope_status?: string | null;
+  description?: string | null;
+  attack_path?: string | null;
+  test_steps?: string | null;
+  expected_output?: string | null;
+  attack_feasibility?: string | null;
+  cia_impact?: string | null;
+  safety_impact?: string | null;
+  automation_possible?: string | null;
+  tools?: number[] | null;
+  references?: number[] | null;
+}
 }
 
 
@@ -504,6 +530,11 @@ export const getTestTypes = () =>
   );
 
 
+export const listTools = () => request<ToolOption[]>("/test-cases/tools");
+
+export const listReferences = () =>
+  request<ReferenceOption[]>("/test-cases/references");
+
 export const listTestCases = (
   categoryIds?:
     | number[]
@@ -511,6 +542,7 @@ export const listTestCases = (
   testTypeIds?:
     | number[]
     | number,
+  projectId?: number,
 ) => {
   const searchParams =
     new URLSearchParams();
@@ -553,6 +585,15 @@ export const listTestCases = (
     },
   );
 
+  if (
+    projectId !== undefined
+  ) {
+    searchParams.append(
+      "project_id",
+      String(projectId),
+    );
+  }
+
   const query =
     searchParams.toString();
 
@@ -564,13 +605,101 @@ export const listTestCases = (
   );
 };
 
-
 export const getTestCase = (
   id: number,
+  projectId?: number,
+) => {
+  const searchParams =
+    new URLSearchParams();
+
+  if (
+    projectId !== undefined
+  ) {
+    searchParams.append(
+      "project_id",
+      String(projectId),
+    );
+  }
+
+  const query =
+    searchParams.toString();
+
+  return request<TestCase>(
+    `/test-cases/${id}${query
+      ? `?${query}`
+      : ""
+    }`,
+  );
+};
+
+export const updateTestCaseOverride = (
+  projectId: number,
+  testCaseId: number,
+  payload: TestCaseOverridePayload,
 ) =>
   request<TestCase>(
-    `/test-cases/${id}`,
+    `/projects/${projectId}/test-cases/${testCaseId}`,
+    {
+      method: "PUT",
+      body: JSON.stringify(
+        payload,
+      ),
+    },
   );
+
+export const resetTestCaseOverride = (
+  projectId: number,
+  testCaseId: number,
+) => {
+  const token =
+    typeof window !==
+      "undefined"
+      ? localStorage.getItem(
+        "token",
+      )
+      : null;
+
+  const headers =
+    new Headers();
+
+  if (token) {
+    headers.set(
+      "Authorization",
+      `Bearer ${token}`,
+    );
+  }
+
+  return fetch(
+    `${API_URL}/projects/${projectId}/test-cases/${testCaseId}`,
+    {
+      method: "DELETE",
+      headers,
+    },
+  ).then(
+    async (
+      response,
+    ) => {
+      if (
+        response.status ===
+        401
+      ) {
+        handleUnauthorizedResponse();
+
+        throw new Error(
+          "Your session has expired. Please sign in again.",
+        );
+      }
+
+      if (!response.ok) {
+        throw new Error(
+          await getResponseErrorMessage(
+            response,
+          ),
+        );
+      }
+    },
+  );
+};
 
 
 export interface DownloadTestCasesPDFParams {

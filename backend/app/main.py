@@ -83,6 +83,11 @@ app.include_router(
     prefix=api_prefix,
 )
 
+app.include_router(
+    test_cases.overrides_router,
+    prefix=api_prefix,
+)
+
 
 @app.get("/api/health")
 async def health() -> dict[str, str]:
