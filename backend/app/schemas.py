@@ -137,13 +137,6 @@ class ThreatRead(BaseModel):
     threat_text: str
 
 
-class AssetRead(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
-    id: int
-    asset_name: str
-
-
 class ToolRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -181,8 +174,10 @@ class TestCaseRead(BaseModel):
     test_type_id: int | None
     severity_id: int | None
     threat_id: int | None
-    asset_id: int | None
 
+    test_case_name: str | None
+    pre_condition: str | None
+    impact: str | None
     action_test_case: str
     source_scope_status: str | None
     description: str | None
@@ -192,7 +187,6 @@ class TestCaseRead(BaseModel):
     attack_feasibility: str | None
     cia_impact: str | None
     safety_impact: str | None
-    automation_possible: str | None
 
     created_at: datetime
 
@@ -203,7 +197,6 @@ class TestCaseRead(BaseModel):
     test_type: TestTypeRead | None
     severity: SeverityRead | None
     threat: ThreatRead | None
-    asset: AssetRead | None
     test_case_tools: list[TestCaseToolRead]
     test_case_references: list[TestCaseReferenceRead]
 
@@ -219,6 +212,9 @@ class TestCaseOverrideUpdate(BaseModel):
     empty list removes them all.
     """
 
+    test_case_name: str | None = Field(default=None, max_length=255)
+    pre_condition: str | None = None
+    impact: str | None = None
     action_test_case: str | None = None
     source_scope_status: str | None = None
     description: str | None = None
@@ -228,7 +224,6 @@ class TestCaseOverrideUpdate(BaseModel):
     attack_feasibility: str | None = None
     cia_impact: str | None = None
     safety_impact: str | None = None
-    automation_possible: str | None = None
 
     tools: list[int] | None = None
     references: list[int] | None = None
@@ -304,18 +299,12 @@ class TestCaseCreate(BaseModel):
         gt=0,
     )
 
-    asset_id: int | None = Field(
-        default=None,
-        gt=0,
-    )
+    test_case_name: str | None = Field(default=None, max_length=255)
+    pre_condition: str | None = None
+    impact: str | None = None
 
     action_test_case: str = Field(
         min_length=1,
-    )
-
-    source_scope_status: str | None = Field(
-        default=None,
-        max_length=100,
     )
 
     description: str | None = None
@@ -326,7 +315,6 @@ class TestCaseCreate(BaseModel):
     cia_impact: str | None = None
     safety_impact: str | None = None
 
-    automation_possible: AutomationOption | None = None
 
     tool_ids: list[int] = Field(
         default_factory=list,
@@ -373,19 +361,13 @@ class TestCaseUpdate(BaseModel):
         gt=0,
     )
 
-    asset_id: int | None = Field(
-        default=None,
-        gt=0,
-    )
+    test_case_name: str | None = Field(default=None, max_length=255)
+    pre_condition: str | None = None
+    impact: str | None = None
 
     action_test_case: str | None = Field(
         default=None,
         min_length=1,
-    )
-
-    source_scope_status: str | None = Field(
-        default=None,
-        max_length=100,
     )
 
     description: str | None = None
@@ -396,7 +378,6 @@ class TestCaseUpdate(BaseModel):
     cia_impact: str | None = None
     safety_impact: str | None = None
 
-    automation_possible: AutomationOption | None = None
 
     tool_ids: list[int] | None = None
     reference_ids: list[int] | None = None
@@ -423,7 +404,6 @@ class TestCaseLookups(BaseModel):
     test_types: list[LookupItem]
     severities: list[SeverityLookupItem]
     threats: list[LookupItem]
-    assets: list[LookupItem]
     tools: list[LookupItem]
     references: list[LookupItem]
 
@@ -449,3 +429,5 @@ class FieldSuggestions(BaseModel):
 class CreateLookupItemPayload(BaseModel):
     """Payload for on-the-fly lookup item creation from the admin form."""
     name: str = Field(min_length=1, max_length=500)
+    category_id: int | None = Field(default=None, gt=0)
+    severity_rank: int | None = Field(default=None, ge=1, le=4)

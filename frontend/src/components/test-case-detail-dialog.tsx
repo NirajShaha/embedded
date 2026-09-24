@@ -11,7 +11,6 @@ import {
   FileText,
   AlertTriangle,
   AlertCircle,
-  Cpu,
   Target,
   Hash,
   Lock,
@@ -23,6 +22,7 @@ import {
 import {
   listReferences,
   listTools,
+  createUserLookupItem,
   resetTestCaseOverride,
   updateTestCaseOverride,
   type TestCase,
@@ -95,16 +95,48 @@ function severityFromRank(rank: number | undefined) {
 }
 
 const TEXT_FIELDS = [
-  { key: "action_test_case", label: "Action / test case", long: true, required: true },
+  {
+    key: "test_case_name",
+    label: "Test case name",
+    long: false,
+    required: false,
+  },
+  { key: "pre_condition", label: "Pre-condition", long: true, required: false },
+  {
+    key: "action_test_case",
+    label: "Action / test case",
+    long: true,
+    required: true,
+  },
   { key: "description", label: "Description", long: true, required: false },
   { key: "test_steps", label: "Test steps", long: true, required: false },
-  { key: "expected_output", label: "Expected output", long: true, required: false },
+  {
+    key: "expected_output",
+    label: "Expected output",
+    long: true,
+    required: false,
+  },
   { key: "attack_path", label: "Attack path", long: true, required: false },
-  { key: "attack_feasibility", label: "Attack feasibility", long: false, required: false },
-  { key: "source_scope_status", label: "Source scope status", long: false, required: false },
+  {
+    key: "attack_feasibility",
+    label: "Attack feasibility",
+    long: false,
+    required: false,
+  },
+  {
+    key: "source_scope_status",
+    label: "Source scope status",
+    long: false,
+    required: false,
+  },
   { key: "cia_impact", label: "CIA impact", long: false, required: false },
-  { key: "safety_impact", label: "Safety impact", long: false, required: false },
-  { key: "automation_possible", label: "Automation possible", long: false, required: false },
+  {
+    key: "safety_impact",
+    label: "Safety impact",
+    long: false,
+    required: false,
+  },
+  { key: "impact", label: "Impact", long: true, required: false },
 ] as const;
 
 type TextFieldKey = (typeof TEXT_FIELDS)[number]["key"];
@@ -113,6 +145,8 @@ type FormState = Record<TextFieldKey, string>;
 
 function toFormState(testCase: TestCase): FormState {
   return {
+    test_case_name: testCase.test_case_name ?? "",
+    pre_condition: testCase.pre_condition ?? "",
     action_test_case: testCase.action_test_case ?? "",
     description: testCase.description ?? "",
     test_steps: testCase.test_steps ?? "",
@@ -122,7 +156,7 @@ function toFormState(testCase: TestCase): FormState {
     source_scope_status: testCase.source_scope_status ?? "",
     cia_impact: testCase.cia_impact ?? "",
     safety_impact: testCase.safety_impact ?? "",
-    automation_possible: testCase.automation_possible ?? "",
+    impact: testCase.impact ?? "",
   };
 }
 
@@ -188,35 +222,79 @@ function TestCaseEditFields({
   form: FormState;
   onChange: (field: TextFieldKey, value: string) => void;
 }) {
+  const renderField = (key: TextFieldKey) => {
+    const field = TEXT_FIELDS.find((item) => item.key === key);
+    if (!field) return null;
+
+    return (
+      <FormField
+        key={field.key}
+        id={field.key}
+        label={field.label}
+        required={field.required}
+        fullWidth={field.long}
+      >
+        {field.long ? (
+          <Textarea
+            id={field.key}
+            value={form[field.key]}
+            onChange={(e) => onChange(field.key, e.target.value)}
+            required={field.required}
+            rows={4}
+            className="field-sizing-content min-h-24 resize-y"
+          />
+        ) : (
+          <Input
+            id={field.key}
+            value={form[field.key]}
+            onChange={(e) => onChange(field.key, e.target.value)}
+          />
+        )}
+      </FormField>
+    );
+  };
+
   return (
-    <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-      {TEXT_FIELDS.map((field) => (
-        <FormField
-          key={field.key}
-          id={field.key}
-          label={field.label}
-          required={field.required}
-          fullWidth={field.long}
-        >
-          {field.long ? (
-            <Textarea
-              id={field.key}
-              value={form[field.key]}
-              onChange={(e) => onChange(field.key, e.target.value)}
-              required={field.required}
-              rows={5}
-              className="field-sizing-content max-h-72 min-h-24 resize-y"
-            />
-          ) : (
-            <Input
-              id={field.key}
-              value={form[field.key]}
-              onChange={(e) => onChange(field.key, e.target.value)}
-            />
-          )}
-        </FormField>
-      ))}
-    </section>
+    <div className="space-y-5">
+      <EditSection title="Test definition" icon={FileText}>
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          {(
+            [
+              "test_case_name",
+              "action_test_case",
+              "pre_condition",
+            ] as TextFieldKey[]
+          ).map(renderField)}
+        </div>
+      </EditSection>
+
+      <EditSection title="Execution details" icon={ListChecks}>
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          {(
+            [
+              "description",
+              "test_steps",
+              "expected_output",
+              "attack_path",
+            ] as TextFieldKey[]
+          ).map(renderField)}
+        </div>
+      </EditSection>
+
+      <EditSection title="Impact and scope" icon={ShieldAlert}>
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          {(
+            [
+              "impact",
+              "attack_feasibility",
+              "source_scope_status",
+              "cia_impact",
+              "safety_impact",
+            ] as TextFieldKey[]
+          ).map(renderField)}
+        </div>
+      </EditSection>
+    </div>
   );
 }
 
@@ -237,7 +315,9 @@ function TestCaseDetailBody({
 
   const [error, setError] = React.useState<string | null>(null);
   const [isResetOpen, setIsResetOpen] = React.useState(false);
-  const [form, setForm] = React.useState<FormState>(() => toFormState(testCase));
+  const [form, setForm] = React.useState<FormState>(() =>
+    toFormState(testCase),
+  );
   const [baseline, setBaseline] = React.useState<FormState>(() =>
     toFormState(testCase),
   );
@@ -253,7 +333,6 @@ function TestCaseDetailBody({
   const [baselineReferences, setBaselineReferences] = React.useState<number[]>(
     () => testCase.test_case_references.map((item) => item.reference.id),
   );
-
   const toolsQuery = useQuery({
     queryKey: ["test-case-tools"],
     queryFn: listTools,
@@ -400,7 +479,9 @@ function TestCaseDetailBody({
           )}
         </div>
         <DialogTitle className="text-xl leading-snug font-semibold tracking-tight">
-          {isEditing ? form.action_test_case || "Edit test case" : testCase.action_test_case}
+          {isEditing
+            ? form.test_case_name || form.action_test_case || "Edit test case"
+            : testCase.test_case_name || testCase.action_test_case}
         </DialogTitle>
         {objective && (
           <DialogDescription className="text-sm text-muted-foreground">
@@ -427,84 +508,54 @@ function TestCaseDetailBody({
 
               <Separator />
 
-              <section>
-                <h3 className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Classification
-                </h3>
-                <p className="mb-3 text-xs text-muted-foreground">
-                  Category, objective, type, severity and the other classifications
-                  come from the master catalogue and cannot be edited here.
-                </p>
-                <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-                  <SummaryItem
-                    icon={Cpu}
-                    label="Asset"
-                    value={testCase.asset?.asset_name}
-                  />
-                  <SummaryItem
-                    icon={Target}
-                    label="Attack vector"
-                    value={testCase.attack_vector?.name}
-                  />
-                  <SummaryItem
-                    icon={Hash}
-                    label="Threat"
-                    value={testCase.threat?.threat_text}
-                  />
-                  <SummaryItem
-                    icon={Lock}
-                    label="Protocol"
-                    value={testCase.protocol?.name}
-                  />
-                </div>
-              </section>
+              <section className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+                <EditSection title="Tools used" icon={Wrench}>
+                  <p className="mb-2 text-xs text-muted-foreground">
+                    Replaces the master list for this project only.
+                  </p>
+                  {toolsQuery.isLoading ? (
+                    <Skeleton className="h-24 w-full" />
+                  ) : (
+                    <ToggleList
+                      lookupType="tools"
+                      options={(toolsQuery.data ?? []).map((tool) => ({
+                        id: tool.id,
+                        label: tool.tool_name,
+                      }))}
+                      selected={selectedTools}
+                      onToggle={toggleTool}
+                      onNewItemCreated={(id) =>
+                        setSelectedTools((prev) => [...prev, id])
+                      }
+                      emptyLabel="No tools available"
+                    />
+                  )}
+                </EditSection>
 
-              <Separator />
-
-              <section>
-                <h3 className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  <Wrench className="size-3.5" />
-                  Tools used
-                </h3>
-                <p className="mb-2 text-xs text-muted-foreground">
-                  Selecting tools replaces the master list for this project only.
-                </p>
-                {toolsQuery.isLoading ? (
-                  <Skeleton className="h-10 w-full" />
-                ) : (
-                  <ToggleList
-                    options={(toolsQuery.data ?? []).map((tool) => ({
-                      id: tool.id,
-                      label: tool.tool_name,
-                    }))}
-                    selected={selectedTools}
-                    onToggle={toggleTool}
-                    emptyLabel="No tools available"
-                  />
-                )}
-              </section>
-
-              <section>
-                <h3 className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  <FileText className="size-3.5" />
-                  References
-                </h3>
-                <p className="mb-2 text-xs text-muted-foreground">
-                  Selecting references replaces the master list for this project only.
-                </p>
-                {referencesQuery.isLoading ? (
-                  <Skeleton className="h-10 w-full" />
-                ) : (
-                  <ToggleList
-                    options={(referencesQuery.data ?? []).map((reference) => ({
-                      id: reference.id,
-                      label: reference.ref_text,
-                    }))}
-                    selected={selectedReferences}
-                    onToggle={toggleReference}
-                    emptyLabel="No references available"
-                  />
-                )}
+                <EditSection title="References" icon={FileText}>
+                  <p className="mb-2 text-xs text-muted-foreground">
+                    Replaces the master list for this project only.
+                  </p>
+                  {referencesQuery.isLoading ? (
+                    <Skeleton className="h-24 w-full" />
+                  ) : (
+                    <ToggleList
+                      lookupType="references"
+                      options={(referencesQuery.data ?? []).map(
+                        (reference) => ({
+                          id: reference.id,
+                          label: reference.ref_text,
+                        }),
+                      )}
+                      selected={selectedReferences}
+                      onToggle={toggleReference}
+                      onNewItemCreated={(id) =>
+                        setSelectedReferences((prev) => [...prev, id])
+                      }
+                      emptyLabel="No references available"
+                    />
+                  )}
+                </EditSection>
               </section>
             </div>
           </div>
@@ -555,6 +606,27 @@ function TestCaseDetailBody({
                   body={testCase.expected_output}
                   tone="success"
                 />
+                {(testCase.test_case_name ||
+                  testCase.pre_condition ||
+                  testCase.impact) && (
+                  <DetailSection title="Test definition" icon={FileText}>
+                    {testCase.test_case_name && (
+                      <SubItem
+                        label="Test case name"
+                        body={testCase.test_case_name}
+                      />
+                    )}
+                    {testCase.pre_condition && (
+                      <SubItem
+                        label="Pre-condition"
+                        body={testCase.pre_condition}
+                      />
+                    )}
+                    {testCase.impact && (
+                      <SubItem label="Impact" body={testCase.impact} />
+                    )}
+                  </DetailSection>
+                )}
                 {(testCase.attack_path || testCase.attack_feasibility) && (
                   <DetailSection
                     title="Attack information"
@@ -562,7 +634,10 @@ function TestCaseDetailBody({
                     tone="danger"
                   >
                     {testCase.attack_path && (
-                      <SubItem label="Attack path" body={testCase.attack_path} />
+                      <SubItem
+                        label="Attack path"
+                        body={testCase.attack_path}
+                      />
                     )}
                     {testCase.attack_feasibility && (
                       <SubItem
@@ -577,11 +652,6 @@ function TestCaseDetailBody({
               {/* Right column: structured facts */}
               <div className="space-y-5">
                 <section className="grid grid-cols-2 gap-3">
-                  <SummaryItem
-                    icon={Cpu}
-                    label="Asset"
-                    value={testCase.asset?.asset_name}
-                  />
                   <SummaryItem
                     icon={Target}
                     label="Attack vector"
@@ -601,11 +671,8 @@ function TestCaseDetailBody({
 
                 <Separator />
 
-                <section>
-                  <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Impact analysis
-                  </h3>
-                  <div className="grid grid-cols-1 gap-3">
+                <DetailSection title="Impact analysis" icon={ShieldAlert}>
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <SummaryItem
                       icon={ShieldAlert}
                       label="CIA impact"
@@ -616,46 +683,47 @@ function TestCaseDetailBody({
                       label="Safety impact"
                       value={testCase.safety_impact}
                     />
-                    <SummaryItem
-                      icon={Wrench}
-                      label="Automation"
-                      value={testCase.automation_possible}
-                    />
                   </div>
-                </section>
+                </DetailSection>
 
-                {testCase.test_case_tools.length > 0 && (
-                  <section>
-                    <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      Tools used
-                    </h3>
-                    <div className="flex flex-wrap gap-1.5">
+                <DetailSection title="Tools used" icon={Wrench}>
+                  {testCase.test_case_tools.length > 0 ? (
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                       {testCase.test_case_tools.map((tool, idx) => (
-                        <Badge key={idx} variant="secondary">
+                        <Badge
+                          key={idx}
+                          variant="secondary"
+                          className="justify-start truncate px-3 py-2 text-left"
+                        >
                           {tool.tool.tool_name}
                         </Badge>
                       ))}
                     </div>
-                  </section>
-                )}
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      No tools selected.
+                    </p>
+                  )}
+                </DetailSection>
 
-                {testCase.test_case_references.length > 0 && (
-                  <section>
-                    <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      References
-                    </h3>
-                    <ul className="space-y-2">
+                <DetailSection title="References" icon={FileText}>
+                  {testCase.test_case_references.length > 0 ? (
+                    <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                       {testCase.test_case_references.map((ref, idx) => (
                         <li
                           key={idx}
-                          className="border-l-2 border-border pl-3 text-sm leading-relaxed text-foreground"
+                          className="rounded-md border border-border/60 bg-background/60 p-3 text-xs leading-5 text-foreground"
                         >
                           {ref.reference.ref_text}
                         </li>
                       ))}
                     </ul>
-                  </section>
-                )}
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      No references selected.
+                    </p>
+                  )}
+                </DetailSection>
               </div>
             </div>
           </ScrollArea>
@@ -711,8 +779,8 @@ function TestCaseDetailBody({
           <AlertDialogHeader>
             <AlertDialogTitle>Reset to original?</AlertDialogTitle>
             <AlertDialogDescription>
-              This discards the edits made for this project and restores the original
-              master test case. Other projects are not affected.
+              This discards the edits made for this project and restores the
+              original master test case. Other projects are not affected.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -736,42 +804,160 @@ function TestCaseDetailBody({
 }
 
 function ToggleList({
+  lookupType,
   options,
   selected,
   onToggle,
   emptyLabel,
+  onNewItemCreated,
 }: {
+  lookupType: "tools" | "references";
   options: Array<{ id: number; label: string }>;
   selected: number[];
   onToggle: (id: number) => void;
   emptyLabel: string;
+  onNewItemCreated: (id: number) => void;
 }) {
+  const [filterText, setFilterText] = React.useState("");
+  const [isAdding, setIsAdding] = React.useState(false);
+  const [newName, setNewName] = React.useState("");
+  const [addError, setAddError] = React.useState<string | null>(null);
+  const [isSaving, setIsSaving] = React.useState(false);
+  const queryClient = useQueryClient();
+  const filteredOptions = React.useMemo(() => {
+    const query = filterText.trim().toLowerCase();
+    return query
+      ? options.filter((option) => option.label.toLowerCase().includes(query))
+      : [];
+  }, [filterText, options]);
+
   if (options.length === 0) {
     return <p className="text-sm text-muted-foreground">{emptyLabel}</p>;
   }
 
   return (
-    <div className="max-h-56 space-y-1 overflow-y-auto rounded-md border border-border/60 p-2">
-      {options.map((option) => {
-        const isSelected = selected.includes(option.id);
-        return (
-          <button
-            key={option.id}
-            type="button"
-            onClick={() => onToggle(option.id)}
-            aria-pressed={isSelected}
-            className={
-              isSelected
-                ? "block w-full rounded border border-primary/40 bg-primary/10 px-2.5 py-1.5 text-left text-sm text-foreground"
-                : "block w-full rounded border border-transparent px-2.5 py-1.5 text-left text-sm text-muted-foreground hover:bg-muted"
-            }
-          >
-            {option.label}
-          </button>
-        );
-      })}
+    <div className="space-y-2">
+      <Input
+        value={filterText}
+        onChange={(event) => setFilterText(event.target.value)}
+        placeholder="Type to search"
+        className="h-9 text-sm"
+      />
+      {selected.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 rounded-md border border-border/60 bg-muted/20 p-2">
+          {selected.map((id) => {
+            const option = options.find((item) => item.id === id);
+            return option ? (
+              <button
+                key={id}
+                type="button"
+                onClick={() => onToggle(id)}
+                className="inline-flex max-w-full items-center gap-1 rounded-md border border-primary/30 bg-primary/10 px-2 py-1 text-xs leading-5 text-foreground hover:bg-primary/15"
+                title={`Remove ${option.label}`}
+              >
+                <span className="truncate">{option.label}</span>
+                <span aria-hidden="true">×</span>
+              </button>
+            ) : null;
+          })}
+        </div>
+      )}
+      {filterText.trim() && (
+        <div className="max-h-56 space-y-1 overflow-y-auto rounded-md border border-border/60 p-2">
+          {filteredOptions.length === 0 ? (
+            <p className="px-2 py-2 text-xs text-muted-foreground">
+              No matches found.
+            </p>
+          ) : null}
+          {filteredOptions.map((option) => {
+            const isSelected = selected.includes(option.id);
+            return (
+              <button
+                key={option.id}
+                type="button"
+                onClick={() => onToggle(option.id)}
+                aria-pressed={isSelected}
+                className={
+                  isSelected
+                    ? "block w-full rounded border border-primary/40 bg-primary/10 px-2.5 py-1.5 text-left text-xs leading-5 text-foreground"
+                    : "block w-full rounded border border-transparent px-2.5 py-1.5 text-left text-xs leading-5 text-muted-foreground hover:bg-muted"
+                }
+              >
+                {option.label}
+              </button>
+            );
+          })}
+          <div className="mt-1 border-t border-border/60 pt-2">
+            {isAdding ? (
+              <div className="flex gap-1.5">
+                <Input
+                  autoFocus
+                  value={newName}
+                  onChange={(event) => {
+                    setNewName(event.target.value);
+                    setAddError(null);
+                  }}
+                  placeholder={`New ${lookupType === "tools" ? "tool" : "reference"}`}
+                  disabled={isSaving}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                      void saveNewItem();
+                    }
+                    if (event.key === "Escape") setIsAdding(false);
+                  }}
+                />
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="outline"
+                  disabled={!newName.trim() || isSaving}
+                  onClick={() => void saveNewItem()}
+                  title="Add"
+                >
+                  <Save className="size-4" />
+                </Button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                className="w-full rounded px-2 py-1.5 text-left text-xs text-muted-foreground hover:bg-muted"
+                onClick={() => setIsAdding(true)}
+              >
+                + Add new {lookupType === "tools" ? "tool" : "reference"}
+              </button>
+            )}
+            {addError ? (
+              <p className="mt-1 text-xs text-destructive">{addError}</p>
+            ) : null}
+          </div>
+        </div>
+      )}
     </div>
   );
+
+  async function saveNewItem() {
+    const name = newName.trim();
+    if (!name) return;
+    setIsSaving(true);
+    setAddError(null);
+    try {
+      const item = await createUserLookupItem(lookupType, name);
+      await queryClient.invalidateQueries({
+        queryKey: [
+          lookupType === "tools" ? "test-case-tools" : "test-case-references",
+        ],
+      });
+      onNewItemCreated(item.id);
+      setNewName("");
+      setIsAdding(false);
+      setFilterText(item.name);
+    } catch (err) {
+      setAddError(err instanceof Error ? err.message : "Could not add item");
+    } finally {
+      setIsSaving(false);
+    }
+  }
 }
 
 function FormField({
@@ -795,6 +981,26 @@ function FormField({
       </Label>
       {children}
     </div>
+  );
+}
+
+function EditSection({
+  title,
+  icon: Icon,
+  children,
+}: {
+  title: string;
+  icon: React.ElementType;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="rounded-lg border border-border/70 bg-card/40 p-4 shadow-sm">
+      <h3 className="mb-3 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        <Icon className="size-3.5" />
+        {title}
+      </h3>
+      {children}
+    </section>
   );
 }
 
@@ -869,9 +1075,7 @@ function DetailSection({
 function SubItem({ label, body }: { label: string; body: string }) {
   return (
     <div className="mt-2">
-      <p className="mb-1 text-xs font-medium text-muted-foreground">
-        {label}
-      </p>
+      <p className="mb-1 text-xs font-medium text-muted-foreground">{label}</p>
       <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-foreground">
         {body}
       </p>

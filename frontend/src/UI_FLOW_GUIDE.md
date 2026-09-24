@@ -69,6 +69,7 @@
 ## 📱 Page Structure
 
 ### 1️⃣ **Login Page** (`/login`)
+
 ```
 ┌─────────────────────────────────────────┐
 │                                         │
@@ -88,6 +89,7 @@
 ```
 
 ### 2️⃣ **Dashboard** (`/`) - All Users
+
 ```
 ┌─────────────────────────────────────────────────────────┐
 │  📍 Sidebar                    Header                   │
@@ -110,6 +112,7 @@
 ```
 
 ### 3️⃣ **Admin Dashboard** (`/admin`) - Admin Only
+
 ```
 ┌──────────────────────────────────────────────────────────┐
 │  📍 Sidebar                                              │
@@ -144,6 +147,7 @@
 ```
 
 ### 4️⃣ **Test Case Management** (`/admin/test-cases`) - Admin Only
+
 ```
 ┌────────────────────────────────────────────────────────────┐
 │  ⬅ Test Case Management        [+ New Test Case]          │
@@ -187,7 +191,7 @@ When clicking [+ New Test Case] or [✎ Edit]:
 │  │ Test Type         │ Severity                    │ │
 │  │ [ Select ]        │ [ Select ]                  │ │
 │  │                                                  │ │
-│  │ Threat            │ Asset                       │ │
+│  │ Threat            │                             │ │
 │  │ [ Select ]        │ [ Select ]                  │ │
 │  └──────────────────────────────────────────────────┘ │
 │                                                        │
@@ -229,13 +233,13 @@ When clicking [+ New Test Case] or [✎ Edit]:
 
 ## 🔐 Access Control Rules
 
-| Page | Normal User | Admin | Login Required |
-|------|-------------|-------|----------------|
-| `/login` | ✅ | ✅ | No |
-| `/` (Dashboard) | ✅ | ✅ | Yes |
-| `/projects/*` | ✅ | ✅ | Yes |
-| `/admin` | ❌ | ✅ | Yes |
-| `/admin/test-cases` | ❌ | ✅ | Yes |
+| Page                | Normal User | Admin | Login Required |
+| ------------------- | ----------- | ----- | -------------- |
+| `/login`            | ✅          | ✅    | No             |
+| `/` (Dashboard)     | ✅          | ✅    | Yes            |
+| `/projects/*`       | ✅          | ✅    | Yes            |
+| `/admin`            | ❌          | ✅    | Yes            |
+| `/admin/test-cases` | ❌          | ✅    | Yes            |
 
 ## 🔄 Component Hierarchy
 
@@ -263,18 +267,21 @@ When clicking [+ New Test Case] or [✎ Edit]:
 ## 🎨 Key Features
 
 ### Authentication
+
 - ✅ JWT token storage in localStorage
 - ✅ Auto-persist login on page refresh
 - ✅ Automatic redirect to login if no token
 - ✅ Logout clears token & redirects
 
 ### Authorization
+
 - ✅ Role-based access (ADMIN vs USER)
 - ✅ Admin menu only visible to admins
 - ✅ Protected routes check role before rendering
 - ✅ Access denied message for non-admins
 
 ### Test Case Management
+
 - ✅ Table view of all test cases
 - ✅ Create new test case (modal form)
 - ✅ Edit existing test case
@@ -300,6 +307,7 @@ React Query (TanStack Query)
 ```
 
 ## ✅ What's Ready (Frontend)
+
 - [x] Auth context & hooks
 - [x] Login page
 - [x] Protected routes
@@ -310,6 +318,7 @@ React Query (TanStack Query)
 - [x] Dark mode support
 
 ## ⏳ Next: Backend Implementation
+
 - [ ] Database: users table + audit columns
 - [ ] Auth API: login endpoint
 - [ ] RBAC: middleware & decorators
