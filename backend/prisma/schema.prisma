@@ -4,20 +4,16 @@ generator client {
 
 datasource db {
   provider = "mysql"
-  url      = env("DATABASE_URL")
-}
-
-model assets {
-  id         BigInt       @id @default(autoincrement())
-  asset_name String       @unique(map: "asset_name") @db.VarChar(500)
-  test_cases test_cases[]
 }
 
 model project_test_case_overrides {
-  id          Int    @id @default(autoincrement())
-  project_id  Int
+  id           Int    @id @default(autoincrement())
+  project_id   Int
   test_case_id BigInt
 
+  test_case_name      String? @db.VarChar(255)
+  pre_condition       String? @db.LongText
+  impact              String? @db.LongText
   action_test_case    String? @db.LongText
   source_scope_status String? @db.VarChar(100)
   description         String? @db.LongText
@@ -27,7 +23,6 @@ model project_test_case_overrides {
   attack_feasibility  String? @db.Text
   cia_impact          String? @db.Text
   safety_impact       String? @db.Text
-  automation_possible String? @db.VarChar(50)
 
   tools_overridden      Boolean @default(false)
   references_overridden Boolean @default(false)
@@ -35,8 +30,8 @@ model project_test_case_overrides {
   created_at DateTime @default(now()) @db.Timestamp(0)
   updated_at DateTime @default(now()) @db.Timestamp(0)
 
-  projects      projects   @relation(fields: [project_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "ptco_ibfk_1")
-  test_cases    test_cases @relation(fields: [test_case_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "ptco_ibfk_2")
+  projects   projects   @relation(fields: [project_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "ptco_ibfk_1")
+  test_cases test_cases @relation(fields: [test_case_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "ptco_ibfk_2")
 
   project_test_case_override_tools      project_test_case_override_tools[]
   project_test_case_override_references project_test_case_override_references[]
@@ -146,10 +141,10 @@ model project_selections {
 }
 
 model projects {
-  id                  Int                  @id @default(autoincrement())
-  name                String               @db.VarChar(200)
-  description         String?              @db.Text
-  created_at          DateTime             @default(dbgenerated("(now())")) @db.DateTime(0)
+  id                  Int                           @id @default(autoincrement())
+  name                String                        @db.VarChar(200)
+  description         String?                       @db.Text
+  created_at          DateTime                      @default(dbgenerated("(now())")) @db.DateTime(0)
   project_ecu_details project_ecu_details?
   project_selections  project_selections[]
   test_case_overrides project_test_case_overrides[]
@@ -162,15 +157,15 @@ model protocols {
 }
 
 model references_master {
-  id                   BigInt                 @id @default(autoincrement())
-  ref_text             String                 @unique(map: "uk_ref", length: 255) @db.Text
+  id                   BigInt                                  @id @default(autoincrement())
+  ref_text             String                                  @unique(map: "uk_ref", length: 255) @db.Text
   test_case_references test_case_references[]
   override_references  project_test_case_override_references[]
 }
 
 model severities {
   id            BigInt       @id @default(autoincrement())
-  name          String       @unique(map: "name") @db.VarChar(50)
+  name          String       @unique(map: "name") @db.VarChar(255)
   severity_rank Int
   test_cases    test_cases[]
 }
@@ -196,21 +191,21 @@ model test_case_tools {
 }
 
 model users {
-  id          BigInt       @id @default(autoincrement())
-  username    String       @unique(map: "uk_username") @db.VarChar(255)
-  password    String       @db.VarChar(255)
-  role        String       @db.VarChar(50) @default("USER")
-  created_at  DateTime     @default(now()) @db.Timestamp(0)
-  updated_at  DateTime     @default(now()) @updatedAt @db.Timestamp(0)
-  test_cases_created  test_cases[] @relation("created_by_rel")
-  test_cases_updated  test_cases[] @relation("updated_by_rel")
-  test_cases_deleted  test_cases[] @relation("deleted_by_rel")
+  id                 BigInt       @id @default(autoincrement())
+  username           String       @unique(map: "uk_username") @db.VarChar(255)
+  password           String       @db.VarChar(255)
+  role               String       @default("USER") @db.VarChar(50)
+  created_at         DateTime     @default(now()) @db.Timestamp(0)
+  updated_at         DateTime     @default(now()) @updatedAt @db.Timestamp(0)
+  test_cases_created test_cases[] @relation("created_by_rel")
+  test_cases_updated test_cases[] @relation("updated_by_rel")
+  test_cases_deleted test_cases[] @relation("deleted_by_rel")
 
   @@index([username], map: "ix_users_username")
 }
 
 model test_cases {
-  id                   BigInt                 @id @default(autoincrement())
+  id                   BigInt                        @id @default(autoincrement())
   category_id          BigInt
   objective_id         BigInt
   protocol_id          BigInt?
@@ -218,39 +213,38 @@ model test_cases {
   test_type_id         BigInt?
   severity_id          BigInt?
   threat_id            BigInt?
-  asset_id             BigInt?
-  action_test_case     String                 @db.LongText
-  source_scope_status  String?                @db.VarChar(100)
-  description          String?                @db.LongText
-  attack_path          String?                @db.LongText
-  test_steps           String?                @db.LongText
-  expected_output      String?                @db.LongText
-  attack_feasibility   String?                @db.Text
-  cia_impact           String?                @db.Text
-  safety_impact        String?                @db.Text
-  automation_possible  String?                @db.VarChar(50)
-  created_at           DateTime?              @default(now()) @db.Timestamp(0)
-  updated_at           DateTime?              @default(now()) @updatedAt @db.Timestamp(0)
+  test_case_name       String?                       @db.VarChar(255)
+  pre_condition        String?                       @db.LongText
+  impact               String?                       @db.LongText
+  action_test_case     String                        @db.LongText
+  source_scope_status  String?                       @db.VarChar(100)
+  description          String?                       @db.LongText
+  attack_path          String?                       @db.LongText
+  test_steps           String?                       @db.LongText
+  expected_output      String?                       @db.LongText
+  attack_feasibility   String?                       @db.Text
+  cia_impact           String?                       @db.Text
+  safety_impact        String?                       @db.Text
+  created_at           DateTime?                     @default(now()) @db.Timestamp(0)
+  updated_at           DateTime?                     @default(now()) @updatedAt @db.Timestamp(0)
   created_by           BigInt?
   updated_by           BigInt?
   deleted_by           BigInt?
-  deleted_at DateTime? @db.Timestamp(0)
+  deleted_at           DateTime?                     @db.Timestamp(0)
   test_case_references test_case_references[]
   test_case_tools      test_case_tools[]
   test_case_overrides  project_test_case_overrides[]
-  categories           categories             @relation(fields: [category_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "test_cases_ibfk_1")
-  objectives           objectives             @relation(fields: [objective_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "test_cases_ibfk_2")
-  protocols            protocols?             @relation(fields: [protocol_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "test_cases_ibfk_3")
-  attack_vectors       attack_vectors?        @relation(fields: [attack_vector_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "test_cases_ibfk_4")
-  test_types           test_types?            @relation(fields: [test_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "test_cases_ibfk_5")
-  severities           severities?            @relation(fields: [severity_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "test_cases_ibfk_6")
-  threats              threats?               @relation(fields: [threat_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "test_cases_ibfk_7")
-  assets               assets?                @relation(fields: [asset_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "test_cases_ibfk_8")
-  created_by_user      users?                 @relation("created_by_rel", fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "test_cases_ibfk_created_by")
-  updated_by_user      users?                 @relation("updated_by_rel", fields: [updated_by], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "test_cases_ibfk_updated_by")
-  deleted_by_user      users?                 @relation("deleted_by_rel", fields: [deleted_by], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "test_cases_ibfk_deleted_by")
+  categories           categories                    @relation(fields: [category_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "test_cases_ibfk_1")
+  objectives           objectives                    @relation(fields: [objective_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "test_cases_ibfk_2")
+  protocols            protocols?                    @relation(fields: [protocol_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "test_cases_ibfk_3")
+  attack_vectors       attack_vectors?               @relation(fields: [attack_vector_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "test_cases_ibfk_4")
+  test_types           test_types?                   @relation(fields: [test_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "test_cases_ibfk_5")
+  severities           severities?                   @relation(fields: [severity_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "test_cases_ibfk_6")
+  threats              threats?                      @relation(fields: [threat_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "test_cases_ibfk_7")
+  created_by_user      users?                        @relation("created_by_rel", fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "test_cases_ibfk_created_by")
+  updated_by_user      users?                        @relation("updated_by_rel", fields: [updated_by], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "test_cases_ibfk_updated_by")
+  deleted_by_user      users?                        @relation("deleted_by_rel", fields: [deleted_by], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "test_cases_ibfk_deleted_by")
 
-  @@index([asset_id], map: "asset_id")
   @@index([attack_vector_id], map: "attack_vector_id")
   @@index([category_id], map: "category_id")
   @@index([objective_id], map: "objective_id")
@@ -277,8 +271,8 @@ model threats {
 }
 
 model tools_master {
-  id              BigInt            @id @default(autoincrement())
-  tool_name       String            @unique(map: "uk_tool", length: 255) @db.VarChar(1000)
+  id              BigInt                             @id @default(autoincrement())
+  tool_name       String                             @unique(map: "uk_tool", length: 255) @db.VarChar(1000)
   test_case_tools test_case_tools[]
   override_tools  project_test_case_override_tools[]
 }

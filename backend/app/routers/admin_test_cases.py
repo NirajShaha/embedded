@@ -31,7 +31,6 @@ TEST_CASE_INCLUDE = {
     "test_types": True,
     "severities": True,
     "threats": True,
-    "assets": True,
     "test_case_tools": {
         "include": {
             "tools_master": True,
@@ -87,7 +86,6 @@ async def _validate_relations(
     test_type_id: int | None,
     severity_id: int | None,
     threat_id: int | None,
-    asset_id: int | None,
     tool_ids: list[int],
     reference_ids: list[int],
 ) -> None:
@@ -152,12 +150,6 @@ async def _validate_relations(
         client=db.threats,
         record_id=threat_id,
         label="Threat",
-    )
-
-    await _ensure_record_exists(
-        client=db.assets,
-        record_id=asset_id,
-        label="Asset",
     )
 
     unique_tool_ids = sorted(
@@ -312,12 +304,6 @@ async def get_test_case_lookups(
         }
     )
 
-    assets = await db.assets.find_many(
-        order={
-            "asset_name": "asc",
-        }
-    )
-
     tools = await db.tools_master.find_many(
         order={
             "tool_name": "asc",
@@ -381,13 +367,6 @@ async def get_test_case_lookups(
                 "name": item.threat_text,
             }
             for item in threats
-        ],
-        "assets": [
-            {
-                "id": int(item.id),
-                "name": item.asset_name,
-            }
-            for item in assets
         ],
         "tools": [
             {
@@ -477,7 +456,6 @@ async def create_admin_test_case(
         test_type_id=payload.test_type_id,
         severity_id=payload.severity_id,
         threat_id=payload.threat_id,
-        asset_id=payload.asset_id,
         tool_ids=tool_ids,
         reference_ids=reference_ids,
     )
@@ -497,11 +475,16 @@ async def create_admin_test_case(
                 "test_type_id": payload.test_type_id,
                 "severity_id": payload.severity_id,
                 "threat_id": payload.threat_id,
-                "asset_id": payload.asset_id,
-                "action_test_case": action_test_case,
-                "source_scope_status": _clean_optional_text(
-                    payload.source_scope_status
+                "test_case_name": _clean_optional_text(
+                    payload.test_case_name
                 ),
+                "pre_condition": _clean_optional_text(
+                    payload.pre_condition
+                ),
+                "impact": _clean_optional_text(
+                    payload.impact
+                ),
+                "action_test_case": action_test_case,
                 "description": _clean_optional_text(
                     payload.description
                 ),
@@ -522,9 +505,6 @@ async def create_admin_test_case(
                 ),
                 "safety_impact": _clean_optional_text(
                     payload.safety_impact
-                ),
-                "automation_possible": (
-                    payload.automation_possible
                 ),
                 "created_by": int(current_admin.id),
                 "updated_by": int(current_admin.id),
@@ -644,12 +624,6 @@ async def update_admin_test_case(
         else existing.threat_id
     )
 
-    final_asset_id = (
-        supplied["asset_id"]
-        if "asset_id" in supplied
-        else existing.asset_id
-    )
-
     await _validate_relations(
         category_id=category_id,
         objective_id=objective_id,
@@ -658,7 +632,6 @@ async def update_admin_test_case(
         test_type_id=final_test_type_id,
         severity_id=final_severity_id,
         threat_id=final_threat_id,
-        asset_id=final_asset_id,
         tool_ids=tool_ids,
         reference_ids=reference_ids,
     )
@@ -677,9 +650,13 @@ async def update_admin_test_case(
         "test_type_id",
         "severity_id",
         "threat_id",
-        "asset_id",
+        "test_case_name",
+        "pre_condition",
+        "impact",
         "action_test_case",
-        "source_scope_status",
+        "test_case_name",
+        "pre_condition",
+        "impact",
         "description",
         "attack_path",
         "test_steps",
@@ -687,11 +664,9 @@ async def update_admin_test_case(
         "attack_feasibility",
         "cia_impact",
         "safety_impact",
-        "automation_possible",
     }
 
     text_fields = {
-        "source_scope_status",
         "description",
         "attack_path",
         "test_steps",
@@ -842,7 +817,6 @@ async def get_field_suggestions(
     """
 
     TEXT_FIELDS = [
-        "source_scope_status",
         "description",
         "attack_path",
         "test_steps",
@@ -891,8 +865,8 @@ async def create_lookup_item(
 ):
     """
     Create a new entry in the requested lookup table.
-    Supported types: protocols, attack_vectors, test_types,
-    threats, assets, tools, references.
+    Supports all admin lookup tables, including category/objective/severity
+    creation with their required relation metadata.
     """
 
     name = payload.name.strip()
@@ -902,7 +876,38 @@ async def create_lookup_item(
             detail="Name is required",
         )
 
-    if lookup_type == "protocols":
+    if lookup_type == "categories":
+        existing = await db.categories.find_first(where={"name": name})
+        if existing:
+            return {"id": int(existing.id), "name": existing.name}
+        item = await db.categories.create(data={"name": name})
+        return {"id": int(item.id), "name": item.name}
+
+    elif lookup_type == "objectives":
+        if payload.category_id is None:
+            raise HTTPException(status_code=422, detail="Category is required for a new objective")
+        existing = await db.objectives.find_first(
+            where={"category_id": payload.category_id, "name": name}
+        )
+        if existing:
+            return {"id": int(existing.id), "name": existing.name}
+        item = await db.objectives.create(
+            data={"category_id": payload.category_id, "name": name}
+        )
+        return {"id": int(item.id), "name": item.name}
+
+    elif lookup_type == "severities":
+        if payload.severity_rank is None:
+            raise HTTPException(status_code=422, detail="Severity rank is required")
+        existing = await db.severities.find_first(where={"name": name})
+        if existing:
+            return {"id": int(existing.id), "name": existing.name}
+        item = await db.severities.create(
+            data={"name": name, "severity_rank": payload.severity_rank}
+        )
+        return {"id": int(item.id), "name": item.name}
+
+    elif lookup_type == "protocols":
         # Check for duplicate
         existing = await db.protocols.find_first(where={"name": name})
         if existing:
@@ -931,12 +936,6 @@ async def create_lookup_item(
         item = await db.threats.create(data={"threat_text": name})
         return {"id": int(item.id), "name": item.threat_text}
 
-    elif lookup_type == "assets":
-        existing = await db.assets.find_first(where={"asset_name": name})
-        if existing:
-            return {"id": int(existing.id), "name": existing.asset_name}
-        item = await db.assets.create(data={"asset_name": name})
-        return {"id": int(item.id), "name": item.asset_name}
 
     elif lookup_type == "tools":
         existing = await db.tools_master.find_first(where={"tool_name": name})
@@ -955,5 +954,5 @@ async def create_lookup_item(
     else:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Unknown lookup type: {lookup_type!r}. Supported: protocols, attack_vectors, test_types, threats, assets, tools, references",
+            detail=f"Unknown lookup type: {lookup_type!r}. Supported: protocols, attack_vectors, test_types, threats, tools, references",
         )

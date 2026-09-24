@@ -50,18 +50,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Pagination } from "@/components/pagination";
 import { TestCaseDetailDialog } from "@/components/test-case-detail-dialog";
 
-
 interface TestCasesDashboardProps {
   projectId: number;
 }
 
-
-type SeverityRank =
-  | 1
-  | 2
-  | 3
-  | 4;
-
+type SeverityRank = 1 | 2 | 3 | 4;
 
 interface SeverityMeta {
   label: string;
@@ -70,64 +63,42 @@ interface SeverityMeta {
   icon: LucideIcon;
 }
 
-
-const severityMeta: Record<
-  SeverityRank,
-  SeverityMeta
-> = {
+const severityMeta: Record<SeverityRank, SeverityMeta> = {
   1: {
     label: "Low",
-    color:
-      "bg-[var(--severity-low)]/12 text-[var(--severity-low)]",
-    ring:
-      "ring-[var(--severity-low)]/30",
+    color: "bg-[var(--severity-low)]/12 text-[var(--severity-low)]",
+    ring: "ring-[var(--severity-low)]/30",
     icon: CheckCircle,
   },
   2: {
     label: "Medium",
-    color:
-      "bg-[var(--severity-medium)]/15 text-[var(--severity-medium)]",
-    ring:
-      "ring-[var(--severity-medium)]/30",
+    color: "bg-[var(--severity-medium)]/15 text-[var(--severity-medium)]",
+    ring: "ring-[var(--severity-medium)]/30",
     icon: Zap,
   },
   3: {
     label: "High",
-    color:
-      "bg-[var(--severity-high)]/15 text-[var(--severity-high)]",
-    ring:
-      "ring-[var(--severity-high)]/30",
+    color: "bg-[var(--severity-high)]/15 text-[var(--severity-high)]",
+    ring: "ring-[var(--severity-high)]/30",
     icon: CircleAlert,
   },
   4: {
     label: "Critical",
-    color:
-      "bg-[var(--severity-critical)]/15 text-[var(--severity-critical)]",
-    ring:
-      "ring-[var(--severity-critical)]/40",
+    color: "bg-[var(--severity-critical)]/15 text-[var(--severity-critical)]",
+    ring: "ring-[var(--severity-critical)]/40",
     icon: ShieldAlert,
   },
 };
 
-
-function severityFromRank(
-  rank: number | undefined,
-): SeverityMeta | null {
+function severityFromRank(rank: number | undefined): SeverityMeta | null {
   if (!rank) {
     return null;
   }
 
-  const safeRank = (
-    rank >= 4
-      ? 4
-      : rank <= 1
-        ? 1
-        : rank
-  ) as SeverityRank;
+  const safeRank = (rank >= 4 ? 4 : rank <= 1 ? 1 : rank) as SeverityRank;
 
   return severityMeta[safeRank];
 }
-
 
 interface MultiFilterDropdownProps<
   T extends {
@@ -144,7 +115,6 @@ interface MultiFilterDropdownProps<
   allLabel: string;
 }
 
-
 function MultiFilterDropdown<
   T extends {
     id: number;
@@ -160,9 +130,7 @@ function MultiFilterDropdown<
   allLabel,
 }: MultiFilterDropdownProps<T>) {
   const selectedItems =
-    items?.filter((item) =>
-      selected.includes(item.id),
-    ) ?? [];
+    items?.filter((item) => selected.includes(item.id)) ?? [];
 
   const triggerLabel =
     selectedItems.length === 0
@@ -173,9 +141,7 @@ function MultiFilterDropdown<
 
   return (
     <div className="flex min-w-[12rem] flex-col gap-1.5">
-      <span className="text-xs font-medium text-muted-foreground">
-        {label}
-      </span>
+      <span className="text-xs font-medium text-muted-foreground">{label}</span>
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -184,25 +150,20 @@ function MultiFilterDropdown<
             className={cn(
               "w-full justify-between font-normal",
               selectedItems.length > 0 &&
-              "border-primary/40 bg-primary/5 text-foreground",
+                "border-primary/40 bg-primary/5 text-foreground",
             )}
           >
             <span className="flex min-w-0 items-center gap-2 truncate">
               <Icon className="size-3.5 shrink-0 text-muted-foreground" />
 
-              <span className="truncate">
-                {triggerLabel}
-              </span>
+              <span className="truncate">{triggerLabel}</span>
             </span>
 
             <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
           </Button>
         </DropdownMenuTrigger>
 
-        <DropdownMenuContent
-          align="start"
-          className="w-64"
-        >
+        <DropdownMenuContent align="start" className="w-64">
           <DropdownMenuLabel className="flex items-center justify-between">
             <span>{label}</span>
 
@@ -224,24 +185,19 @@ function MultiFilterDropdown<
           <DropdownMenuSeparator />
 
           {items?.map((item) => {
-            const isChecked =
-              selected.includes(item.id);
+            const isChecked = selected.includes(item.id);
 
             return (
               <DropdownMenuCheckboxItem
                 key={item.id}
                 checked={isChecked}
-                onCheckedChange={() =>
-                  onToggle(item.id)
-                }
+                onCheckedChange={() => onToggle(item.id)}
                 onSelect={(event) => {
                   event.preventDefault();
                 }}
                 className="justify-between"
               >
-                <span className="truncate">
-                  {item.name}
-                </span>
+                <span className="truncate">{item.name}</span>
               </DropdownMenuCheckboxItem>
             );
           })}
@@ -251,109 +207,61 @@ function MultiFilterDropdown<
   );
 }
 
-
 const PAGE_SIZE_DEFAULT = 10;
 
-
-export function TestCasesDashboard({
-  projectId,
-}: TestCasesDashboardProps) {
-  const [
-    selectedCategories,
-    setSelectedCategories,
-  ] = React.useState<number[]>([]);
-
-  const [
-    selectedTestTypes,
-    setSelectedTestTypes,
-  ] = React.useState<number[]>([]);
-
-  const [
-    selectedSeverities,
-    setSelectedSeverities,
-  ] = React.useState<number[]>([]);
-
-  const [
-    search,
-    setSearch,
-  ] = React.useState("");
-
-  const [
-    page,
-    setPage,
-  ] = React.useState(1);
-
-  const [
-    pageSize,
-    setPageSize,
-  ] = React.useState(
-    PAGE_SIZE_DEFAULT,
+export function TestCasesDashboard({ projectId }: TestCasesDashboardProps) {
+  const [selectedCategories, setSelectedCategories] = React.useState<number[]>(
+    [],
   );
-  const [
-    activeTestCaseId,
-    setActiveTestCaseId,
-  ] = React.useState<number | null>(
+
+  const [selectedTestTypes, setSelectedTestTypes] = React.useState<number[]>(
+    [],
+  );
+
+  const [selectedSeverities, setSelectedSeverities] = React.useState<number[]>(
+    [],
+  );
+
+  const [search, setSearch] = React.useState("");
+
+  const [page, setPage] = React.useState(1);
+
+  const [pageSize, setPageSize] = React.useState(PAGE_SIZE_DEFAULT);
+  const [activeTestCaseId, setActiveTestCaseId] = React.useState<number | null>(
     null,
   );
 
-  const [
-    isPdfLoading,
-    setIsPdfLoading,
-  ] = React.useState(false);
+  const [isPdfLoading, setIsPdfLoading] = React.useState(false);
 
-  const [
-    pdfError,
-    setPdfError,
-  ] = React.useState<string | null>(
-    null,
-  );
+  const [pdfError, setPdfError] = React.useState<string | null>(null);
 
-  const {
-    data: categories,
-    isLoading: categoriesLoading,
-  } = useQuery({
+  const { data: categories, isLoading: categoriesLoading } = useQuery({
     queryKey: ["categories"],
     queryFn: getCategories,
   });
 
-  const {
-    data: testTypes,
-    isLoading: testTypesLoading,
-  } = useQuery({
+  const { data: testTypes, isLoading: testTypesLoading } = useQuery({
     queryKey: ["test-types"],
     queryFn: getTestTypes,
   });
 
-  const {
-    data: testCases,
-    isLoading: casesLoading,
-  } = useQuery({
+  const { data: testCases, isLoading: casesLoading } = useQuery({
     queryKey: [
       "test-cases",
       projectId,
       selectedCategories
         .slice()
-        .sort(
-          (first, second) =>
-            first - second,
-        )
+        .sort((first, second) => first - second)
         .join(","),
       selectedTestTypes
         .slice()
-        .sort(
-          (first, second) =>
-            first - second,
-        )
+        .sort((first, second) => first - second)
         .join(","),
     ],
     queryFn: () =>
       listTestCases(
-        selectedCategories.length > 0
-          ? selectedCategories
-          : undefined,
-        selectedTestTypes.length > 0
-          ? selectedTestTypes
-          : undefined,
+        selectedCategories.length > 0 ? selectedCategories : undefined,
+        selectedTestTypes.length > 0 ? selectedTestTypes : undefined,
         projectId,
       ),
   });
@@ -362,324 +270,186 @@ export function TestCasesDashboard({
   // dialog immediately flow back into the row and the detail view.
   const activeTestCase = React.useMemo(
     () =>
-      (testCases ?? []).find(
-        (testCase) =>
-          testCase.id ===
-          activeTestCaseId,
-      ) ?? null,
-    [
-      testCases,
-      activeTestCaseId,
-    ],
+      (testCases ?? []).find((testCase) => testCase.id === activeTestCaseId) ??
+      null,
+    [testCases, activeTestCaseId],
   );
 
-  const toggleCategory =
-    React.useCallback(
-      (id: number) => {
-        setSelectedCategories(
-          (previous) =>
-            previous.includes(id)
-              ? previous.filter(
-                (item) =>
-                  item !== id,
-              )
-              : [
-                ...previous,
-                id,
-              ],
-        );
-
-        setPage(1);
-        setPdfError(null);
-      },
-      [],
+  const toggleCategory = React.useCallback((id: number) => {
+    setSelectedCategories((previous) =>
+      previous.includes(id)
+        ? previous.filter((item) => item !== id)
+        : [...previous, id],
     );
 
-  const toggleTestType =
-    React.useCallback(
-      (id: number) => {
-        setSelectedTestTypes(
-          (previous) =>
-            previous.includes(id)
-              ? previous.filter(
-                (item) =>
-                  item !== id,
-              )
-              : [
-                ...previous,
-                id,
-              ],
-        );
+    setPage(1);
+    setPdfError(null);
+  }, []);
 
-        setPage(1);
-        setPdfError(null);
-      },
-      [],
+  const toggleTestType = React.useCallback((id: number) => {
+    setSelectedTestTypes((previous) =>
+      previous.includes(id)
+        ? previous.filter((item) => item !== id)
+        : [...previous, id],
     );
 
-  const toggleSeverity =
-    React.useCallback(
-      (id: number) => {
-        setSelectedSeverities(
-          (previous) =>
-            previous.includes(id)
-              ? previous.filter(
-                (item) =>
-                  item !== id,
-              )
-              : [
-                ...previous,
-                id,
-              ],
-        );
+    setPage(1);
+    setPdfError(null);
+  }, []);
 
-        setPage(1);
-        setPdfError(null);
-      },
-      [],
+  const toggleSeverity = React.useCallback((id: number) => {
+    setSelectedSeverities((previous) =>
+      previous.includes(id)
+        ? previous.filter((item) => item !== id)
+        : [...previous, id],
     );
 
-  const clearCategories =
-    React.useCallback(() => {
-      setSelectedCategories([]);
-      setPage(1);
-      setPdfError(null);
-    }, []);
+    setPage(1);
+    setPdfError(null);
+  }, []);
 
-  const clearTestTypes =
-    React.useCallback(() => {
-      setSelectedTestTypes([]);
-      setPage(1);
-      setPdfError(null);
-    }, []);
+  const clearCategories = React.useCallback(() => {
+    setSelectedCategories([]);
+    setPage(1);
+    setPdfError(null);
+  }, []);
 
-  const clearSeverities =
-    React.useCallback(() => {
-      setSelectedSeverities([]);
-      setPage(1);
-      setPdfError(null);
-    }, []);
+  const clearTestTypes = React.useCallback(() => {
+    setSelectedTestTypes([]);
+    setPage(1);
+    setPdfError(null);
+  }, []);
 
-  const clearAllFilters =
-    React.useCallback(() => {
-      setSelectedCategories([]);
-      setSelectedTestTypes([]);
-      setSelectedSeverities([]);
-      setSearch("");
-      setPage(1);
-      setPdfError(null);
-    }, []);
+  const clearSeverities = React.useCallback(() => {
+    setSelectedSeverities([]);
+    setPage(1);
+    setPdfError(null);
+  }, []);
 
-  const severityOptions =
-    React.useMemo(() => {
-      const seen = new Map<
-        number,
-        {
-          id: number;
-          name: string;
-          rank: number;
-        }
-      >();
+  const clearAllFilters = React.useCallback(() => {
+    setSelectedCategories([]);
+    setSelectedTestTypes([]);
+    setSelectedSeverities([]);
+    setSearch("");
+    setPage(1);
+    setPdfError(null);
+  }, []);
 
-      for (
-        const testCase
-        of testCases ?? []
-      ) {
-        if (
-          testCase.severity &&
-          !seen.has(
-            testCase.severity.id,
-          )
-        ) {
-          seen.set(
-            testCase.severity.id,
-            {
-              id:
-                testCase.severity.id,
-              name:
-                testCase.severity.name,
-              rank:
-                testCase.severity
-                  .severity_rank,
-            },
-          );
-        }
+  const severityOptions = React.useMemo(() => {
+    const seen = new Map<
+      number,
+      {
+        id: number;
+        name: string;
+        rank: number;
       }
+    >();
 
-      return Array.from(
-        seen.values(),
-      ).sort(
-        (first, second) =>
-          first.rank - second.rank,
+    for (const testCase of testCases ?? []) {
+      if (testCase.severity && !seen.has(testCase.severity.id)) {
+        seen.set(testCase.severity.id, {
+          id: testCase.severity.id,
+          name: testCase.severity.name,
+          rank: testCase.severity.severity_rank,
+        });
+      }
+    }
+
+    return Array.from(seen.values()).sort(
+      (first, second) => first.rank - second.rank,
+    );
+  }, [testCases]);
+
+  const filteredTestCases = React.useMemo(() => {
+    let result = testCases ?? [];
+
+    if (selectedSeverities.length > 0) {
+      result = result.filter(
+        (testCase) =>
+          testCase.severity_id !== null &&
+          selectedSeverities.includes(testCase.severity_id),
       );
-    }, [testCases]);
+    }
 
-  const filteredTestCases =
-    React.useMemo(() => {
-      let result =
-        testCases ?? [];
+    const query = search.trim().toLowerCase();
 
-      if (
-        selectedSeverities.length >
-        0
-      ) {
-        result = result.filter(
-          (testCase) =>
-            testCase.severity_id !==
-            null &&
-            selectedSeverities.includes(
-              testCase.severity_id,
-            ),
-        );
-      }
-
-      const query =
-        search
-          .trim()
+    if (query) {
+      result = result.filter((testCase) => {
+        const haystack = [
+          testCase.action_test_case,
+          testCase.description,
+          testCase.attack_path,
+          testCase.test_steps,
+          testCase.expected_output,
+          testCase.category?.name,
+          testCase.objective?.name,
+          testCase.protocol?.name,
+          testCase.attack_vector?.name,
+          testCase.test_type?.name,
+          testCase.severity?.name,
+          testCase.threat?.threat_text,
+          ...testCase.test_case_tools.map((item) => item.tool.tool_name),
+          ...testCase.test_case_references.map(
+            (item) => item.reference.ref_text,
+          ),
+        ]
+          .filter(
+            (value): value is string =>
+              typeof value === "string" && value.length > 0,
+          )
+          .join(" ")
           .toLowerCase();
 
-      if (query) {
-        result = result.filter(
-          (testCase) => {
-            const haystack = [
-              testCase.action_test_case,
-              testCase.description,
-              testCase.attack_path,
-              testCase.test_steps,
-              testCase.expected_output,
-              testCase.category?.name,
-              testCase.objective?.name,
-              testCase.protocol?.name,
-              testCase.attack_vector
-                ?.name,
-              testCase.test_type?.name,
-              testCase.severity?.name,
-              testCase.asset
-                ?.asset_name,
-              testCase.threat
-                ?.threat_text,
-              ...testCase.test_case_tools.map(
-                (item) =>
-                  item.tool
-                    .tool_name,
-              ),
-              ...testCase.test_case_references.map(
-                (item) =>
-                  item.reference
-                    .ref_text,
-              ),
-            ]
-              .filter(
-                (
-                  value,
-                ): value is string =>
-                  typeof value ===
-                  "string" &&
-                  value.length > 0,
-              )
-              .join(" ")
-              .toLowerCase();
+        return haystack.includes(query);
+      });
+    }
 
-            return haystack.includes(
-              query,
-            );
-          },
-        );
-      }
+    return result;
+  }, [testCases, selectedSeverities, search]);
 
-      return result;
-    }, [
-      testCases,
-      selectedSeverities,
-      search,
-    ]);
+  const handleDownloadPDF = React.useCallback(async () => {
+    if (filteredTestCases.length === 0) {
+      setPdfError("No test cases match the current filters.");
 
-  const handleDownloadPDF =
-    React.useCallback(async () => {
-      if (
-        filteredTestCases.length ===
-        0
-      ) {
-        setPdfError(
-          "No test cases match the current filters.",
-        );
+      return;
+    }
 
-        return;
-      }
+    setPdfError(null);
+    setIsPdfLoading(true);
 
-      setPdfError(null);
-      setIsPdfLoading(true);
+    try {
+      await downloadTestCasesPDF({
+        projectId,
+        testCaseIds: filteredTestCases.map((testCase) => testCase.id),
+        categoryIds: selectedCategories,
+        testTypeIds: selectedTestTypes,
+      });
+    } catch (error) {
+      setPdfError(
+        error instanceof Error ? error.message : "Failed to generate PDF",
+      );
+    } finally {
+      setIsPdfLoading(false);
+    }
+  }, [projectId, filteredTestCases, selectedCategories, selectedTestTypes]);
 
-      try {
-        await downloadTestCasesPDF({
-          projectId,
-          testCaseIds:
-            filteredTestCases.map(
-              (testCase) =>
-                testCase.id,
-            ),
-          categoryIds:
-            selectedCategories,
-          testTypeIds:
-            selectedTestTypes,
-        });
-      } catch (error) {
-        setPdfError(
-          error instanceof Error
-            ? error.message
-            : "Failed to generate PDF",
-        );
-      } finally {
-        setIsPdfLoading(false);
-      }
-    }, [
-      projectId,
-      filteredTestCases,
-      selectedCategories,
-      selectedTestTypes,
-    ]);
+  const totalItems = filteredTestCases.length;
 
-  const totalItems =
-    filteredTestCases.length;
-
-  const totalPages = Math.max(
-    1,
-    Math.ceil(
-      totalItems / pageSize,
-    ),
-  );
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
 
   React.useEffect(() => {
     if (page > totalPages) {
       setPage(totalPages);
     }
-  }, [
-    page,
-    totalPages,
-  ]);
+  }, [page, totalPages]);
 
-  const safePage = Math.max(
-    1,
-    Math.min(
-      page,
-      totalPages,
-    ),
-  );
+  const safePage = Math.max(1, Math.min(page, totalPages));
 
-  const pageStart =
-    (safePage - 1) *
-    pageSize;
+  const pageStart = (safePage - 1) * pageSize;
 
-  const visible =
-    filteredTestCases.slice(
-      pageStart,
-      pageStart + pageSize,
-    );
+  const visible = filteredTestCases.slice(pageStart, pageStart + pageSize);
 
-  const isLoading =
-    categoriesLoading ||
-    testTypesLoading ||
-    casesLoading;
+  const isLoading = categoriesLoading || testTypesLoading || casesLoading;
 
   const hasFilters =
     selectedCategories.length > 0 ||
@@ -687,216 +457,150 @@ export function TestCasesDashboard({
     selectedSeverities.length > 0 ||
     search.trim().length > 0;
 
-  const categoryChips = (
-    categories ?? []
-  )
-    .filter((category) =>
-      selectedCategories.includes(
-        category.id,
-      ),
-    )
+  const categoryChips = (categories ?? [])
+    .filter((category) => selectedCategories.includes(category.id))
     .map((category) => ({
       id: category.id,
       name: category.name,
       kind: "category" as const,
     }));
 
-  const testTypeChips = (
-    testTypes ?? []
-  )
-    .filter((testType) =>
-      selectedTestTypes.includes(
-        testType.id,
-      ),
-    )
+  const testTypeChips = (testTypes ?? [])
+    .filter((testType) => selectedTestTypes.includes(testType.id))
     .map((testType) => ({
       id: testType.id,
       name: testType.name,
       kind: "testType" as const,
     }));
 
-  const severityChips =
-    severityOptions
-      .filter((severity) =>
-        selectedSeverities.includes(
-          severity.id,
-        ),
-      )
-      .map((severity) => ({
-        id: severity.id,
-        name: severity.name,
-        kind: "severity" as const,
-      }));
+  const severityChips = severityOptions
+    .filter((severity) => selectedSeverities.includes(severity.id))
+    .map((severity) => ({
+      id: severity.id,
+      name: severity.name,
+      kind: "severity" as const,
+    }));
 
-  const activeChips = [
-    ...categoryChips,
-    ...testTypeChips,
-    ...severityChips,
-  ];
+  const activeChips = [...categoryChips, ...testTypeChips, ...severityChips];
 
-  const columns =
-    React.useMemo<
-      ColumnDef<TestCase>[]
-    >(
-      () => [
-        {
-          id: "testCase",
-          header: "Test case",
-          meta: {
-            className: "w-[36%]",
-          },
-          cell: ({ row }) => {
-            const testCase =
-              row.original;
-
-            return (
-              <>
-                <div className="line-clamp-3 break-words text-sm font-medium leading-snug text-foreground">
-                  {
-                    testCase.action_test_case
-                  }
-                </div>
-
-                <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                  {testCase.objective
-                    ?.name && (
-                      <div className="line-clamp-1 break-words text-xs text-muted-foreground">
-                        {
-                          testCase.objective
-                            .name
-                        }
-                      </div>
-                    )}
-
-                  {testCase.is_overridden && (
-                    <Badge
-                      variant="secondary"
-                      className="text-[10px]"
-                    >
-                      Edited
-                    </Badge>
-                  )}
-                </div>
-              </>
-            );
-          },
+  const columns = React.useMemo<ColumnDef<TestCase>[]>(
+    () => [
+      {
+        id: "testCase",
+        header: "Test case",
+        meta: {
+          className: "w-[36%]",
         },
-        {
-          id: "category",
-          header: "Category",
-          meta: {
-            className: "w-[14%]",
-          },
-          cell: ({ row }) => (
-            <span className="block break-words text-sm text-muted-foreground">
-              {row.original.category
-                ?.name ?? "—"}
-            </span>
-          ),
-        },
-        {
-          id: "type",
-          header: "Type",
-          meta: {
-            className: "w-[10%]",
-          },
-          cell: ({ row }) => (
-            <span className="block break-words text-sm text-muted-foreground">
-              {row.original.test_type
-                ?.name ?? "—"}
-            </span>
-          ),
-        },
-        {
-          id: "severity",
-          header: "Severity",
-          meta: {
-            className: "w-[12%]",
-          },
-          cell: ({ row }) => {
-            const severity =
-              severityFromRank(
-                row.original
-                  .severity
-                  ?.severity_rank,
-              );
+        cell: ({ row }) => {
+          const testCase = row.original;
 
-            const SeverityIcon =
-              severity?.icon;
+          return (
+            <>
+              <div className="line-clamp-3 break-words text-sm font-medium leading-snug text-foreground">
+                {testCase.action_test_case}
+              </div>
 
-            return severity &&
-              SeverityIcon ? (
-              <span
-                className={cn(
-                  "inline-flex w-fit max-w-full items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset",
-                  severity.color,
-                  severity.ring,
+              <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                {testCase.objective?.name && (
+                  <div className="line-clamp-1 break-words text-xs text-muted-foreground">
+                    {testCase.objective.name}
+                  </div>
                 )}
-              >
-                <SeverityIcon className="size-3 shrink-0" />
 
-                <span className="truncate">
-                  {row.original
-                    .severity?.name ??
-                    severity.label}
-                </span>
+                {testCase.is_overridden && (
+                  <Badge variant="secondary" className="text-[10px]">
+                    Edited
+                  </Badge>
+                )}
+              </div>
+            </>
+          );
+        },
+      },
+      {
+        id: "category",
+        header: "Category",
+        meta: {
+          className: "w-[14%]",
+        },
+        cell: ({ row }) => (
+          <span className="block break-words text-sm text-muted-foreground">
+            {row.original.category?.name ?? "—"}
+          </span>
+        ),
+      },
+      {
+        id: "type",
+        header: "Type",
+        meta: {
+          className: "w-[10%]",
+        },
+        cell: ({ row }) => (
+          <span className="block break-words text-sm text-muted-foreground">
+            {row.original.test_type?.name ?? "—"}
+          </span>
+        ),
+      },
+      {
+        id: "severity",
+        header: "Severity",
+        meta: {
+          className: "w-[12%]",
+        },
+        cell: ({ row }) => {
+          const severity = severityFromRank(
+            row.original.severity?.severity_rank,
+          );
+
+          const SeverityIcon = severity?.icon;
+
+          return severity && SeverityIcon ? (
+            <span
+              className={cn(
+                "inline-flex w-fit max-w-full items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset",
+                severity.color,
+                severity.ring,
+              )}
+            >
+              <SeverityIcon className="size-3 shrink-0" />
+
+              <span className="truncate">
+                {row.original.severity?.name ?? severity.label}
               </span>
-            ) : (
-              <span className="text-muted-foreground">
-                —
-              </span>
-            );
-          },
-        },
-        {
-          id: "asset",
-          header: "Asset",
-          meta: {
-            className: "w-[16%]",
-          },
-          cell: ({ row }) => (
-            <span className="block break-words text-sm text-foreground">
-              {row.original.asset
-                ?.asset_name ?? "—"}
             </span>
-          ),
+          ) : (
+            <span className="text-muted-foreground">—</span>
+          );
         },
-        {
-          id: "actions",
-          header: () => (
-            <span className="sr-only">
-              View details
-            </span>
-          ),
-          meta: {
-            className:
-              "w-[8%] text-right",
-          },
-          cell: ({ row }) => {
-            const testCase =
-              row.original;
-
-            return (
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                onClick={(event) => {
-                  event.stopPropagation();
-
-                  setActiveTestCaseId(
-                    testCase.id,
-                  );
-                }}
-                aria-label={`View details for ${testCase.action_test_case}`}
-              >
-                <Eye className="size-3.5" />
-              </Button>
-            );
-          },
+      },
+      {
+        id: "actions",
+        header: () => <span className="sr-only">View details</span>,
+        meta: {
+          className: "w-[8%] text-right",
         },
-      ],
-      [],
-    );
+        cell: ({ row }) => {
+          const testCase = row.original;
+
+          return (
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={(event) => {
+                event.stopPropagation();
+
+                setActiveTestCaseId(testCase.id);
+              }}
+              aria-label={`View details for ${testCase.action_test_case}`}
+            >
+              <Eye className="size-3.5" />
+            </Button>
+          );
+        },
+      },
+    ],
+    [],
+  );
 
   // TanStack Table returns functions that React Compiler
   // cannot safely memoize.
@@ -904,11 +608,9 @@ export function TestCasesDashboard({
   const table = useReactTable({
     data: visible,
     columns,
-    getCoreRowModel:
-      getCoreRowModel(),
+    getCoreRowModel: getCoreRowModel(),
     autoResetPageIndex: false,
-    getRowId: (row) =>
-      String(row.id),
+    getRowId: (row) => String(row.id),
   });
 
   return (
@@ -920,9 +622,7 @@ export function TestCasesDashboard({
           </h2>
 
           <p className="text-sm text-muted-foreground">
-            Search and filter by
-            category, test type, or
-            severity to narrow the
+            Search and filter by category, test type, or severity to narrow the
             relevant coverage.
           </p>
         </div>
@@ -932,9 +632,7 @@ export function TestCasesDashboard({
 
           <span>
             {totalItems} matching{" "}
-            {totalItems === 1
-              ? "test case"
-              : "test cases"}
+            {totalItems === 1 ? "test case" : "test cases"}
           </span>
         </div>
       </div>
@@ -951,9 +649,7 @@ export function TestCasesDashboard({
             <Input
               value={search}
               onChange={(event) => {
-                setSearch(
-                  event.target.value,
-                );
+                setSearch(event.target.value);
 
                 setPage(1);
                 setPdfError(null);
@@ -966,14 +662,8 @@ export function TestCasesDashboard({
 
         <MultiFilterDropdown
           label="Category"
-          items={
-            categories as
-            | Category[]
-            | undefined
-          }
-          selected={
-            selectedCategories
-          }
+          items={categories as Category[] | undefined}
+          selected={selectedCategories}
           onToggle={toggleCategory}
           onClear={clearCategories}
           icon={Target}
@@ -982,14 +672,8 @@ export function TestCasesDashboard({
 
         <MultiFilterDropdown
           label="Test type"
-          items={
-            testTypes as
-            | TestType[]
-            | undefined
-          }
-          selected={
-            selectedTestTypes
-          }
+          items={testTypes as TestType[] | undefined}
+          selected={selectedTestTypes}
           onToggle={toggleTestType}
           onClear={clearTestTypes}
           icon={Wrench}
@@ -999,9 +683,7 @@ export function TestCasesDashboard({
         <MultiFilterDropdown
           label="Severity"
           items={severityOptions}
-          selected={
-            selectedSeverities
-          }
+          selected={selectedSeverities}
           onToggle={toggleSeverity}
           onClear={clearSeverities}
           icon={ShieldAlert}
@@ -1012,9 +694,7 @@ export function TestCasesDashboard({
           <Button
             variant="ghost"
             size="sm"
-            onClick={
-              clearAllFilters
-            }
+            onClick={clearAllFilters}
             className="self-end"
           >
             Clear filters
@@ -1024,46 +704,28 @@ export function TestCasesDashboard({
 
       {activeChips.length > 0 && (
         <div className="flex flex-wrap items-center gap-1.5">
-          <span className="text-xs text-muted-foreground">
-            Active:
-          </span>
+          <span className="text-xs text-muted-foreground">Active:</span>
 
-          {activeChips.map(
-            (chip) => (
-              <button
-                key={`${chip.kind}-${chip.id}`}
-                type="button"
-                onClick={() => {
-                  if (
-                    chip.kind ===
-                    "category"
-                  ) {
-                    toggleCategory(
-                      chip.id,
-                    );
-                  } else if (
-                    chip.kind ===
-                    "testType"
-                  ) {
-                    toggleTestType(
-                      chip.id,
-                    );
-                  } else {
-                    toggleSeverity(
-                      chip.id,
-                    );
-                  }
-                }}
-                className="group inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/5 px-2.5 py-0.5 text-xs font-medium text-foreground transition-colors hover:bg-primary/10"
-              >
-                <span>
-                  {chip.name}
-                </span>
+          {activeChips.map((chip) => (
+            <button
+              key={`${chip.kind}-${chip.id}`}
+              type="button"
+              onClick={() => {
+                if (chip.kind === "category") {
+                  toggleCategory(chip.id);
+                } else if (chip.kind === "testType") {
+                  toggleTestType(chip.id);
+                } else {
+                  toggleSeverity(chip.id);
+                }
+              }}
+              className="group inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/5 px-2.5 py-0.5 text-xs font-medium text-foreground transition-colors hover:bg-primary/10"
+            >
+              <span>{chip.name}</span>
 
-                <X className="size-3 text-muted-foreground group-hover:text-foreground" />
-              </button>
-            ),
-          )}
+              <X className="size-3 text-muted-foreground group-hover:text-foreground" />
+            </button>
+          ))}
         </div>
       )}
 
@@ -1073,26 +735,18 @@ export function TestCasesDashboard({
             {Array.from({
               length: 5,
             }).map((_, index) => (
-              <div
-                key={index}
-                className="space-y-2"
-              >
+              <div key={index} className="space-y-2">
                 <Skeleton className="h-4 w-3/4" />
                 <Skeleton className="h-10 w-full" />
               </div>
             ))}
           </div>
-        ) : filteredTestCases.length >
-          0 ? (
+        ) : filteredTestCases.length > 0 ? (
           <>
             <DataTable
               table={table}
-              onRowClick={(
-                testCase,
-              ) => {
-                setActiveTestCaseId(
-                  testCase.id,
-                );
+              onRowClick={(testCase) => {
+                setActiveTestCaseId(testCase.id);
               }}
             />
 
@@ -1101,12 +755,8 @@ export function TestCasesDashboard({
               pageSize={pageSize}
               totalItems={totalItems}
               onPageChange={setPage}
-              onPageSizeChange={(
-                newPageSize,
-              ) => {
-                setPageSize(
-                  newPageSize,
-                );
+              onPageSizeChange={(newPageSize) => {
+                setPageSize(newPageSize);
 
                 setPage(1);
               }}
@@ -1118,46 +768,28 @@ export function TestCasesDashboard({
                   role="alert"
                   className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"
                 >
-                  <p className="font-medium">
-                    PDF Generation Error
-                  </p>
+                  <p className="font-medium">PDF Generation Error</p>
 
-                  <p className="text-xs">
-                    {pdfError}
-                  </p>
+                  <p className="text-xs">{pdfError}</p>
                 </div>
               )}
 
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-xs text-muted-foreground">
-                  {
-                    filteredTestCases.length
-                  }{" "}
-                  matching{" "}
-                  {filteredTestCases.length ===
-                    1
-                    ? "test case"
-                    : "test cases"}
+                  {filteredTestCases.length} matching{" "}
+                  {filteredTestCases.length === 1 ? "test case" : "test cases"}
                 </p>
 
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={
-                    handleDownloadPDF
-                  }
-                  disabled={
-                    isPdfLoading ||
-                    filteredTestCases.length ===
-                    0
-                  }
+                  onClick={handleDownloadPDF}
+                  disabled={isPdfLoading || filteredTestCases.length === 0}
                   className="gap-2"
                 >
                   <Download className="size-4" />
 
-                  {isPdfLoading
-                    ? "Generating PDF..."
-                    : "Generate PDF Report"}
+                  {isPdfLoading ? "Generating PDF..." : "Generate PDF Report"}
                 </Button>
               </div>
             </div>
@@ -1169,9 +801,7 @@ export function TestCasesDashboard({
             </div>
 
             <div className="space-y-1">
-              <p className="text-sm font-semibold">
-                No test cases match
-              </p>
+              <p className="text-sm font-semibold">No test cases match</p>
 
               <p className="mx-auto max-w-sm text-xs text-muted-foreground">
                 {hasFilters
@@ -1181,13 +811,7 @@ export function TestCasesDashboard({
             </div>
 
             {hasFilters && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={
-                  clearAllFilters
-                }
-              >
+              <Button variant="outline" size="sm" onClick={clearAllFilters}>
                 Clear filters
               </Button>
             )}
@@ -1198,14 +822,10 @@ export function TestCasesDashboard({
       <TestCaseDetailDialog
         testCase={activeTestCase}
         projectId={projectId}
-        open={
-          activeTestCase !== null
-        }
+        open={activeTestCase !== null}
         onOpenChange={(open) => {
           if (!open) {
-            setActiveTestCaseId(
-              null,
-            );
+            setActiveTestCaseId(null);
           }
         }}
       />

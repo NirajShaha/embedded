@@ -1,0 +1,7 @@
+{
+  "private": true,
+  "devDependencies": {
+    "dotenv": "^16.4.7",
+    "prisma": "7.10.0"
+  }
+}

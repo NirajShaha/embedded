@@ -6,22 +6,15 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
-import {
-  useRouter,
-} from "next/navigation";
+import { useRouter } from "next/navigation";
 
-import {
-  API_URL,
-} from "@/config";
+import { API_URL } from "@/config";
 
-
-export type UserRole =
-  | "ADMIN"
-  | "USER";
-
+export type UserRole = "ADMIN" | "USER";
 
 export interface AuthUser {
   id: number;
@@ -29,13 +22,11 @@ export interface AuthUser {
   role: UserRole;
 }
 
-
 interface LoginResponse {
   access_token: string;
   token_type: string;
   user: AuthUser;
 }
-
 
 interface AuthContextValue {
   user: AuthUser | null;
@@ -43,62 +34,38 @@ interface AuthContextValue {
   isAdmin: boolean;
   isLoading: boolean;
 
-  login: (
-    username: string,
-    password: string,
-  ) => Promise<void>;
+  login: (username: string, password: string) => Promise<void>;
 
   logout: () => void;
 }
 
+const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-const AuthContext =
-  createContext<
-    AuthContextValue | undefined
-  >(undefined);
-
-
-function isValidAuthUser(
-  value: unknown,
-): value is AuthUser {
-  if (
-    typeof value !== "object" ||
-    value === null
-  ) {
+function isValidAuthUser(value: unknown): value is AuthUser {
+  if (typeof value !== "object" || value === null) {
     return false;
   }
 
-  const candidate =
-    value as Partial<AuthUser>;
+  const candidate = value as Partial<AuthUser>;
 
   return (
     typeof candidate.id === "number" &&
     Number.isFinite(candidate.id) &&
-    typeof candidate.username ===
-    "string" &&
-    candidate.username.trim().length >
-    0 &&
-    (
-      candidate.role === "ADMIN" ||
-      candidate.role === "USER"
-    )
+    typeof candidate.username === "string" &&
+    candidate.username.trim().length > 0 &&
+    (candidate.role === "ADMIN" || candidate.role === "USER")
   );
 }
-
 
 function clearStoredAuthentication() {
   localStorage.removeItem("token");
   localStorage.removeItem("user");
 }
 
+function readStoredAuthentication(): AuthUser | null {
+  const token = localStorage.getItem("token");
 
-function readStoredAuthentication():
-  AuthUser | null {
-  const token =
-    localStorage.getItem("token");
-
-  const storedUser =
-    localStorage.getItem("user");
+  const storedUser = localStorage.getItem("user");
 
   if (!token || !storedUser) {
     clearStoredAuthentication();
@@ -106,12 +73,9 @@ function readStoredAuthentication():
   }
 
   try {
-    const parsedUser: unknown =
-      JSON.parse(storedUser);
+    const parsedUser: unknown = JSON.parse(storedUser);
 
-    if (
-      !isValidAuthUser(parsedUser)
-    ) {
+    if (!isValidAuthUser(parsedUser)) {
       clearStoredAuthentication();
       return null;
     }
@@ -123,12 +87,7 @@ function readStoredAuthentication():
   }
 }
 
-
-export function AuthProvider({
-  children,
-}: {
-  children: ReactNode;
-}) {
+export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
 
   /*
@@ -138,25 +97,23 @@ export function AuthProvider({
    *
    * Do not read localStorage in useState.
    */
-  const [
-    user,
-    setUser,
-  ] = useState<AuthUser | null>(
-    null,
-  );
+  const [user, setUser] = useState<AuthUser | null>(null);
 
-  const [
-    isLoading,
-    setIsLoading,
-  ] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const authenticationChangedRef = useRef(false);
 
   /*
    * localStorage is accessed only after
    * hydration has completed in the browser.
    */
   useEffect(() => {
-    const storedUser =
-      readStoredAuthentication();
+    if (authenticationChangedRef.current) {
+      setIsLoading(false);
+      return;
+    }
+
+    const storedUser = readStoredAuthentication();
 
     setUser(storedUser);
     setIsLoading(false);
@@ -176,16 +133,10 @@ export function AuthProvider({
       router.refresh();
     };
 
-    window.addEventListener(
-      "auth:unauthorized",
-      handleUnauthorized,
-    );
+    window.addEventListener("auth:unauthorized", handleUnauthorized);
 
     return () => {
-      window.removeEventListener(
-        "auth:unauthorized",
-        handleUnauthorized,
-      );
+      window.removeEventListener("auth:unauthorized", handleUnauthorized);
     };
   }, [router]);
 
@@ -194,19 +145,12 @@ export function AuthProvider({
    * multiple tabs and browser windows.
    */
   useEffect(() => {
-    const handleStorageChange = (
-      event: StorageEvent,
-    ) => {
-      if (
-        event.key !== "token" &&
-        event.key !== "user" &&
-        event.key !== null
-      ) {
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key !== "token" && event.key !== "user" && event.key !== null) {
         return;
       }
 
-      const storedUser =
-        readStoredAuthentication();
+      const storedUser = readStoredAuthentication();
 
       setUser(storedUser);
       setIsLoading(false);
@@ -217,77 +161,52 @@ export function AuthProvider({
       }
     };
 
-    window.addEventListener(
-      "storage",
-      handleStorageChange,
-    );
+    window.addEventListener("storage", handleStorageChange);
 
     return () => {
-      window.removeEventListener(
-        "storage",
-        handleStorageChange,
-      );
+      window.removeEventListener("storage", handleStorageChange);
     };
   }, [router]);
 
   const login = useCallback(
-    async (
-      username: string,
-      password: string,
-    ) => {
-      const normalizedUsername =
-        username.trim();
+    async (username: string, password: string) => {
+      const normalizedUsername = username.trim();
 
       if (!normalizedUsername) {
-        throw new Error(
-          "Username is required.",
-        );
+        throw new Error("Username is required.");
       }
 
       if (!password) {
-        throw new Error(
-          "Password is required.",
-        );
+        throw new Error("Password is required.");
       }
 
       setIsLoading(true);
 
       try {
-        const response = await fetch(
-          `${API_URL}/auth/login`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type":
-                "application/json",
-            },
-            body: JSON.stringify({
-              username:
-                normalizedUsername,
-              password,
-            }),
+        const response = await fetch(`${API_URL}/auth/login`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
           },
-        );
+          body: JSON.stringify({
+            username: normalizedUsername,
+            password,
+          }),
+        });
 
         if (!response.ok) {
-          let message =
-            "Invalid username or password";
+          let message = "Invalid username or password";
 
           try {
-            const responseBody =
-              (await response.json()) as {
-                detail?: string;
-              };
+            const responseBody = (await response.json()) as {
+              detail?: string;
+            };
 
             if (
-              typeof responseBody.detail ===
-              "string" &&
-              responseBody.detail
-                .trim()
-                .length > 0
+              typeof responseBody.detail === "string" &&
+              responseBody.detail.trim().length > 0
             ) {
-              message =
-                responseBody.detail;
+              message = responseBody.detail;
             }
           } catch {
             /*
@@ -299,37 +218,20 @@ export function AuthProvider({
           throw new Error(message);
         }
 
-        const data =
-          (await response.json()) as LoginResponse;
+        const data = (await response.json()) as LoginResponse;
 
-        if (
-          !data.access_token ||
-          !isValidAuthUser(data.user)
-        ) {
-          throw new Error(
-            "The login response is invalid.",
-          );
+        if (!data.access_token || !isValidAuthUser(data.user)) {
+          throw new Error("The login response is invalid.");
         }
 
-        localStorage.setItem(
-          "token",
-          data.access_token,
-        );
+        localStorage.setItem("token", data.access_token);
 
-        localStorage.setItem(
-          "user",
-          JSON.stringify(data.user),
-        );
+        localStorage.setItem("user", JSON.stringify(data.user));
 
+        authenticationChangedRef.current = true;
         setUser(data.user);
 
-        router.replace(
-          data.user.role === "ADMIN"
-            ? "/admin"
-            : "/",
-        );
-
-        router.refresh();
+        window.location.assign(data.user.role === "ADMIN" ? "/admin" : "/");
       } finally {
         setIsLoading(false);
       }
@@ -338,6 +240,7 @@ export function AuthProvider({
   );
 
   const logout = useCallback(() => {
+    authenticationChangedRef.current = true;
     clearStoredAuthentication();
 
     setUser(null);
@@ -347,48 +250,32 @@ export function AuthProvider({
     router.refresh();
   }, [router]);
 
-  const contextValue =
-    useMemo<AuthContextValue>(
-      () => ({
-        user,
+  const contextValue = useMemo<AuthContextValue>(
+    () => ({
+      user,
 
-        isAuthenticated:
-          user !== null,
+      isAuthenticated: user !== null,
 
-        isAdmin:
-          user?.role === "ADMIN",
+      isAdmin: user?.role === "ADMIN",
 
-        isLoading,
+      isLoading,
 
-        login,
-        logout,
-      }),
-      [
-        user,
-        isLoading,
-        login,
-        logout,
-      ],
-    );
+      login,
+      logout,
+    }),
+    [user, isLoading, login, logout],
+  );
 
   return (
-    <AuthContext.Provider
-      value={contextValue}
-    >
-      {children}
-    </AuthContext.Provider>
+    <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>
   );
 }
 
-
 export function useAuth() {
-  const context =
-    useContext(AuthContext);
+  const context = useContext(AuthContext);
 
   if (context === undefined) {
-    throw new Error(
-      "useAuth must be used inside AuthProvider",
-    );
+    throw new Error("useAuth must be used inside AuthProvider");
   }
 
   return context;

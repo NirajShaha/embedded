@@ -14,7 +14,7 @@ from fastapi import (
 from app.auth import get_current_user
 from app.pdf_generator import build_pdf
 from app.prisma_client import db
-from app.schemas import TestCaseOverrideUpdate, TestCaseRead
+from app.schemas import CreateLookupItemPayload, TestCaseOverrideUpdate, TestCaseRead
 from app.test_case_overrides import (
     apply_override,
     load_overrides,
@@ -27,6 +27,31 @@ router = APIRouter(
     prefix="/test-cases",
     tags=["test-cases"],
 )
+
+
+@router.post("/lookups/{lookup_type}")
+async def create_user_lookup_item(
+    lookup_type: str,
+    payload: CreateLookupItemPayload,
+    _current_user=Depends(get_current_user),
+):
+    """Create a reusable tool/reference for a project override selection."""
+    name = payload.name.strip()
+    if not name or lookup_type not in {"tools", "references"}:
+        raise HTTPException(status_code=400, detail="Only tools and references can be added here")
+
+    if lookup_type == "tools":
+        existing = await db.tools_master.find_first(where={"tool_name": name})
+        if existing:
+            return {"id": int(existing.id), "name": existing.tool_name}
+        item = await db.tools_master.create(data={"tool_name": name})
+        return {"id": int(item.id), "name": item.tool_name}
+
+    existing = await db.references_master.find_first(where={"ref_text": name})
+    if existing:
+        return {"id": int(existing.id), "name": existing.ref_text}
+    item = await db.references_master.create(data={"ref_text": name})
+    return {"id": int(item.id), "name": item.ref_text}
 
 overrides_router = APIRouter(
     prefix="/projects/{project_id}/test-cases",
@@ -41,7 +66,6 @@ TEST_CASE_INCLUDE = {
     "test_types": True,
     "severities": True,
     "threats": True,
-    "assets": True,
     "test_case_tools": {
         "include": {
             "tools_master": True,
@@ -260,6 +284,49 @@ async def get_test_types(
         }
         for test_type in test_types
     ]
+
+
+@router.get(
+    "/classification-lookups",
+    response_model=dict[str, list[dict]],
+)
+async def get_classification_lookups(
+    _current_user=Depends(get_current_user),
+):
+    return {
+        "categories": [
+            {"id": int(item.id), "name": item.name}
+            for item in await db.categories.find_many(order={"name": "asc"})
+        ],
+        "objectives": [
+            {
+                "id": int(item.id),
+                "name": item.name,
+                "category_id": int(item.category_id),
+            }
+            for item in await db.objectives.find_many(order={"name": "asc"})
+        ],
+        "protocols": [
+            {"id": int(item.id), "name": item.name}
+            for item in await db.protocols.find_many(order={"name": "asc"})
+        ],
+        "attack_vectors": [
+            {"id": int(item.id), "name": item.name}
+            for item in await db.attack_vectors.find_many(order={"name": "asc"})
+        ],
+        "test_types": [
+            {"id": int(item.id), "name": item.name}
+            for item in await db.test_types.find_many(order={"name": "asc"})
+        ],
+        "severities": [
+            {"id": int(item.id), "name": item.name}
+            for item in await db.severities.find_many(order={"severity_rank": "asc"})
+        ],
+        "threats": [
+            {"id": int(item.id), "name": item.threat_text}
+            for item in await db.threats.find_many(order={"id": "asc"})
+        ],
+    }
 
 
 @router.get(
@@ -711,9 +778,9 @@ def _map_test_case(
         "threat_id": _optional_int(
             test_case.threat_id
         ),
-        "asset_id": _optional_int(
-            test_case.asset_id
-        ),
+        "test_case_name": test_case.test_case_name,
+        "pre_condition": test_case.pre_condition,
+        "impact": test_case.impact,
         "action_test_case": (
             test_case.action_test_case
         ),
@@ -741,9 +808,6 @@ def _map_test_case(
         "safety_impact": (
             test_case.safety_impact
         ),
-        "automation_possible": (
-            test_case.automation_possible
-        ),
         "created_at": (
             test_case.created_at
         ),
@@ -767,9 +831,6 @@ def _map_test_case(
         ),
         "threat": (
             test_case.threats
-        ),
-        "asset": (
-            test_case.assets
         ),
         "test_case_tools": [
             {

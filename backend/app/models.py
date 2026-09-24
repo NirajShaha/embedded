@@ -199,7 +199,7 @@ class Severity(Base):
     __tablename__ = "severities"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str] = mapped_column(String(50), nullable=False, unique=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
     severity_rank: Mapped[int] = mapped_column(Integer, nullable=False)
 
     test_cases: Mapped[list["TestCase"]] = relationship(
@@ -218,19 +218,6 @@ class Threat(Base):
 
     test_cases: Mapped[list["TestCase"]] = relationship(
         back_populates="threat", cascade="all, delete-orphan"
-    )
-
-
-class Asset(Base):
-    """Asset."""
-
-    __tablename__ = "assets"
-
-    id: Mapped[int] = mapped_column(primary_key=True)
-    asset_name: Mapped[str] = mapped_column(String(500), nullable=False, unique=True)
-
-    test_cases: Mapped[list["TestCase"]] = relationship(
-        back_populates="asset", cascade="all, delete-orphan"
     )
 
 
@@ -281,8 +268,10 @@ class TestCase(Base):
     test_type_id: Mapped[int | None] = mapped_column(ForeignKey("test_types.id"), nullable=True)
     severity_id: Mapped[int | None] = mapped_column(ForeignKey("severities.id"), nullable=True)
     threat_id: Mapped[int | None] = mapped_column(ForeignKey("threats.id"), nullable=True)
-    asset_id: Mapped[int | None] = mapped_column(ForeignKey("assets.id"), nullable=True)
 
+    test_case_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    pre_condition: Mapped[str | None] = mapped_column(LONGTEXT, nullable=True)
+    impact: Mapped[str | None] = mapped_column(LONGTEXT, nullable=True)
     action_test_case: Mapped[str] = mapped_column(LONGTEXT, nullable=False)
     source_scope_status: Mapped[str | None] = mapped_column(String(100), nullable=True)
     description: Mapped[str | None] = mapped_column(LONGTEXT, nullable=True)
@@ -292,7 +281,6 @@ class TestCase(Base):
     attack_feasibility: Mapped[str | None] = mapped_column(Text, nullable=True)
     cia_impact: Mapped[str | None] = mapped_column(Text, nullable=True)
     safety_impact: Mapped[str | None] = mapped_column(Text, nullable=True)
-    automation_possible: Mapped[str | None] = mapped_column(String(50), nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
@@ -305,7 +293,6 @@ class TestCase(Base):
     test_type: Mapped["TestType | None"] = relationship(back_populates="test_cases")
     severity: Mapped["Severity | None"] = relationship(back_populates="test_cases")
     threat: Mapped["Threat | None"] = relationship(back_populates="test_cases")
-    asset: Mapped["Asset | None"] = relationship(back_populates="test_cases")
 
     test_case_tools: Mapped[list["TestCaseTool"]] = relationship(
         back_populates="test_case", cascade="all, delete-orphan"

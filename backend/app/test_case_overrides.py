@@ -19,6 +19,9 @@ from app.prisma_client import db
 
 
 EDITABLE_TEXT_FIELDS: tuple[str, ...] = (
+    "test_case_name",
+    "pre_condition",
+    "impact",
     "action_test_case",
     "source_scope_status",
     "description",
@@ -28,7 +31,6 @@ EDITABLE_TEXT_FIELDS: tuple[str, ...] = (
     "attack_feasibility",
     "cia_impact",
     "safety_impact",
-    "automation_possible",
 )
 
 
@@ -43,7 +45,9 @@ def map_test_case(tc: Any) -> dict:
         "test_type_id": tc.test_type_id,
         "severity_id": tc.severity_id,
         "threat_id": tc.threat_id,
-        "asset_id": tc.asset_id,
+        "test_case_name": tc.test_case_name,
+        "pre_condition": tc.pre_condition,
+        "impact": tc.impact,
         "action_test_case": tc.action_test_case,
         "source_scope_status": tc.source_scope_status,
         "description": tc.description,
@@ -53,7 +57,6 @@ def map_test_case(tc: Any) -> dict:
         "attack_feasibility": tc.attack_feasibility,
         "cia_impact": tc.cia_impact,
         "safety_impact": tc.safety_impact,
-        "automation_possible": tc.automation_possible,
         "created_at": tc.created_at,
         "category": tc.categories,
         "objective": tc.objectives,
@@ -62,7 +65,6 @@ def map_test_case(tc: Any) -> dict:
         "test_type": tc.test_types,
         "severity": tc.severities,
         "threat": tc.threats,
-        "asset": tc.assets,
         "test_case_tools": [
             {"tool": item.tools_master} for item in tc.test_case_tools
         ],

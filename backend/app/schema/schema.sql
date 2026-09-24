@@ -35,7 +35,7 @@ CREATE TABLE test_types (
 
 CREATE TABLE severities (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
-    name VARCHAR(50) NOT NULL UNIQUE,
+    name VARCHAR(255) NOT NULL UNIQUE,
     severity_rank INT NOT NULL
 );
 
@@ -43,11 +43,6 @@ CREATE TABLE threats (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     threat_text TEXT NOT NULL,
     UNIQUE KEY uk_threat(threat_text(255))
-);
-
-CREATE TABLE assets (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,
-    asset_name VARCHAR(500) NOT NULL UNIQUE
 );
 
 CREATE TABLE tools_master (
@@ -72,8 +67,10 @@ CREATE TABLE test_cases (
     test_type_id BIGINT,
     severity_id BIGINT,
     threat_id BIGINT,
-    asset_id BIGINT,
 
+    test_case_name VARCHAR(255),
+    pre_condition LONGTEXT,
+    impact LONGTEXT,
     action_test_case LONGTEXT NOT NULL,
     source_scope_status VARCHAR(100),
 
@@ -86,7 +83,6 @@ CREATE TABLE test_cases (
     attack_feasibility TEXT,
     cia_impact TEXT,
     safety_impact TEXT,
-    automation_possible VARCHAR(50),
 
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
@@ -96,8 +92,7 @@ CREATE TABLE test_cases (
     FOREIGN KEY (attack_vector_id) REFERENCES attack_vectors(id),
     FOREIGN KEY (test_type_id) REFERENCES test_types(id),
     FOREIGN KEY (severity_id) REFERENCES severities(id),
-    FOREIGN KEY (threat_id) REFERENCES threats(id),
-    FOREIGN KEY (asset_id) REFERENCES assets(id)
+    FOREIGN KEY (threat_id) REFERENCES threats(id)
 );
 
 CREATE TABLE test_case_tools (
@@ -121,6 +116,9 @@ CREATE TABLE project_test_case_overrides (
     project_id INT NOT NULL,
     test_case_id BIGINT NOT NULL,
 
+    test_case_name VARCHAR(255),
+    pre_condition LONGTEXT,
+    impact LONGTEXT,
     action_test_case LONGTEXT,
     source_scope_status VARCHAR(100),
     description LONGTEXT,
@@ -130,7 +128,6 @@ CREATE TABLE project_test_case_overrides (
     attack_feasibility TEXT,
     cia_impact TEXT,
     safety_impact TEXT,
-    automation_possible VARCHAR(50),
 
     tools_overridden BOOLEAN NOT NULL DEFAULT FALSE,
     references_overridden BOOLEAN NOT NULL DEFAULT FALSE,
