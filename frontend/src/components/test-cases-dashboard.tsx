@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import {
   getCoreRowModel,
@@ -13,6 +14,7 @@ import {
   CircleAlert,
   Download,
   Eye,
+  Play,
   Search,
   ShieldAlert,
   ShieldCheck,
@@ -23,6 +25,7 @@ import {
   Zap,
   type LucideIcon,
 } from "lucide-react";
+import { toast } from "sonner";
 
 import {
   downloadTestCasesPDF,
@@ -210,6 +213,7 @@ function MultiFilterDropdown<
 const PAGE_SIZE_DEFAULT = 10;
 
 export function TestCasesDashboard({ projectId }: TestCasesDashboardProps) {
+  const router = useRouter();
   const [selectedCategories, setSelectedCategories] = React.useState<number[]>(
     [],
   );
@@ -234,6 +238,8 @@ export function TestCasesDashboard({ projectId }: TestCasesDashboardProps) {
   const [isPdfLoading, setIsPdfLoading] = React.useState(false);
 
   const [pdfError, setPdfError] = React.useState<string | null>(null);
+
+  const [isRunStarting, setIsRunStarting] = React.useState(false);
 
   const { data: categories, isLoading: categoriesLoading } = useQuery({
     queryKey: ["categories"],
@@ -432,6 +438,30 @@ export function TestCasesDashboard({ projectId }: TestCasesDashboardProps) {
       setIsPdfLoading(false);
     }
   }, [projectId, filteredTestCases, selectedCategories, selectedTestTypes]);
+
+  const handleRunTestCases = React.useCallback(async () => {
+    if (filteredTestCases.length === 0) {
+      setPdfError("No test cases match the current filters.");
+      return;
+    }
+    setIsRunStarting(true);
+    try {
+      const { createExecutionRun } = await import("@/lib/execution");
+      const created = await createExecutionRun({
+        projectId,
+        testCaseIds: filteredTestCases.map((testCase) => testCase.id),
+        durationPerCaseS: 90,
+      });
+      toast.success("Run started", {
+        description: `${created.run.total_cases} test cases queued for execution.`,
+      });
+      router.push(`/projects/${projectId}/runs/${created.run.id}`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to start run");
+    } finally {
+      setIsRunStarting(false);
+    }
+  }, [projectId, filteredTestCases, router]);
 
   const totalItems = filteredTestCases.length;
 
@@ -780,6 +810,7 @@ export function TestCasesDashboard({ projectId }: TestCasesDashboardProps) {
                   {filteredTestCases.length === 1 ? "test case" : "test cases"}
                 </p>
 
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                 <Button
                   variant="outline"
                   size="sm"
@@ -791,6 +822,18 @@ export function TestCasesDashboard({ projectId }: TestCasesDashboardProps) {
 
                   {isPdfLoading ? "Generating PDF..." : "Generate PDF Report"}
                 </Button>
+
+                <Button
+                  size="sm"
+                  onClick={handleRunTestCases}
+                  disabled={isRunStarting || filteredTestCases.length === 0}
+                  className="gap-2"
+                >
+                  <Play className="size-4" />
+
+                  {isRunStarting ? "Starting run..." : "Run Test Cases"}
+                </Button>
+                </div>
               </div>
             </div>
           </>

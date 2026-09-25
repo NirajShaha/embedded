@@ -9,6 +9,7 @@ from app.routers import (
     admin_test_cases,
     auth,
     ecu_details,
+    executions,
     pages,
     projects,
     test_cases,
@@ -27,6 +28,15 @@ async def lifespan(
 
     await ensure_attributes()
     await ensure_users()
+
+    try:
+        from app.execution.engine import recover_incomplete_runs
+
+        recovered = await recover_incomplete_runs()
+        if recovered:
+            print(f"Recovered {recovered} interrupted test run(s) to paused state")
+    except Exception as exc:
+        print(f"Run recovery skipped: {exc}")
 
     yield
 
@@ -85,6 +95,11 @@ app.include_router(
 
 app.include_router(
     test_cases.overrides_router,
+    prefix=api_prefix,
+)
+
+app.include_router(
+    executions.router,
     prefix=api_prefix,
 )
 
