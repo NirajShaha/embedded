@@ -15,7 +15,7 @@ import {
 import {
   AuthProvider,
 } from "@/contexts/auth-context";
-
+import { Toaster } from "sonner";
 
 export function Providers({
   children,
@@ -51,6 +51,7 @@ export function Providers({
           >
             {children}
           </TooltipProvider>
+          <Toaster richColors position="top-right" closeButton />
         </QueryClientProvider>
       </ThemeProvider>
     </AuthProvider>

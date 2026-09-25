@@ -383,7 +383,7 @@ with engine.begin() as conn:
 
                     attack_feasibility,
                     cia_impact,
-                    safety_impact,
+                    safety_impact
                 )
                 VALUES
                 (
@@ -409,7 +409,7 @@ with engine.begin() as conn:
 
                     :attack_feasibility,
                     :cia_impact,
-                    :safety_impact,
+                    safety_impact
                 )
                 """
             ),

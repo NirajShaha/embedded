@@ -149,6 +149,7 @@ model projects {
   project_ecu_details project_ecu_details?
   project_selections  project_selections[]
   test_case_overrides project_test_case_overrides[]
+  test_runs           test_runs[]
 }
 
 model protocols {
@@ -235,6 +236,7 @@ model test_cases {
   test_case_references test_case_references[]
   test_case_tools      test_case_tools[]
   test_case_overrides  project_test_case_overrides[]
+  test_run_cases       test_run_cases[]
   categories           categories                    @relation(fields: [category_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "test_cases_ibfk_1")
   objectives           objectives                    @relation(fields: [objective_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "test_cases_ibfk_2")
   protocols            protocols?                    @relation(fields: [protocol_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "test_cases_ibfk_3")
@@ -276,4 +278,100 @@ model tools_master {
   tool_name       String                             @unique(map: "uk_tool", length: 255) @db.VarChar(1000)
   test_case_tools test_case_tools[]
   override_tools  project_test_case_override_tools[]
+}
+
+model test_runs {
+  id                  BigInt              @id @default(autoincrement())
+  project_id          Int
+  status              String              @default("running") @db.VarChar(20)
+  total_cases         Int
+  completed_cases     Int                 @default(0)
+  passed_cases        Int                 @default(0)
+  failed_cases        Int                 @default(0)
+  current_position    Int?
+  duration_per_case_s Float               @default(90)
+  packet_loss_rate    Float               @default(0.02)
+  started_at          DateTime?           @db.DateTime(6)
+  finished_at         DateTime?           @db.DateTime(6)
+  created_by          BigInt?
+  created_at          DateTime            @default(now()) @db.DateTime(6)
+  updated_at          DateTime            @default(now()) @updatedAt @db.DateTime(6)
+  projects            projects            @relation(fields: [project_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "test_runs_ibfk_1")
+  test_run_cases      test_run_cases[]
+  test_packets        test_packets[]
+  test_case_buckets   test_case_buckets[]
+  test_run_events     test_run_events[]
+
+  @@index([project_id], map: "ix_test_runs_project_id")
+  @@index([status], map: "ix_test_runs_status")
+}
+
+model test_run_cases {
+  id              BigInt     @id @default(autoincrement())
+  run_id          BigInt
+  position        Int
+  test_case_id    BigInt
+  test_case_name  String?    @db.Text
+  status          String     @default("pending") @db.VarChar(20)
+  attempt         Int        @default(0)
+  packets_planned Int        @default(0)
+  packets_sent    Int        @default(0)
+  packets_acked   Int        @default(0)
+  packets_nacked  Int        @default(0)
+  avg_rtt_ms      Float?
+  started_at      DateTime?  @db.DateTime(6)
+  finished_at     DateTime?  @db.DateTime(6)
+  duration_ms     BigInt?
+  error           String?    @db.Text
+  fault_start_seq Int?
+  fault_end_seq   Int?
+  test_runs       test_runs  @relation(fields: [run_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "test_run_cases_ibfk_1")
+  test_case       test_cases @relation(fields: [test_case_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "test_run_cases_ibfk_2")
+  test_packets    test_packets[]
+  test_buckets    test_case_buckets[]
+
+  @@unique([run_id, position], map: "uq_run_position")
+  @@index([run_id, status], map: "ix_run_cases_status")
+}
+
+model test_packets {
+  id           BigInt          @id @default(autoincrement())
+  run_id       BigInt
+  case_id      BigInt
+  seq          Int
+  seq_global   BigInt
+  payload_hex  String          @db.VarChar(64)
+  ack          Boolean         @default(true)
+  rtt_ms       Float           @default(0)
+  sent_at      DateTime        @default(now()) @db.DateTime(6)
+  test_runs    test_runs       @relation(fields: [run_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "test_packets_ibfk_1")
+  test_run_case test_run_cases @relation(fields: [case_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "test_packets_ibfk_2")
+
+  @@index([run_id, seq_global], map: "ix_packets_run_seq")
+  @@index([case_id, seq], map: "ix_packets_case")
+}
+
+model test_case_buckets {
+  run_id     BigInt
+  case_id    BigInt
+  bucket_index Int
+  packets    Int     @default(0)
+  acked      Int     @default(0)
+  nacked     Int     @default(0)
+  avg_rtt_ms Float?
+  test_runs  test_runs     @relation(fields: [run_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "test_case_buckets_ibfk_1")
+  test_run_case test_run_cases @relation(fields: [case_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "test_case_buckets_ibfk_2")
+
+  @@id([run_id, case_id, bucket_index])
+}
+
+model test_run_events {
+  id         BigInt    @id @default(autoincrement())
+  run_id     BigInt
+  event_type String    @db.VarChar(40)
+  payload    Json?
+  created_at DateTime  @default(now()) @db.DateTime(6)
+  test_runs  test_runs @relation(fields: [run_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "test_run_events_ibfk_1")
+
+  @@index([run_id], map: "ix_run_events_run_id")
 }
