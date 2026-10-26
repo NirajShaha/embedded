@@ -143,6 +143,93 @@ export const createProject = (payload: {
 
 export const getProject = (id: number) => request<Project>(`/projects/${id}`);
 
+export async function runScript(
+  scriptId: string,
+  signal: AbortSignal,
+  onOutput: (chunk: string) => void,
+): Promise<void> {
+  const token =
+    typeof window !== "undefined" ? localStorage.getItem("token") : null;
+  const headers = new Headers();
+
+  if (token) {
+    headers.set("Authorization", `Bearer ${token}`);
+  }
+
+  const response = await fetch(
+    `${API_URL}/scripts/${encodeURIComponent(scriptId)}/run`,
+    {
+      method: "POST",
+      headers,
+      signal,
+    },
+  );
+
+  if (response.status === 401) {
+    handleUnauthorizedResponse();
+    throw new Error("Your session has expired. Please sign in again.");
+  }
+
+  if (!response.ok) {
+    throw new Error(await getResponseErrorMessage(response));
+  }
+
+  if (!response.body) {
+    throw new Error("The script output stream is unavailable.");
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let pendingLine = "";
+  let exitCodeLine = "";
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) {
+        break;
+      }
+      const lines = (pendingLine + decoder.decode(value, { stream: true })).split(
+        "\n",
+      );
+      pendingLine = lines.pop() ?? "";
+      for (const line of lines) {
+        if (line.startsWith("__SCRIPT_EXIT_CODE__=")) {
+          exitCodeLine = line;
+        } else {
+          onOutput(`${line}\n`);
+        }
+      }
+    }
+  } finally {
+    reader.releaseLock();
+  }
+
+  const finalLines = (pendingLine + decoder.decode()).split("\n");
+  pendingLine = finalLines.pop() ?? "";
+  for (const line of finalLines) {
+    if (line.startsWith("__SCRIPT_EXIT_CODE__=")) {
+      exitCodeLine = line;
+    } else {
+      onOutput(`${line}\n`);
+    }
+  }
+  if (pendingLine.startsWith("__SCRIPT_EXIT_CODE__=")) {
+    exitCodeLine = pendingLine;
+  } else if (pendingLine) {
+    onOutput(pendingLine);
+  }
+
+  const exitCode = exitCodeLine.match(/^__SCRIPT_EXIT_CODE__=(\d+)\s*$/);
+  if (!exitCode) {
+    throw new Error("The script ended without reporting its exit status.");
+  }
+  if (Number(exitCode[1]) !== 0) {
+    throw new Error(
+      `The script exited with code ${exitCode[1]}. Check the backend terminal for details.`,
+    );
+  }
+}
+
 // Page and selection APIs
 
 export const getPageAttributes = (page: number) =>

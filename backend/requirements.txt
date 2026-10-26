@@ -9,5 +9,6 @@ openpyxl
 cryptography
 reportlab
 pillow
+python-can
 PyJWT
 pwdlib[argon2]
