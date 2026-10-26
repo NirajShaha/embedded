@@ -4,7 +4,14 @@ import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { LayoutDashboard, Cpu, ShieldCheck, Settings, LogOut } from "lucide-react";
+import {
+  LayoutDashboard,
+  Cpu,
+  ShieldCheck,
+  Settings,
+  LogOut,
+  Terminal,
+} from "lucide-react";
 
 import { getProject } from "@/lib/api";
 import { useAuth } from "@/contexts/auth-context";
@@ -76,6 +83,18 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 <Link href="/">
                   <LayoutDashboard />
                   <span>Dashboard</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                asChild
+                isActive={pathname === "/scripts"}
+                tooltip="Script tools"
+              >
+                <Link href="/scripts">
+                  <Terminal />
+                  <span>Script tools</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>

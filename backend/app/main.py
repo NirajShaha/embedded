@@ -12,6 +12,7 @@ from app.routers import (
     executions,
     pages,
     projects,
+    script_runner,
     test_cases,
 )
 from app.seed import (
@@ -100,6 +101,11 @@ app.include_router(
 
 app.include_router(
     executions.router,
+    prefix=api_prefix,
+)
+
+app.include_router(
+    script_runner.router,
     prefix=api_prefix,
 )
 
