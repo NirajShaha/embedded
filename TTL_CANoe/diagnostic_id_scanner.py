@@ -2,39 +2,35 @@ import can
 import csv
 import time
 from ASC_Logger import ASCLogger
+import can_env
 
 
 # ----------------------------------------------------
 # Configuration
 # ----------------------------------------------------
+# Values come from the environment when launched by the backend (the Source ID
+# and Destination ID from the dashboard map to the scan range, and the manual
+# message maps to the request payload), and fall back to the original
+# hard-coded defaults when the script is run by hand.
 
-SCAN_START = 0x400
-SCAN_END = 0x500
+SCAN_START = can_env.scan_start(0x400)
+SCAN_END = can_env.scan_end(0x500)
 
-REQUEST = [
-    0x02,
-    0x10,
-    0x03,
-    0x00,
-    0x00,
-    0x00,
-    0x00,
-    0x00
-]
+REQUEST = can_env.request_bytes("02 10 03 00 00 00 00 00")
 
 OUTPUT_CSV = "diagnostic_ids.csv"
+
+print(
+    f"Scan range 0x{SCAN_START:03X} - 0x{SCAN_END:03X} | "
+    f"request {' '.join(f'{b:02X}' for b in REQUEST)}",
+    flush=True,
+)
 
 # ----------------------------------------------------
 # Open Bus
 # ----------------------------------------------------
 
-bus = can.Bus(
-    interface="vector",
-    channel=0,
-    app_name="Python",
-    fd=True,
-    receive_own_messages=True
-)
+bus = can.Bus(**can_env.bus_kwargs())
 
 # ----------------------------------------------------
 # Results Store

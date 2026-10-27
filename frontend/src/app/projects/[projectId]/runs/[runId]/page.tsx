@@ -11,7 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { ContentWrapper } from "@/components/content-wrapper";
 import { PageHeader } from "@/components/page-header";
 import { getExecutionRun } from "@/lib/execution";
-import { LiveRun } from "@/components/execution/live-run";
+import { ScriptRunDashboard } from "@/components/execution/script-run-dashboard";
 
 export default function RunPage() {
   const params = useParams<{ projectId: string; runId: string }>();
@@ -29,7 +29,7 @@ export default function RunPage() {
     <ContentWrapper>
       <PageHeader
         title={`Run #${Number.isFinite(runId) ? runId : "…"}`}
-        description="Live ECU packet stream. Cases run in order on the left; binary frames arrive on the right."
+        description="Configure the Vector bus, start the trace, then run each test case. Live output and script status stream on the right."
         badge="Live execution"
         actions={
           <div className="flex items-center gap-2">
@@ -65,12 +65,11 @@ export default function RunPage() {
           </Button>
         </div>
       ) : (
-        <LiveRun
+        <ScriptRunDashboard
           projectId={projectId}
           runId={runId}
           initialRun={runQuery.data.run}
           initialCases={runQuery.data.cases}
-          durationPerCaseS={90}
         />
       )}
     </ContentWrapper>

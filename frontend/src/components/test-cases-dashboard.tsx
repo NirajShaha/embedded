@@ -446,14 +446,13 @@ export function TestCasesDashboard({ projectId }: TestCasesDashboardProps) {
     }
     setIsRunStarting(true);
     try {
-      const { createExecutionRun } = await import("@/lib/execution");
-      const created = await createExecutionRun({
+      const { createScriptRun } = await import("@/lib/script-run");
+      const created = await createScriptRun({
         projectId,
         testCaseIds: filteredTestCases.map((testCase) => testCase.id),
-        durationPerCaseS: 90,
       });
-      toast.success("Run started", {
-        description: `${created.run.total_cases} test cases queued for execution.`,
+      toast.success("Run created", {
+        description: `${created.run.total_cases} test cases ready. Configure the bus and start them on the run page.`,
       });
       router.push(`/projects/${projectId}/runs/${created.run.id}`);
     } catch (error) {

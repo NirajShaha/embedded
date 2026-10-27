@@ -12,6 +12,7 @@ from app.routers import (
     executions,
     pages,
     projects,
+    script_executions,
     script_runner,
     test_cases,
 )
@@ -31,6 +32,13 @@ async def lifespan(
     await ensure_users()
 
     try:
+        from app.execution.bootstrap import ensure_execution_tables
+
+        await ensure_execution_tables()
+    except Exception as exc:
+        print(f"Execution table bootstrap skipped: {exc}")
+
+    try:
         from app.execution.engine import recover_incomplete_runs
 
         recovered = await recover_incomplete_runs()
@@ -40,6 +48,15 @@ async def lifespan(
         print(f"Run recovery skipped: {exc}")
 
     yield
+
+    try:
+        from app.execution.script_runtime import manager
+
+        killed = manager.shutdown_all()
+        if killed:
+            print(f"Stopped {killed} running script process(es) on shutdown")
+    except Exception as exc:
+        print(f"Script process cleanup skipped: {exc}")
 
     await db.disconnect()
 
@@ -101,6 +118,11 @@ app.include_router(
 
 app.include_router(
     executions.router,
+    prefix=api_prefix,
+)
+
+app.include_router(
+    script_executions.router,
     prefix=api_prefix,
 )
 
