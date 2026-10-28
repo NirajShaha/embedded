@@ -24,11 +24,11 @@ export default function RunPage() {
   });
 
   return (
-    <div className="flex flex-col gap-4 lg:h-full">
+    <div className="flex flex-col gap-2.5 lg:h-full">
       {/* Compact header so the dashboard below gets the screen */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
-          <h1 className="text-xl font-semibold tracking-tight">
+          <h1 className="text-lg font-semibold tracking-tight">
             Run #{Number.isFinite(runId) ? runId : "…"}
           </h1>
           <Badge variant="secondary" className="gap-1.5">
