@@ -564,8 +564,8 @@ export function ScriptRunDashboard({
 
       <div
         className={cn(
-          "flex min-h-0 flex-1 flex-col gap-2",
-          scrollable ? "overflow-y-auto pr-1" : "overflow-hidden",
+          "flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto pr-1 [scrollbar-color:var(--border)_transparent] [scrollbar-width:thin]",
+          scrollable ? "" : "max-h-[260px]",
         )}
       >
         {visibleCases.length === 0 ? (
@@ -700,7 +700,7 @@ export function ScriptRunDashboard({
     <>
       <div className={cn("flex min-h-0 flex-col gap-2.5 lg:flex-row", className)}>
         {/* LEFT: controls */}
-        <div className="flex min-h-0 flex-col gap-2.5 lg:w-[360px] lg:shrink-0 lg:overflow-hidden">
+        <div className="flex min-h-0 flex-col gap-2.5 lg:w-[360px] lg:shrink-0">
           <Section
             title="Vector Config"
             onMaximize={() => setMaximized("config")}
@@ -728,8 +728,8 @@ export function ScriptRunDashboard({
           </Section>
         </div>
 
-        {/* RIGHT: live feed + python terminal */}
-        <div className="flex min-h-0 flex-1 flex-col gap-2.5 max-lg:h-[520px]">
+        {/* RIGHT: live feed + python terminal — match the controls' height */}
+        <div className="flex min-h-0 flex-1 flex-col gap-2.5 max-lg:h-[520px] lg:min-h-[440px]">
           <TerminalPanel
             className="flex-1"
             title="Live feed — trace window & test case scripts"

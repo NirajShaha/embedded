@@ -24,7 +24,7 @@ export default function RunPage() {
   });
 
   return (
-    <div className="flex flex-col gap-2.5 lg:h-full">
+    <div className="flex flex-col gap-2.5">
       {/* Compact header so the dashboard below gets the screen */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
@@ -69,7 +69,6 @@ export default function RunPage() {
         </div>
       ) : (
         <ScriptRunDashboard
-          className="lg:min-h-0 lg:flex-1"
           projectId={projectId}
           runId={runId}
           initialRun={runQuery.data.run}
