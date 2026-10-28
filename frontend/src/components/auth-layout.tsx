@@ -133,7 +133,7 @@ export function AuthLayout({
         </header>
 
         <main className="flex-1 overflow-auto">
-          <div className="mx-auto w-full max-w-6xl px-6 py-8 sm:px-8 sm:py-10">
+          <div className="w-full px-6 py-8 sm:px-8 sm:py-10">
             {children}
           </div>
         </main>
