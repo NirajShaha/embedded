@@ -76,6 +76,7 @@ class ManagedProcess:
     state: str = "running"  # running | paused | exited | error
     exit_code: Optional[int] = None
     reader: Optional[threading.Thread] = None
+    stopped_by_user: bool = False
 
 
 @dataclass
@@ -261,7 +262,12 @@ class ScriptProcessManager:
                 },
             )
             if proc.scope == "case" and proc.case_id is not None:
-                self._schedule(self._finish_case(proc.case_id, code))
+                # The exit handler is the single writer of a case's final status,
+                # so a user-stopped case is recorded as skipped (never failed).
+                if proc.stopped_by_user:
+                    self._schedule(self._mark_case_stopped(proc.case_id))
+                else:
+                    self._schedule(self._finish_case(proc.case_id, code))
 
     def _schedule(self, coro) -> None:
         loop = self._loop
@@ -363,8 +369,11 @@ class ScriptProcessManager:
 
     async def stop_case(self, run_id: int, case_id: int) -> None:
         proc = self._require_case(run_id, case_id)
+        proc.stopped_by_user = True
         await asyncio.to_thread(self._terminate, proc)
-        await self._mark_case_stopped(case_id)
+        # Final status ('skipped') is written by the exit handler in
+        # _read_output once the process actually exits — a single writer
+        # avoids racing the process-exit path to 'failed'.
 
     def _require_case(self, run_id: int, case_id: int) -> ManagedProcess:
         channel = self._channel(run_id)
@@ -382,6 +391,7 @@ class ScriptProcessManager:
             for proc in procs:
                 if proc is not None and proc.popen.poll() is None:
                     try:
+                        proc.stopped_by_user = True
                         self._terminate(proc)
                         terminated += 1
                     except Exception:

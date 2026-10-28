@@ -43,7 +43,7 @@ import {
 } from "@/lib/script-run";
 import { useScriptStream, type FeedLine } from "@/hooks/use-script-stream";
 
-type SectionKind = "config" | "message" | "cases" | "feed" | "terminal";
+type SectionKind = "cases" | "feed" | "terminal";
 
 interface ScriptRunDashboardProps {
   projectId: number;
@@ -136,7 +136,7 @@ function Section({
 }: {
   title: string;
   icon?: React.ElementType;
-  onMaximize: () => void;
+  onMaximize?: () => void;
   headerExtra?: React.ReactNode;
   children: React.ReactNode;
   className?: string;
@@ -151,7 +151,9 @@ function Section({
         </CardTitle>
         <div className="flex items-center gap-1.5">
           {headerExtra}
-          <MaximizeButton onClick={onMaximize} label={title} />
+          {onMaximize ? (
+            <MaximizeButton onClick={onMaximize} label={title} />
+          ) : null}
         </div>
       </CardHeader>
       <CardContent className={cn("min-h-0 flex-1 overflow-hidden p-3", bodyClassName)}>
@@ -659,8 +661,6 @@ export function ScriptRunDashboard({
   };
 
   const MAX_TITLE: Record<SectionKind, string> = {
-    config: "Vector Config",
-    message: "Message & IDs",
     cases: "Test cases",
     feed: "Live feed — trace window & test case scripts",
     terminal: "Python terminal — script status",
@@ -668,10 +668,6 @@ export function ScriptRunDashboard({
 
   const maximizedBody = (() => {
     switch (maximized) {
-      case "config":
-        return <div className="h-full overflow-auto p-4">{configBody}</div>;
-      case "message":
-        return <div className="h-full overflow-auto p-4">{messageBody}</div>;
       case "cases":
         return <div className="h-full overflow-hidden p-4">{renderCases(true)}</div>;
       case "feed":
@@ -701,20 +697,11 @@ export function ScriptRunDashboard({
       <div className={cn("flex min-h-0 flex-col gap-2.5 lg:flex-row", className)}>
         {/* LEFT: controls */}
         <div className="flex min-h-0 flex-col gap-2.5 lg:w-[360px] lg:shrink-0">
-          <Section
-            title="Vector Config"
-            onMaximize={() => setMaximized("config")}
-            headerExtra={traceDot}
-            className="shrink-0"
-          >
+          <Section title="Vector Config" headerExtra={traceDot} className="shrink-0">
             {configBody}
           </Section>
 
-          <Section
-            title="Message & IDs"
-            onMaximize={() => setMaximized("message")}
-            className="shrink-0"
-          >
+          <Section title="Message & IDs" className="shrink-0">
             {messageBody}
           </Section>
 
