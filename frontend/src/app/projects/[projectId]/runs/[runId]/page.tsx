@@ -24,7 +24,7 @@ export default function RunPage() {
   });
 
   return (
-    <div className="flex flex-col gap-4 lg:h-[calc(100dvh-7.5rem)]">
+    <div className="flex flex-col gap-4 lg:h-full">
       {/* Compact header so the dashboard below gets the screen */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">

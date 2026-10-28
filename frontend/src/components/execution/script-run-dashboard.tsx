@@ -290,7 +290,7 @@ export function ScriptRunDashboard({
   return (
     <div className={cn("flex min-h-0 flex-col gap-3 lg:flex-row", className)}>
       {/* LEFT: controls — one compact column that scrolls if needed */}
-      <div className="flex min-h-0 flex-col gap-3 lg:w-[360px] lg:shrink-0 lg:overflow-y-auto lg:pr-1">
+      <div className="flex min-h-0 flex-col gap-3 lg:w-[360px] lg:shrink-0 lg:overflow-y-auto lg:pr-1.5 lg:[scrollbar-color:var(--border)_transparent] lg:[scrollbar-width:thin]">
         {/* Vector config + trace + test connection */}
         <Card className="shrink-0 gap-0 py-0">
           <CardHeader className="flex flex-row items-center justify-between gap-2 border-b border-border/60 px-4 py-2.5">
