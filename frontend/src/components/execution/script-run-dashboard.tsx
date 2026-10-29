@@ -9,7 +9,6 @@ import {
   Pause,
   Play,
   Plug,
-  Radio,
   Square,
   Terminal,
   XCircle,
@@ -42,6 +41,7 @@ import {
   type VectorConfig,
 } from "@/lib/script-run";
 import { useScriptStream, type FeedLine } from "@/hooks/use-script-stream";
+import { LiveFeedPanel } from "@/components/execution/live-feed-panel";
 
 type SectionKind = "cases" | "feed" | "terminal";
 
@@ -176,27 +176,51 @@ function TerminalBody({
   scrollable?: boolean;
 }) {
   const scrollRef = React.useRef<HTMLDivElement>(null);
+  const [pinned, setPinned] = React.useState(true);
+
   React.useEffect(() => {
+    if (!pinned) return;
     const node = scrollRef.current;
     if (node) node.scrollTop = node.scrollHeight;
-  }, [lines]);
+  }, [lines, pinned]);
+
+  const onScroll = () => {
+    const node = scrollRef.current;
+    if (!node) return;
+    setPinned(
+      node.scrollHeight - node.scrollTop - node.clientHeight < 48,
+    );
+  };
 
   return (
-    <div
-      ref={scrollRef}
-      className={cn(
-        "h-full bg-[oklch(0.16_0.01_250)] p-3 font-mono text-[11px] leading-relaxed text-[oklch(0.9_0.02_150)]",
-        scrollable ? "overflow-auto" : "overflow-hidden",
-      )}
-    >
-      {lines.length === 0 ? (
-        <span className="text-muted-foreground/70">{empty}</span>
-      ) : (
-        lines.map((line) => (
-          <div key={line.id} className="whitespace-pre-wrap break-words">
-            {renderLine ? renderLine(line) : line.line}
-          </div>
-        ))
+    <div className="relative h-full">
+      <div
+        ref={scrollRef}
+        onScroll={onScroll}
+        className={cn(
+          "h-full bg-[oklch(0.16_0.01_250)] p-3 font-mono text-[11px] leading-relaxed text-[oklch(0.9_0.02_150)]",
+          scrollable ? "overflow-auto" : "overflow-hidden",
+        )}
+      >
+        {lines.length === 0 ? (
+          <span className="text-muted-foreground/70">{empty}</span>
+        ) : (
+          lines.map((line) => (
+            <div key={line.id} className="whitespace-pre-wrap break-words">
+              {renderLine ? renderLine(line) : line.line}
+            </div>
+          ))
+        )}
+      </div>
+      {!pinned && lines.length > 0 && (
+        <Button
+          type="button"
+          size="xs"
+          className="absolute bottom-2 right-2 gap-1 shadow"
+          onClick={() => setPinned(true)}
+        >
+          Latest
+        </Button>
       )}
     </div>
   );
@@ -235,7 +259,12 @@ function TerminalPanel({
         </div>
       </CardHeader>
       <CardContent className="min-h-0 flex-1 overflow-hidden p-0">
-        <TerminalBody lines={lines} empty={empty} renderLine={renderLine} />
+        <TerminalBody
+          lines={lines}
+          empty={empty}
+          renderLine={renderLine}
+          scrollable
+        />
       </CardContent>
     </Card>
   );
@@ -650,7 +679,7 @@ export function ScriptRunDashboard({
     </div>
   );
 
-  const feedRenderLine = (line: FeedLine) => {
+  const terminalRenderLine = (line: FeedLine) => {
     const label = line.scope === "case" ? caseLabel(line.caseId) : "trace";
     return (
       <>
@@ -662,8 +691,8 @@ export function ScriptRunDashboard({
 
   const MAX_TITLE: Record<SectionKind, string> = {
     cases: "Test cases",
-    feed: "Live feed — trace window & test case scripts",
-    terminal: "Python terminal — script status",
+    feed: "Live feed — trace window",
+    terminal: "Python terminal — test case scripts",
   };
 
   const maximizedBody = (() => {
@@ -672,11 +701,10 @@ export function ScriptRunDashboard({
         return <div className="h-full overflow-hidden p-4">{renderCases(true)}</div>;
       case "feed":
         return (
-          <TerminalBody
-            scrollable
+          <LiveFeedPanel
             lines={stream.feed}
-            empty="Start the trace or a test case to see live output here."
-            renderLine={feedRenderLine}
+            connected={stream.connected}
+            className="h-full border-0"
           />
         );
       case "terminal":
@@ -684,7 +712,8 @@ export function ScriptRunDashboard({
           <TerminalBody
             scrollable
             lines={stream.terminal}
-            empty="Process status (started, paused, exited, errors) appears here."
+            empty="Test case script output and process status appears here."
+            renderLine={terminalRenderLine}
           />
         );
       default:
@@ -694,45 +723,48 @@ export function ScriptRunDashboard({
 
   return (
     <>
-      <div className={cn("flex min-h-0 flex-col gap-2.5 lg:flex-row", className)}>
-        {/* LEFT: controls */}
-        <div className="flex min-h-0 flex-col gap-2.5 lg:w-[360px] lg:shrink-0">
-          <Section title="Vector Config" headerExtra={traceDot} className="shrink-0">
+      <div className={cn("grid min-h-0 min-w-0 grid-cols-1 gap-2.5 xl:grid-cols-[320px_minmax(0,1fr)]", className)}>
+        <div className="order-2 contents xl:order-1 xl:flex xl:min-h-0 xl:flex-col xl:gap-2.5">
+          <Section
+            title="Vector Config"
+            headerExtra={traceDot}
+            className="order-2 min-w-0 xl:order-none"
+          >
             {configBody}
           </Section>
 
-          <Section title="Message & IDs" className="shrink-0">
+          <Section
+            title="Message & IDs"
+            className="order-3 min-w-0 xl:order-none"
+          >
             {messageBody}
           </Section>
 
           <Section
             title="Test cases"
             onMaximize={() => setMaximized("cases")}
-            className="min-h-0 flex-1"
+            className="order-4 min-h-0 min-w-0 xl:order-none xl:flex-1"
             bodyClassName="p-3"
           >
             {renderCases(false)}
           </Section>
         </div>
 
-        {/* RIGHT: live feed + python terminal — match the controls' height */}
-        <div className="flex min-h-0 flex-1 flex-col gap-2.5 max-lg:h-[520px] lg:min-h-[440px]">
-          <TerminalPanel
-            className="flex-1"
-            title="Live feed — trace window & test case scripts"
-            icon={Radio}
+        <div className="order-1 col-span-full flex h-[720px] min-h-0 min-w-0 flex-col gap-2.5 lg:h-[calc(100vh-140px)] lg:min-h-[560px] xl:order-2 xl:col-span-1">
+          <LiveFeedPanel
+            className="min-h-0 flex-[1.15]"
             lines={stream.feed}
-            empty="Start the trace or a test case to see live output here."
-            statusDot={liveDot}
-            renderLine={feedRenderLine}
+            connected={stream.connected}
             onMaximize={() => setMaximized("feed")}
           />
           <TerminalPanel
-            className="flex-1"
-            title="Python terminal — script status"
+            className="min-h-0 flex-1"
+            title="Python terminal — test case scripts"
             icon={Terminal}
             lines={stream.terminal}
-            empty="Process status (started, paused, exited, errors) appears here."
+            empty="Test case script output and process status appears here."
+            statusDot={liveDot}
+            renderLine={terminalRenderLine}
             onMaximize={() => setMaximized("terminal")}
           />
         </div>

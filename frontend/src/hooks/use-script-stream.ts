@@ -5,6 +5,7 @@ import * as React from "react";
 import type { ExecutionCase } from "@/lib/execution";
 import {
   scriptStreamUrl,
+  TRACE_FRAME_RE,
   type ProcState,
   type ScriptStreamFrame,
 } from "@/lib/script-run";
@@ -79,16 +80,19 @@ export function useScriptStream(runId: number | null) {
               return { ...prev, cases: frame.cases };
             case "output": {
               const id = (counter.current += 1);
-              const feed = [
-                ...prev.feed,
-                {
-                  id,
-                  scope: frame.scope,
-                  caseId: frame.case_id,
-                  line: frame.line,
-                },
-              ].slice(-MAX_LINES);
-              return { ...prev, feed };
+              const entry = {
+                id,
+                scope: frame.scope,
+                caseId: frame.case_id,
+                line: frame.line,
+              };
+              // Keep trace errors and status text in the terminal, not the frame table.
+              if (frame.scope === "trace" && TRACE_FRAME_RE.test(frame.line)) {
+                const feed = [...prev.feed, entry].slice(-MAX_LINES);
+                return { ...prev, feed };
+              }
+              const terminal = [...prev.terminal, entry].slice(-MAX_LINES);
+              return { ...prev, terminal };
             }
             case "status": {
               const id = (counter.current += 1);

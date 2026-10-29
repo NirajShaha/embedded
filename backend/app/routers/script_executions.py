@@ -293,13 +293,16 @@ async def script_stream(websocket: WebSocket, run_id: int):
     try:
         # Send the current case snapshot so the UI can render checkboxes/status.
         cases = await fetch_run_cases(run_id)
-        await websocket.send_json(
-            {
-                "type": "snapshot",
-                "run": serialize_run(run),
-                "cases": [serialize_case(case) for case in cases],
-            }
-        )
+        try:
+            await websocket.send_json(
+                {
+                    "type": "snapshot",
+                    "run": serialize_run(run),
+                    "cases": [serialize_case(case) for case in cases],
+                }
+            )
+        except (WebSocketDisconnect, RuntimeError):
+            return
         while True:
             get_task = asyncio.ensure_future(queue.get())
             disc_task = asyncio.ensure_future(disconnected.wait())

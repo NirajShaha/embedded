@@ -43,6 +43,9 @@ export type ScriptStreamFrame =
       ts: string;
     };
 
+export const TRACE_FRAME_RE =
+  /^\s*(\d+(?:\.\d+)?)\s+(\S+)\s+([0-9A-Fa-f]+)\s+([A-Za-z]+)\s+(\S+)\s+(\d+)\s*(.*)$/;
+
 async function authedFetch(path: string, init?: RequestInit) {
   const token =
     typeof window !== "undefined" ? localStorage.getItem("token") : null;
