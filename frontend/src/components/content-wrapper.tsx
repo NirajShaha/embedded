@@ -18,7 +18,7 @@ interface ContentWrapperProps {
  */
 export function ContentWrapper({ children, className }: ContentWrapperProps) {
   return (
-    <div className={cn("flex flex-col gap-10 px-4 py-8 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full", className)}>
+    <div className={cn("flex flex-col gap-10 w-full", className)}>
       {children}
     </div>
   );

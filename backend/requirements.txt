@@ -10,5 +10,6 @@ cryptography
 reportlab
 pillow
 python-can
+psutil
 PyJWT
 pwdlib[argon2]
