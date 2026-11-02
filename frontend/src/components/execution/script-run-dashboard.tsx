@@ -4,6 +4,7 @@ import * as React from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   CheckCircle2,
+  FlaskConical,
   Loader2,
   Maximize2,
   Pause,
@@ -41,6 +42,7 @@ import {
   type VectorConfig,
 } from "@/lib/script-run";
 import { useScriptStream, type FeedLine } from "@/hooks/use-script-stream";
+import { useDummyStream } from "@/hooks/use-dummy-stream";
 import { LiveFeedPanel } from "@/components/execution/live-feed-panel";
 
 type SectionKind = "cases" | "feed" | "terminal";
@@ -279,6 +281,15 @@ export function ScriptRunDashboard({
 }: ScriptRunDashboardProps) {
   const stream = useScriptStream(runId);
   const cases = stream.cases.length > 0 ? stream.cases : initialCases;
+  const [dummyMode, setDummyMode] = React.useState(false);
+  const dummyCaseId = cases[0]?.id ?? null;
+  const dummy = useDummyStream(dummyMode, dummyCaseId);
+
+  const feed = dummy.hasData ? dummy.feed : stream.feed;
+  const terminal = dummy.hasData ? dummy.terminal : stream.terminal;
+  const connected = dummyMode ? true : stream.connected;
+  const traceState = dummyMode ? ("running" as const) : stream.traceState;
+  const showingFrozenDummy = !dummyMode && dummy.hasData;
 
   const [config, setConfig] = React.useState<VectorConfig>(DEFAULT_VECTOR_CONFIG);
   const [manualMessage, setManualMessage] = React.useState("");
@@ -327,9 +338,16 @@ export function ScriptRunDashboard({
       effectiveCategory,
   );
 
-  const traceRunning = stream.traceState === "running";
-  const traceActive =
-    stream.traceState === "running" || stream.traceState === "paused";
+  const traceRunning = traceState === "running";
+  const traceActive = traceState === "running" || traceState === "paused";
+
+  const onToggleDummy = () => {
+    setDummyMode((prev) => {
+      if (prev) toast.info("Dummy stopped — data kept on screen");
+      else toast.info("Dummy mode on — simulated live feed");
+      return !prev;
+    });
+  };
 
   async function guard<T>(key: string, fn: () => Promise<T>): Promise<T | null> {
     setBusy(key);
@@ -343,25 +361,41 @@ export function ScriptRunDashboard({
     }
   }
 
-  const onTestConnection = () =>
-    guard("test-conn", async () => {
+  const onTestConnection = () => {
+    if (dummyMode) {
+      setConnResult({ ok: true, message: "Dummy connection OK" });
+      toast.success("Dummy connection OK");
+      return;
+    }
+    return guard("test-conn", async () => {
       const result = await testConnection(runId, config);
       setConnResult(result);
       if (result.ok) toast.success("Connection OK");
       else toast.error("Connection failed");
     });
+  };
 
-  const onStartTrace = () =>
-    guard("trace-start", async () => {
+  const onStartTrace = () => {
+    if (dummyMode) {
+      toast.info("Dummy mode is driving the trace — stop dummy to use hardware");
+      return;
+    }
+    return guard("trace-start", async () => {
       await startTrace(runId, config);
       toast.info("Trace window started");
     });
+  };
 
-  const onStopTrace = () =>
-    guard("trace-stop", async () => {
+  const onStopTrace = () => {
+    if (dummyMode) {
+      toast.info("Dummy mode is driving the trace — stop dummy first");
+      return;
+    }
+    return guard("trace-stop", async () => {
       await stopTrace(runId);
       toast.info("Trace window stopped");
     });
+  };
 
   const toggleSelected = (caseId: number) =>
     setSelected((prev) => {
@@ -371,8 +405,12 @@ export function ScriptRunDashboard({
       return next;
     });
 
-  const onStartCase = (runCase: ExecutionCase) =>
-    guard(`case-${runCase.id}`, async () => {
+  const onStartCase = (runCase: ExecutionCase) => {
+    if (dummyMode) {
+      toast.info("Dummy mode is simulating this case — stop dummy to run hardware");
+      return;
+    }
+    return guard(`case-${runCase.id}`, async () => {
       await startCase(runId, runCase.id, {
         config,
         sourceId,
@@ -381,21 +419,37 @@ export function ScriptRunDashboard({
       });
       toast.success(`Started: ${runCase.test_case_name ?? `case ${runCase.id}`}`);
     });
+  };
 
-  const onPauseCase = (runCase: ExecutionCase) =>
-    guard(`case-${runCase.id}`, async () => {
+  const onPauseCase = (runCase: ExecutionCase) => {
+    if (dummyMode) {
+      toast.info("Dummy mode is simulating — stop dummy to control hardware");
+      return;
+    }
+    return guard(`case-${runCase.id}`, async () => {
       await pauseCase(runId, runCase.id);
     });
+  };
 
-  const onResumeCase = (runCase: ExecutionCase) =>
-    guard(`case-${runCase.id}`, async () => {
+  const onResumeCase = (runCase: ExecutionCase) => {
+    if (dummyMode) {
+      toast.info("Dummy mode is simulating — stop dummy to control hardware");
+      return;
+    }
+    return guard(`case-${runCase.id}`, async () => {
       await resumeCase(runId, runCase.id);
     });
+  };
 
-  const onStopCase = (runCase: ExecutionCase) =>
-    guard(`case-${runCase.id}-stop`, async () => {
+  const onStopCase = (runCase: ExecutionCase) => {
+    if (dummyMode) {
+      toast.info("Dummy mode is simulating — stop dummy to control hardware");
+      return;
+    }
+    return guard(`case-${runCase.id}-stop`, async () => {
       await stopCase(runId, runCase.id);
     });
+  };
 
   const caseLabel = (caseId: number | null) => {
     if (caseId === null) return null;
@@ -412,12 +466,12 @@ export function ScriptRunDashboard({
           "size-2 rounded-full",
           traceRunning
             ? "bg-emerald-500"
-            : stream.traceState === "paused"
+            : traceState === "paused"
               ? "bg-amber-500"
               : "bg-muted-foreground/40",
         )}
       />
-      Trace {stream.traceState ?? "idle"}
+      Trace {dummyMode ? "dummy" : showingFrozenDummy ? "dummy (kept)" : (traceState ?? "idle")}
     </span>
   );
 
@@ -425,16 +479,16 @@ export function ScriptRunDashboard({
     <span
       className={cn(
         "flex items-center gap-1 text-[11px]",
-        stream.connected ? "text-emerald-600" : "text-muted-foreground",
+        connected ? "text-emerald-600" : "text-muted-foreground",
       )}
     >
       <span
         className={cn(
           "size-1.5 rounded-full",
-          stream.connected ? "bg-emerald-500" : "bg-muted-foreground/40",
+          connected ? "bg-emerald-500" : "bg-muted-foreground/40",
         )}
       />
-      {stream.connected ? "live" : "offline"}
+      {dummyMode ? "dummy" : showingFrozenDummy ? "dummy (kept)" : connected ? "live" : "offline"}
     </span>
   );
 
@@ -488,8 +542,17 @@ export function ScriptRunDashboard({
       <div className="flex flex-wrap items-center gap-2 border-t border-border/60 pt-2.5">
         <Button
           size="xs"
+          onClick={onToggleDummy}
+          variant={dummyMode ? "secondary" : "outline"}
+          className="gap-1"
+        >
+          <FlaskConical className="size-3" />
+          {dummyMode ? "Stop dummy" : "Dummy"}
+        </Button>
+        <Button
+          size="xs"
           onClick={onStartTrace}
-          disabled={busy !== null || traceRunning}
+          disabled={busy !== null || traceRunning || dummyMode}
           className="gap-1"
         >
           {busy === "trace-start" ? (
@@ -605,7 +668,11 @@ export function ScriptRunDashboard({
           </p>
         ) : (
           visibleCases.map((runCase) => {
-            const proc = stream.caseStates[runCase.id];
+            const realProc = stream.caseStates[runCase.id];
+            const proc =
+              dummyMode && runCase.id === dummyCaseId
+                ? { state: "running" as const, exitCode: null }
+                : realProc;
             const isRunning = proc?.state === "running";
             const isPaused = proc?.state === "paused";
             const isActive = isRunning || isPaused;
@@ -702,8 +769,8 @@ export function ScriptRunDashboard({
       case "feed":
         return (
           <LiveFeedPanel
-            lines={stream.feed}
-            connected={stream.connected}
+            lines={feed}
+            connected={connected}
             className="h-full border-0"
           />
         );
@@ -711,7 +778,7 @@ export function ScriptRunDashboard({
         return (
           <TerminalBody
             scrollable
-            lines={stream.terminal}
+            lines={terminal}
             empty="Test case script output and process status appears here."
             renderLine={terminalRenderLine}
           />
@@ -753,15 +820,15 @@ export function ScriptRunDashboard({
         <div className="order-1 col-span-full flex h-[720px] min-h-0 min-w-0 flex-col gap-2.5 lg:h-[calc(100vh-140px)] lg:min-h-[560px] xl:order-2 xl:col-span-1">
           <LiveFeedPanel
             className="min-h-0 flex-[1.15]"
-            lines={stream.feed}
-            connected={stream.connected}
+            lines={feed}
+            connected={connected}
             onMaximize={() => setMaximized("feed")}
           />
           <TerminalPanel
             className="min-h-0 flex-1"
             title="Python terminal — test case scripts"
             icon={Terminal}
-            lines={stream.terminal}
+            lines={terminal}
             empty="Test case script output and process status appears here."
             statusDot={liveDot}
             renderLine={terminalRenderLine}
