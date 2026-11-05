@@ -25,6 +25,7 @@ interface PaginationProps {
   onPageChange: (page: number) => void;
   onPageSizeChange?: (size: number) => void;
   pageSizeOptions?: number[];
+  compact?: boolean;
   className?: string;
 }
 
@@ -55,9 +56,11 @@ export function Pagination({
   onPageChange,
   onPageSizeChange,
   pageSizeOptions = [10, 20, 50, 100],
+  compact = false,
   className,
 }: PaginationProps) {
   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const iconSize = compact ? "icon-xs" : "icon-sm";
   const safePage = Math.min(Math.max(1, page), totalPages);
   const start = totalItems === 0 ? 0 : (safePage - 1) * pageSize + 1;
   const end = Math.min(safePage * pageSize, totalItems);
@@ -71,10 +74,16 @@ export function Pagination({
     <div
       className={cn(
         "flex flex-col gap-3 border-t border-border/60 bg-card/40 px-4 py-3 sm:flex-row sm:items-center sm:justify-between",
+        compact && "gap-2 px-3 py-1.5",
         className,
       )}
     >
-      <div className="flex items-center gap-4 text-sm text-muted-foreground">
+      <div
+        className={cn(
+          "flex items-center gap-4 text-sm text-muted-foreground",
+          compact && "gap-3 text-xs",
+        )}
+      >
         <span className="font-tabular">
           <span className="font-medium text-foreground">{start}</span>
           <span className="mx-1">–</span>
@@ -89,7 +98,10 @@ export function Pagination({
               value={String(pageSize)}
               onValueChange={(v: string) => onPageSizeChange(Number(v))}
             >
-              <SelectTrigger size="sm" className="h-7 w-[68px]">
+              <SelectTrigger
+                size="sm"
+                className={cn("h-7 w-17", compact && "h-6 w-15")}
+              >
                 <SelectValue />
               </SelectTrigger>
               <SelectContent side="top">
@@ -107,7 +119,7 @@ export function Pagination({
       <div className="flex items-center gap-1">
         <Button
           variant="ghost"
-          size="icon-sm"
+          size={iconSize}
           onClick={() => onPageChange(1)}
           disabled={safePage <= 1}
           aria-label="First page"
@@ -116,7 +128,7 @@ export function Pagination({
         </Button>
         <Button
           variant="ghost"
-          size="icon-sm"
+          size={iconSize}
           onClick={() => onPageChange(safePage - 1)}
           disabled={safePage <= 1}
           aria-label="Previous page"
@@ -136,7 +148,7 @@ export function Pagination({
             <Button
               key={p}
               variant={p === safePage ? "default" : "ghost"}
-              size="icon-sm"
+              size={iconSize}
               onClick={() => onPageChange(p)}
               aria-current={p === safePage ? "page" : undefined}
               aria-label={`Page ${p}`}
@@ -148,7 +160,7 @@ export function Pagination({
         )}
         <Button
           variant="ghost"
-          size="icon-sm"
+          size={iconSize}
           onClick={() => onPageChange(safePage + 1)}
           disabled={safePage >= totalPages}
           aria-label="Next page"
@@ -157,7 +169,7 @@ export function Pagination({
         </Button>
         <Button
           variant="ghost"
-          size="icon-sm"
+          size={iconSize}
           onClick={() => onPageChange(totalPages)}
           disabled={safePage >= totalPages}
           aria-label="Last page"

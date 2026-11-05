@@ -146,7 +146,7 @@ function Section({
 }) {
   return (
     <Card className={cn("flex min-h-0 flex-col gap-0 overflow-hidden py-0", className)}>
-      <CardHeader className="flex shrink-0 flex-row items-center justify-between gap-2 border-b border-border/60 px-3 py-1.5">
+      <CardHeader className="flex shrink-0 flex-row items-center justify-between gap-2 border-b border-border/60 px-3 pt-2 [.border-b]:pb-2.5">
         <CardTitle className="flex items-center gap-2 text-[13px]">
           {Icon ? <Icon className="size-3.5 text-muted-foreground" /> : null}
           {title}
@@ -179,6 +179,15 @@ function TerminalBody({
 }) {
   const scrollRef = React.useRef<HTMLDivElement>(null);
   const [pinned, setPinned] = React.useState(true);
+  const [moreAbove, setMoreAbove] = React.useState(false);
+  const [moreBelow, setMoreBelow] = React.useState(false);
+
+  const updateFades = React.useCallback(() => {
+    const node = scrollRef.current;
+    if (!node) return;
+    setMoreAbove(node.scrollTop > 8);
+    setMoreBelow(node.scrollHeight - node.scrollTop - node.clientHeight > 8);
+  }, []);
 
   React.useEffect(() => {
     if (!pinned) return;
@@ -186,12 +195,17 @@ function TerminalBody({
     if (node) node.scrollTop = node.scrollHeight;
   }, [lines, pinned]);
 
+  React.useEffect(() => {
+    updateFades();
+  });
+
   const onScroll = () => {
     const node = scrollRef.current;
     if (!node) return;
     setPinned(
       node.scrollHeight - node.scrollTop - node.clientHeight < 48,
     );
+    updateFades();
   };
 
   return (
@@ -200,7 +214,7 @@ function TerminalBody({
         ref={scrollRef}
         onScroll={onScroll}
         className={cn(
-          "h-full bg-[oklch(0.16_0.01_250)] p-3 font-mono text-[11px] leading-relaxed text-[oklch(0.9_0.02_150)]",
+          "h-full bg-[oklch(0.16_0.01_250)] p-3 font-mono text-[11px] leading-relaxed text-[oklch(0.9_0.02_150)] scrollbar-none [&::-webkit-scrollbar]:hidden",
           scrollable ? "overflow-auto" : "overflow-hidden",
         )}
       >
@@ -208,17 +222,31 @@ function TerminalBody({
           <span className="text-muted-foreground/70">{empty}</span>
         ) : (
           lines.map((line) => (
-            <div key={line.id} className="whitespace-pre-wrap break-words">
+            <div key={line.id} className="whitespace-pre-wrap wrap-break-word">
               {renderLine ? renderLine(line) : line.line}
             </div>
           ))
         )}
       </div>
+      <div
+        aria-hidden
+        className={cn(
+          "pointer-events-none absolute inset-x-0 top-0 h-10 bg-linear-to-b from-[oklch(0.16_0.01_250)] to-transparent transition-opacity duration-200",
+          moreAbove ? "opacity-100" : "opacity-0",
+        )}
+      />
+      <div
+        aria-hidden
+        className={cn(
+          "pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-linear-to-t from-[oklch(0.16_0.01_250)] to-transparent transition-opacity duration-200",
+          moreBelow ? "opacity-100" : "opacity-0",
+        )}
+      />
       {!pinned && lines.length > 0 && (
         <Button
           type="button"
           size="xs"
-          className="absolute bottom-2 right-2 gap-1 shadow"
+          className="absolute bottom-2 right-2 gap-1 shadow hover:bg-primary bg-primary/80"
           onClick={() => setPinned(true)}
         >
           Latest
@@ -249,7 +277,7 @@ function TerminalPanel({
 }) {
   return (
     <Card className={cn("flex min-h-0 flex-col gap-0 overflow-hidden py-0", className)}>
-      <CardHeader className="flex shrink-0 flex-row items-center justify-between gap-2 border-b border-border/60 px-3 py-2">
+      <CardHeader className="flex shrink-0 flex-row items-center justify-between gap-2 border-b border-border/60 px-3 pt-2">
         <CardTitle className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
           <Icon className="size-3.5" />
           {title}
@@ -269,6 +297,54 @@ function TerminalPanel({
         />
       </CardContent>
     </Card>
+  );
+}
+
+/** Scroll container that fades its content into the card background while more remains below. */
+function ScrollFadeArea({
+  className,
+  scrollClassName,
+  children,
+}: {
+  className?: string;
+  scrollClassName?: string;
+  children: React.ReactNode;
+}) {
+  const scrollRef = React.useRef<HTMLDivElement>(null);
+  const [moreBelow, setMoreBelow] = React.useState(false);
+
+  const update = React.useCallback(() => {
+    const node = scrollRef.current;
+    if (!node) return;
+    setMoreBelow(node.scrollHeight - node.scrollTop - node.clientHeight > 8);
+  }, []);
+
+  React.useEffect(() => {
+    update();
+  });
+
+  React.useEffect(() => {
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, [update]);
+
+  return (
+    <div className={cn("relative flex min-h-0 flex-col", className)}>
+      <div
+        ref={scrollRef}
+        onScroll={update}
+        className={cn("min-h-0 flex-1 overflow-y-auto", scrollClassName)}
+      >
+        {children}
+      </div>
+      <div
+        aria-hidden
+        className={cn(
+          "pointer-events-none absolute inset-x-px bottom-px h-10 rounded-b-lg bg-linear-to-t from-card to-transparent transition-opacity duration-200",
+          moreBelow ? "opacity-100" : "opacity-0",
+        )}
+      />
+    </div>
   );
 }
 
@@ -609,13 +685,13 @@ export function ScriptRunDashboard({
   );
 
   const messageBody = (
-    <div className="grid grid-cols-2 gap-2">
-      <div className="col-span-2 flex flex-col gap-0.5">
-        <Label className="text-[10px] text-muted-foreground">Msg to send</Label>
+    <div className="flex gap-2">
+      <div className="col-span-1 flex flex-col gap-0.5">
+        <Label className="text-[10px] text-muted-foreground">Message to send</Label>
         <Input
           value={manualMessage}
           onChange={(event) => setManualMessage(event.target.value)}
-          placeholder="02 10 03 00 00 00 00 00"
+          placeholder="02 10 03 00"
           className="h-7 font-mono text-xs"
         />
       </div>
@@ -635,7 +711,7 @@ export function ScriptRunDashboard({
   );
 
   const renderCases = (scrollable: boolean) => (
-    <div className="flex h-full min-h-0 flex-col gap-2.5">
+    <div className="flex h-full min-h-0 flex-col gap-1.5">
       {categories.length > 0 && (
         <div className="flex shrink-0 flex-wrap gap-1.5">
           {categories.map((category) => (
@@ -644,7 +720,7 @@ export function ScriptRunDashboard({
               type="button"
               onClick={() => setActiveCategory(category)}
               className={cn(
-                "rounded-md border px-2.5 py-1 text-xs font-medium transition-colors",
+                "rounded-md border px-1.5 py-0.5 text-xs font-medium transition-colors",
                 effectiveCategory === category
                   ? "border-primary/40 bg-primary/10 text-foreground"
                   : "border-border bg-background text-muted-foreground hover:bg-muted",
@@ -656,11 +732,9 @@ export function ScriptRunDashboard({
         </div>
       )}
 
-      <div
-        className={cn(
-          "flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto pr-1 [scrollbar-color:var(--border)_transparent] [scrollbar-width:thin]",
-          scrollable ? "" : "max-h-[260px]",
-        )}
+      <ScrollFadeArea
+        className={cn("flex-1", scrollable ? "" : "max-h-38 xl:max-h-none")}
+        scrollClassName="flex flex-col gap-2 pr-1 [scrollbar-color:var(--border)_transparent] rounded-lg border border-border/60 bg-card p-2 scrollbar-thin"
       >
         {visibleCases.length === 0 ? (
           <p className="py-4 text-center text-xs text-muted-foreground">
@@ -684,7 +758,7 @@ export function ScriptRunDashboard({
             return (
               <div
                 key={runCase.id}
-                className="flex shrink-0 items-center gap-2 rounded-lg border border-border/60 bg-card p-2"
+                className="flex shrink-0 items-center gap-2 "
               >
                 <input
                   type="checkbox"
@@ -693,56 +767,53 @@ export function ScriptRunDashboard({
                   className="size-4 shrink-0 rounded border-border accent-primary"
                   aria-label={`Select ${runCase.test_case_name}`}
                 />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-xs font-medium">
-                    {runCase.test_case_name ?? `Case ${runCase.id}`}
-                  </p>
-                  <StatusBadge status={runCase.status} proc={proc?.state} />
-                </div>
+                <p className="w-36 shrink-0 truncate text-xs font-medium">
+                  {runCase.test_case_name ?? `Case ${runCase.id}`}
+                </p>
+                <StatusBadge status={runCase.status} proc={proc?.state} />
 
-                {isRunning ? (
+                <div className="ml-auto flex shrink-0 items-center gap-1">
+                  {isRunning ? (
+                    <Button
+                      size="icon-xs"
+                      variant="outline"
+                      onClick={() => onPauseCase(runCase)}
+                      disabled={rowBusy}
+                      aria-label="Pause"
+                    >
+                      <Pause className="size-3" />
+                    </Button>
+                  ) : (
+                    <Button
+                      size="icon-xs"
+                      onClick={() =>
+                        isPaused ? onResumeCase(runCase) : onStartCase(runCase)
+                      }
+                      disabled={rowBusy || (!isActive && !isChecked)}
+                      aria-label={isPaused ? "Resume" : "Start"}
+                    >
+                      {rowBusy && !isActive ? (
+                        <Loader2 className="size-3 animate-spin" />
+                      ) : (
+                        <Play className="size-3" />
+                      )}
+                    </Button>
+                  )}
                   <Button
-                    size="xs"
+                    size="icon-xs"
                     variant="outline"
-                    onClick={() => onPauseCase(runCase)}
-                    disabled={rowBusy}
-                    className="gap-1"
+                    onClick={() => onStopCase(runCase)}
+                    disabled={rowBusy || !isActive}
+                    aria-label="Stop"
                   >
-                    <Pause className="size-3" />
-                    Pause
+                    <Square className="size-3" />
                   </Button>
-                ) : (
-                  <Button
-                    size="xs"
-                    onClick={() =>
-                      isPaused ? onResumeCase(runCase) : onStartCase(runCase)
-                    }
-                    disabled={rowBusy || (!isActive && !isChecked)}
-                    className="gap-1"
-                  >
-                    {rowBusy && !isActive ? (
-                      <Loader2 className="size-3 animate-spin" />
-                    ) : (
-                      <Play className="size-3" />
-                    )}
-                    Start
-                  </Button>
-                )}
-                <Button
-                  size="xs"
-                  variant="outline"
-                  onClick={() => onStopCase(runCase)}
-                  disabled={rowBusy || !isActive}
-                  className="gap-1"
-                >
-                  <Square className="size-3" />
-                  Stop
-                </Button>
+                </div>
               </div>
             );
           })
         )}
-      </div>
+      </ScrollFadeArea>
     </div>
   );
 
@@ -790,19 +861,20 @@ export function ScriptRunDashboard({
 
   return (
     <>
-      <div className={cn("grid min-h-0 min-w-0 grid-cols-1 gap-2.5 xl:grid-cols-[320px_minmax(0,1fr)]", className)}>
-        <div className="order-2 contents xl:order-1 xl:flex xl:min-h-0 xl:flex-col xl:gap-2.5">
+      <div className={cn("grid min-h-0 min-w-0 grid-cols-1 gap-2.5 xl:flex-1 xl:grid-cols-12", className)}>
+        <div className="order-2 contents xl:order-1 xl:col-span-4 xl:flex xl:min-h-0 xl:flex-col xl:gap-2.5">
           <Section
             title="Vector Config"
             headerExtra={traceDot}
-            className="order-2 min-w-0 xl:order-none"
+            className="order-2 min-w-0 xl:order-0"
           >
             {configBody}
           </Section>
+        
 
           <Section
             title="Message & IDs"
-            className="order-3 min-w-0 xl:order-none"
+            className="order-3 min-w-0 xl:order-0"
           >
             {messageBody}
           </Section>
@@ -810,22 +882,22 @@ export function ScriptRunDashboard({
           <Section
             title="Test cases"
             onMaximize={() => setMaximized("cases")}
-            className="order-4 min-h-0 min-w-0 xl:order-none xl:flex-1"
-            bodyClassName="p-3"
+            className="order-4 min-h-0 min-w-0 xl:order-0 xl:flex-1"
+            bodyClassName="py-1.5 px-3 mb-1"
           >
             {renderCases(false)}
           </Section>
         </div>
 
-        <div className="order-1 col-span-full flex h-[720px] min-h-0 min-w-0 flex-col gap-2.5 lg:h-[calc(100vh-140px)] lg:min-h-[560px] xl:order-2 xl:col-span-1">
+        <div className="order-1 col-span-full flex h-180 min-h-0 min-w-0 flex-col gap-2.5 lg:h-[calc(100vh-140px)] lg:min-h-140 xl:order-2 xl:col-span-8 xl:h-auto xl:min-h-0">
           <LiveFeedPanel
-            className="min-h-0 flex-[1.15]"
+            className="min-h-0 flex-[1.6]"
             lines={feed}
             connected={connected}
             onMaximize={() => setMaximized("feed")}
           />
           <TerminalPanel
-            className="min-h-0 flex-1"
+            className="min-h-0 flex-[0.9]"
             title="Python terminal — test case scripts"
             icon={Terminal}
             lines={terminal}
@@ -869,7 +941,7 @@ function StatusBadge({ status, proc }: { status: string; proc?: string }) {
   return (
     <Badge
       variant="secondary"
-      className={cn("mt-0.5 h-4 px-1.5 text-[10px] font-normal", tone)}
+      className={cn("h-4 shrink-0 px-1.5 text-[10px] font-normal", tone)}
     >
       {label}
     </Badge>
