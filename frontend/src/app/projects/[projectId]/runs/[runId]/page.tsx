@@ -24,15 +24,15 @@ export default function RunPage() {
   });
 
   return (
-    <div className="flex flex-col gap-2.5">
+    <div className="flex min-h-0 flex-col gap-2.5 xl:h-[calc(100svh-104px)]">
       {/* Compact header so the dashboard below gets the screen */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2.5">
-          <h1 className="text-lg font-semibold tracking-tight">
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center">
+          <h1 className="w-28 shrink-0 whitespace-nowrap text-lg font-semibold tracking-tight tabular-nums">
             Run #{Number.isFinite(runId) ? runId : "…"}
           </h1>
           <Badge variant="secondary" className="gap-1.5">
-            <span className="inline-flex size-1.5 rounded-full bg-[var(--signal)]" />
+            <span className="inline-flex size-1.5 rounded-full bg-signal" />
             Live execution
           </Badge>
         </div>

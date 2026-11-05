@@ -5,13 +5,10 @@ import {
   ArrowDown,
   ArrowDownToLine,
   ArrowUp,
-  ArrowUpDown,
-  ArrowDownUp,
   ChevronDown,
   Columns3,
   Maximize2,
   Pause,
-  Plus,
   Radio,
   Search,
   SearchX,
@@ -34,6 +31,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Pagination } from "@/components/pagination";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { TRACE_FRAME_RE } from "@/lib/script-run";
 import {
   TableBody,
@@ -48,7 +50,6 @@ import type { FeedLine } from "@/hooks/use-script-stream";
 type DirFilter = "both" | "Rx" | "Tx";
 type TypeFilter = "all" | "d" | "fd";
 type SortKey = "ts" | "id";
-type SortOption = "ts-asc" | "ts-desc" | "id-asc" | "id-desc";
 
 interface TraceRow {
   key: number;
@@ -130,15 +131,12 @@ function SortButton({
       aria-label={`Sort by ${label}`}
     >
       {label}
-      {active ? (
-        dir === "asc" ? (
+      {active &&
+        (dir === "asc" ? (
           <ArrowUp className="size-3" />
         ) : (
           <ArrowDown className="size-3" />
-        )
-      ) : (
-        <ArrowUpDown className="size-3 text-muted-foreground/60" />
-      )}
+        ))}
     </button>
   );
 }
@@ -181,10 +179,10 @@ export function LiveFeedPanel({
   const [dlcTo, setDlcTo] = React.useState("");
   const [dataQuery, setDataQuery] = React.useState("");
   const [filtersOpen, setFiltersOpen] = React.useState(false);
-  const [sort, setSort] = React.useState<{ key: SortKey; dir: "asc" | "desc" }>({
-    key: "ts",
-    dir: "asc",
-  });
+  const [sort, setSort] = React.useState<{
+    key: SortKey;
+    dir: "asc" | "desc";
+  } | null>(null);
   const [showChannel, setShowChannel] = React.useState(true);
   const [showFrameType, setShowFrameType] = React.useState(true);
   const [showDlc, setShowDlc] = React.useState(true);
@@ -211,8 +209,7 @@ export function LiveFeedPanel({
     dlcFrom,
     dlcTo,
     dataQuery,
-    sort.key,
-    sort.dir,
+    sort ? `${sort.key}-${sort.dir}` : "base",
   ].join("|");
 
   const hasActiveFilter =
@@ -291,7 +288,7 @@ export function LiveFeedPanel({
   }, [tsFrom, tsTo, idFrom, idTo, dir, typeFilter, dlcFrom, dlcTo, dataQuery]);
 
   const showBanners =
-    !hasActiveFilter && sort.key === "ts" && sort.dir === "asc";
+    !hasActiveFilter && (!sort || (sort.key === "ts" && sort.dir === "asc"));
 
   const visible = React.useMemo(() => {
     const tsLo = parseNumBound(tsFrom);
@@ -324,11 +321,12 @@ export function LiveFeedPanel({
         return false;
       return true;
     });
-    if (sort.key === "ts" && sort.dir === "asc") return matched;
+    if (!sort || (sort.key === "ts" && sort.dir === "asc")) return matched;
     const data = matched.filter((row) => row.isData);
+    const sortByTimestamp = sort.key === "ts";
     data.sort((a, b) => {
-      const aVal = sort.key === "ts" ? (a.timestamp ?? 0) : (a.idValue ?? 0);
-      const bVal = sort.key === "ts" ? (b.timestamp ?? 0) : (b.idValue ?? 0);
+      const aVal = sortByTimestamp ? (a.timestamp ?? 0) : (a.idValue ?? 0);
+      const bVal = sortByTimestamp ? (b.timestamp ?? 0) : (b.idValue ?? 0);
       return sort.dir === "asc" ? aVal - bVal : bVal - aVal;
     });
     return data;
@@ -336,10 +334,10 @@ export function LiveFeedPanel({
   }, [rows, filterSig]);
 
   const totalPages = Math.max(1, Math.ceil(visible.length / pageSize));
-  const sortValue: SortOption = `${sort.key}-${sort.dir}`;
+  const ascending = !sort || sort.dir === "asc";
   const columnCount =
     4 + Number(showChannel) + Number(showFrameType) + Number(showDlc);
-  const followPage = sort.dir === "asc" ? totalPages : 1;
+  const followPage = ascending ? totalPages : 1;
   const currentPage = live
     ? followPage
     : Math.min(Math.max(1, page), totalPages);
@@ -358,17 +356,16 @@ export function LiveFeedPanel({
     const el = scrollRef.current;
     if (!el) return;
     skipScrollCheck.current = Date.now();
-    el.scrollTop = sort.dir === "asc" ? el.scrollHeight : 0;
-  }, [pageItems, live, sort.dir]);
+    el.scrollTop = ascending ? el.scrollHeight : 0;
+  }, [pageItems, live, ascending]);
 
   const onScroll = () => {
     const el = scrollRef.current;
     if (!el || !live) return;
     if (Date.now() - skipScrollCheck.current < 200) return;
-    const atEdge =
-      sort.dir === "asc"
-        ? el.scrollHeight - el.scrollTop - el.clientHeight < 48
-        : el.scrollTop < 48;
+    const atEdge = ascending
+      ? el.scrollHeight - el.scrollTop - el.clientHeight < 48
+      : el.scrollTop < 48;
     if (!atEdge) setLive(false);
   };
 
@@ -378,11 +375,14 @@ export function LiveFeedPanel({
   };
 
   const toggleSort = (key: SortKey) => {
-    setSort((prev) =>
-      prev.key !== key
-        ? { key, dir: "asc" }
-        : { key, dir: prev.dir === "asc" ? "desc" : "asc" },
-    );
+    setSort((prev) => {
+      if (key === "ts") {
+        if (prev?.key === "ts" && prev.dir === "desc") return null;
+        return { key: "ts", dir: "desc" };
+      }
+      if (prev?.key !== "id") return { key: "id", dir: "asc" };
+      return prev.dir === "asc" ? { key: "id", dir: "desc" } : null;
+    });
   };
 
   const clearFilters = () => {
@@ -397,7 +397,7 @@ export function LiveFeedPanel({
     setDataQuery("");
   };
 
-  const rangeInputClass = "h-8 min-w-0 flex-1 px-2 font-mono text-xs";
+  const rangeInputClass = "h-7 min-w-0 flex-1 px-2 font-mono text-xs";
 
   return (
     <Card
@@ -406,7 +406,7 @@ export function LiveFeedPanel({
         className,
       )}
     >
-      <CardHeader className="flex shrink-0 flex-row items-center justify-between gap-2 border-b border-border/60 px-4 py-2.5">
+      <CardHeader className="flex shrink-0 flex-row items-center justify-between gap-2 border-b border-border/60 px-4 pt-1.5 [.border-b]:pb-2">
         <CardTitle className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
           <Radio className="size-3.5" />
           Live feed — trace window
@@ -468,7 +468,7 @@ export function LiveFeedPanel({
       </CardHeader>
 
       <div className="flex shrink-0 flex-wrap items-center gap-1.5 border-b border-border/60 bg-card px-3 py-2">
-        <div className="relative min-w-[180px] flex-1">
+        <div className="relative min-w-45 flex-1">
           <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={dataQuery}
@@ -488,148 +488,108 @@ export function LiveFeedPanel({
             </button>
           )}
         </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
+        <Popover open={filtersOpen} onOpenChange={setFiltersOpen}>
+          <PopoverTrigger asChild>
             <Button
               type="button"
               size="sm"
-              variant="outline"
-              aria-label="Filter by direction"
+              variant={filtersOpen || hasActiveFilter ? "secondary" : "outline"}
+              aria-expanded={filtersOpen}
+              aria-label="Toggle advanced filters"
               className="gap-1.5"
             >
-              <Plus className="size-3.5" />
-              Direction
-              {dir !== "both" && (
-                <span className="border-l border-border pl-1.5 text-muted-foreground">
-                  {dir}
-                </span>
-              )}
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-40">
-            <DropdownMenuLabel>Direction</DropdownMenuLabel>
-            <DropdownMenuRadioGroup
-              value={dir}
-              onValueChange={(value) => {
-                if (value === "both" || value === "Rx" || value === "Tx") {
-                  setDir(value);
-                }
-              }}
-            >
-              <DropdownMenuRadioItem value="both">Both</DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value="Rx">Receive (Rx)</DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value="Tx">Transmit (Tx)</DropdownMenuRadioItem>
-            </DropdownMenuRadioGroup>
-          </DropdownMenuContent>
-        </DropdownMenu>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              aria-label="Filter by frame type"
-              className="gap-1.5"
-            >
-              <Plus className="size-3.5" />
-              Frame
-              {typeFilter !== "all" && (
-                <span className="border-l border-border pl-1.5 font-mono text-muted-foreground">
-                  {typeFilter}
-                </span>
-              )}
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-36">
-            <DropdownMenuLabel>Frame type</DropdownMenuLabel>
-            <DropdownMenuRadioGroup
-              value={typeFilter}
-              onValueChange={(value) => {
-                if (value === "all" || value === "d" || value === "fd") {
-                  setTypeFilter(value);
-                }
-              }}
-            >
-              <DropdownMenuRadioItem value="all">All frames</DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value="d">CAN (d)</DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value="fd">CAN FD</DropdownMenuRadioItem>
-            </DropdownMenuRadioGroup>
-          </DropdownMenuContent>
-        </DropdownMenu>
-        <Button
-          type="button"
-          size="sm"
-          variant={filtersOpen || hasActiveFilter ? "secondary" : "outline"}
-          onClick={() => setFiltersOpen((v) => !v)}
-          aria-expanded={filtersOpen}
-          aria-label="Toggle advanced filters"
-          className="gap-1.5"
-        >
-          <SlidersHorizontal className="size-3.5" />
-          Filters
-          {chips.length > 0 && (
-            <Badge variant="secondary" className="h-4 min-w-4 px-1 font-mono">
-              {chips.length}
-            </Badge>
-          )}
-          <ChevronDown
-            className={cn(
-              "size-3.5 transition-transform",
-              filtersOpen && "rotate-180",
-            )}
-          />
-        </Button>
-        <div className="ml-auto flex shrink-0 items-center gap-1.5">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                aria-label={`Sort by ${sort.key === "ts" ? "timestamp" : "CAN ID"}`}
-                className="gap-1.5"
-              >
-                <ArrowDownUp className="size-3.5" />
-                Sort
-                <Badge variant="secondary" className="h-4 min-w-4 px-1 font-mono">
-                  1
+              <SlidersHorizontal className="size-3.5" />
+              Filters
+              {chips.length > 0 && (
+                <Badge
+                  variant="secondary"
+                  className="h-4 min-w-4 px-1 font-mono"
+                >
+                  {chips.length}
                 </Badge>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuLabel>Sort frames</DropdownMenuLabel>
-              <DropdownMenuRadioGroup
-                value={sortValue}
-                onValueChange={(value) => {
-                  if (
-                    value === "ts-asc" ||
-                    value === "ts-desc" ||
-                    value === "id-asc" ||
-                    value === "id-desc"
-                  ) {
-                    const [key, direction] = value.split("-");
-                    setSort({
-                      key: key === "ts" ? "ts" : "id",
-                      dir: direction === "asc" ? "asc" : "desc",
-                    });
-                  }
-                }}
-              >
-                <DropdownMenuRadioItem value="ts-asc">
-                  Timestamp, oldest first
-                </DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="ts-desc">
-                  Timestamp, newest first
-                </DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="id-asc">
-                  CAN ID, low to high
-                </DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="id-desc">
-                  CAN ID, high to low
-                </DropdownMenuRadioItem>
-              </DropdownMenuRadioGroup>
-            </DropdownMenuContent>
-          </DropdownMenu>
+              )}
+              <ChevronDown
+                className={cn(
+                  "size-3.5 transition-transform",
+                  filtersOpen && "rotate-180",
+                )}
+              />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent align="end" className="w-60">
+            <div className="flex flex-col gap-3 p-2">
+              <FilterField label="Timestamp (s)">
+                <div className="flex gap-1.5">
+                  <Input
+                    value={tsFrom}
+                    onChange={(event) => setTsFrom(event.target.value)}
+                    placeholder="From"
+                    aria-label="Timestamp from"
+                    className={rangeInputClass}
+                  />
+                  <Input
+                    value={tsTo}
+                    onChange={(event) => setTsTo(event.target.value)}
+                    placeholder="To"
+                    aria-label="Timestamp to"
+                    className={rangeInputClass}
+                  />
+                </div>
+              </FilterField>
+              <FilterField label="CAN ID (hex)">
+                <div className="flex gap-1.5">
+                  <Input
+                    value={idFrom}
+                    onChange={(event) => setIdFrom(event.target.value)}
+                    placeholder="0x000"
+                    aria-label="ID from"
+                    className={rangeInputClass}
+                  />
+                  <Input
+                    value={idTo}
+                    onChange={(event) => setIdTo(event.target.value)}
+                    placeholder="0xFFF"
+                    aria-label="ID to"
+                    className={rangeInputClass}
+                  />
+                </div>
+              </FilterField>
+              <FilterField label="DLC (bytes)">
+                <div className="flex gap-1.5">
+                  <Input
+                    value={dlcFrom}
+                    onChange={(event) => setDlcFrom(event.target.value)}
+                    placeholder="Min"
+                    aria-label="DLC min"
+                    className={cn(rangeInputClass, "text-right")}
+                  />
+                  <Input
+                    value={dlcTo}
+                    onChange={(event) => setDlcTo(event.target.value)}
+                    placeholder="Max"
+                    aria-label="DLC max"
+                    className={cn(rangeInputClass, "text-right")}
+                  />
+                </div>
+              </FilterField>
+              <div className="flex items-center justify-between gap-2 border-t border-border/60 pt-2">
+                <span className="text-[11px] text-muted-foreground tabular-nums">
+                  {visible.length} of {dataCount} frames match
+                </span>
+                <Button
+                  type="button"
+                  size="xs"
+                  variant="outline"
+                  onClick={clearFilters}
+                  disabled={!hasActiveFilter}
+                >
+                  Clear all
+                </Button>
+              </div>
+            </div>
+          </PopoverContent>
+        </Popover>
+        <div className="ml-auto flex shrink-0 items-center gap-1.5">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -669,92 +629,11 @@ export function LiveFeedPanel({
         </div>
       </div>
 
-      <div
-        className={cn(
-          "grid shrink-0 transition-all duration-200 ease-out",
-          filtersOpen
-            ? "grid-rows-[1fr] opacity-100"
-            : "grid-rows-[0fr] opacity-0",
-        )}
-      >
-        <div className="overflow-hidden">
-          <div className="grid gap-4 border-b border-border/60 bg-muted/40 px-4 py-3 sm:grid-cols-2 lg:grid-cols-3">
-            <FilterField label="Timestamp (s)">
-              <div className="flex gap-1.5">
-                <Input
-                  value={tsFrom}
-                  onChange={(event) => setTsFrom(event.target.value)}
-                  placeholder="From"
-                  aria-label="Timestamp from"
-                  className={rangeInputClass}
-                />
-                <Input
-                  value={tsTo}
-                  onChange={(event) => setTsTo(event.target.value)}
-                  placeholder="To"
-                  aria-label="Timestamp to"
-                  className={rangeInputClass}
-                />
-              </div>
-            </FilterField>
-            <FilterField label="CAN ID (hex)">
-              <div className="flex gap-1.5">
-                <Input
-                  value={idFrom}
-                  onChange={(event) => setIdFrom(event.target.value)}
-                  placeholder="0x000"
-                  aria-label="ID from"
-                  className={rangeInputClass}
-                />
-                <Input
-                  value={idTo}
-                  onChange={(event) => setIdTo(event.target.value)}
-                  placeholder="0xFFF"
-                  aria-label="ID to"
-                  className={rangeInputClass}
-                />
-              </div>
-            </FilterField>
-            <FilterField label="DLC (bytes)">
-              <div className="flex gap-1.5">
-                <Input
-                  value={dlcFrom}
-                  onChange={(event) => setDlcFrom(event.target.value)}
-                  placeholder="Min"
-                  aria-label="DLC min"
-                  className={cn(rangeInputClass, "text-right")}
-                />
-                <Input
-                  value={dlcTo}
-                  onChange={(event) => setDlcTo(event.target.value)}
-                  placeholder="Max"
-                  aria-label="DLC max"
-                  className={cn(rangeInputClass, "text-right")}
-                />
-              </div>
-            </FilterField>
-            <div className="flex flex-col justify-end gap-1.5">
-              <span className="text-[11px] text-muted-foreground tabular-nums">
-                {visible.length} of {dataCount} frames match
-              </span>
-              <Button
-                type="button"
-                size="xs"
-                variant="outline"
-                onClick={clearFilters}
-                disabled={!hasActiveFilter}
-                className="self-start"
-              >
-                Clear all
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {chips.length > 0 && (
         <div className="flex shrink-0 flex-wrap items-center gap-1.5 border-b border-border/60 bg-muted/20 px-3 py-2">
-          <span className="mr-1 text-[11px] text-muted-foreground">Active filters</span>
+          <span className="mr-1 text-[11px] text-muted-foreground">
+            Active filters
+          </span>
           {chips.map((chip) => (
             <button
               key={chip.key}
@@ -763,71 +642,195 @@ export function LiveFeedPanel({
               className="group inline-flex h-6 items-center gap-1 rounded-md border border-border bg-background px-2 text-[11px] font-medium text-foreground transition-colors hover:bg-muted"
             >
               <span>{chip.label}</span>
-              <X className="size-3 text-muted-foreground group-hover:text-foreground" aria-hidden="true" />
+              <X
+                className="size-3 text-muted-foreground group-hover:text-foreground"
+                aria-hidden="true"
+              />
             </button>
           ))}
         </div>
       )}
 
-      <CardContent className="relative min-h-0 min-w-0 flex-1 overflow-hidden p-3">
+      <CardContent className="relative min-h-0 min-w-0 flex-1 overflow-hidden p-2">
         <div
           ref={scrollRef}
           onScroll={onScroll}
-          className="h-full overflow-auto rounded-lg border border-border"
+          className="h-full overflow-auto rounded-lg border border-border scrollbar-none [&::-webkit-scrollbar]:hidden"
         >
+          <div
+            className={cn(
+              "h-full flex-col items-center justify-center gap-2 p-6 text-center text-muted-foreground",
+              pageItems.length > 0 ? "hidden" : "flex",
+            )}
+          >
+            <SearchX className="size-5" />
+            <p className="text-xs font-medium text-foreground">
+              {dataCount === 0
+                ? "No frames yet"
+                : "No frames match the current filters"}
+            </p>
+            <p className="text-xs">
+              {dataCount === 0
+                ? "Start the trace window to see CAN frames here."
+                : "Try widening the range or clearing the filters."}
+            </p>
+            {hasActiveFilter && (
+              <Button
+                type="button"
+                variant="outline"
+                size="xs"
+                onClick={clearFilters}
+                className="mt-1"
+              >
+                Clear filters
+              </Button>
+            )}
+          </div>
           <table
             aria-label="Live CAN frames"
-            className="w-full min-w-[600px] caption-bottom table-fixed text-xs [&_td]:px-3 [&_td]:py-2"
+            className={cn(
+              "w-full caption-bottom table-fixed text-xs [&_td]:px-3 [&_td]:py-2",
+              pageItems.length > 0 ? "min-w-150" : "hidden",
+            )}
           >
             <TableHeader className="sticky top-0 z-10 bg-muted/40 backdrop-blur [&_th]:h-10 [&_th]:px-3 [&_th]:text-[11px] [&_th]:font-medium [&_th]:text-muted-foreground">
               <TableRow className="hover:bg-transparent">
-                <TableHead className="w-[132px]">
+                <TableHead className="w-[20%]">
                   <SortButton
                     label="Timestamp"
-                    active={sort.key === "ts"}
-                    dir={sort.dir}
+                    active={sort?.key === "ts"}
+                    dir={sort?.dir ?? "asc"}
                     onClick={() => toggleSort("ts")}
                   />
                 </TableHead>
-                {showChannel && <TableHead className="w-[52px]">Channel</TableHead>}
-                <TableHead className="w-[88px]">
+                {showChannel && (
+                  <TableHead className="w-[8%] text-center">Channel</TableHead>
+                )}
+                <TableHead className="w-[13%] text-center">
                   <SortButton
                     label="ID"
-                    active={sort.key === "id"}
-                    dir={sort.dir}
+                    active={sort?.key === "id"}
+                    dir={sort?.dir ?? "asc"}
                     onClick={() => toggleSort("id")}
                   />
                 </TableHead>
-                <TableHead className="w-[72px]">Dir</TableHead>
-                {showFrameType && <TableHead className="w-[72px]">Frame</TableHead>}
-                {showDlc && (
-                  <TableHead className="w-[56px] text-right">
-                    <span className="inline-flex w-full items-center justify-end">
-                      DLC
-                    </span>
+                <TableHead className="w-[10%] text-center">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        type="button"
+                        aria-label="Filter by direction"
+                        className="inline-flex items-center gap-1 transition-colors hover:text-foreground"
+                      >
+                        Direction
+                        {dir !== "both" && (
+                          <span className="font-mono text-foreground">
+                            {dir}
+                          </span>
+                        )}
+                        <ChevronDown className="size-3" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start" className="w-40">
+                      <DropdownMenuLabel>Direction</DropdownMenuLabel>
+                      <DropdownMenuRadioGroup
+                        value={dir}
+                        onValueChange={(value) => {
+                          if (
+                            value === "both" ||
+                            value === "Rx" ||
+                            value === "Tx"
+                          ) {
+                            setDir(value);
+                          }
+                        }}
+                      >
+                        <DropdownMenuRadioItem value="both">
+                          Both
+                        </DropdownMenuRadioItem>
+                        <DropdownMenuRadioItem value="Rx">
+                          Receive (Rx)
+                        </DropdownMenuRadioItem>
+                        <DropdownMenuRadioItem value="Tx">
+                          Transmit (Tx)
+                        </DropdownMenuRadioItem>
+                      </DropdownMenuRadioGroup>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </TableHead>
+                {showFrameType && (
+                  <TableHead className="w-[11%] text-center">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          type="button"
+                          aria-label="Filter by frame type"
+                          className="inline-flex items-center gap-1 transition-colors hover:text-foreground"
+                        >
+                          Frame
+                          {typeFilter !== "all" && (
+                            <span className="font-mono text-foreground">
+                              {typeFilter}
+                            </span>
+                          )}
+                          <ChevronDown className="size-3" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start" className="w-36">
+                        <DropdownMenuLabel>Frame type</DropdownMenuLabel>
+                        <DropdownMenuRadioGroup
+                          value={typeFilter}
+                          onValueChange={(value) => {
+                            if (
+                              value === "all" ||
+                              value === "d" ||
+                              value === "fd"
+                            ) {
+                              setTypeFilter(value);
+                            }
+                          }}
+                        >
+                          <DropdownMenuRadioItem value="all">
+                            All frames
+                          </DropdownMenuRadioItem>
+                          <DropdownMenuRadioItem value="d">
+                            CAN (d)
+                          </DropdownMenuRadioItem>
+                          <DropdownMenuRadioItem value="fd">
+                            CAN FD
+                          </DropdownMenuRadioItem>
+                        </DropdownMenuRadioGroup>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </TableHead>
                 )}
-                <TableHead>Data</TableHead>
+                {showDlc && (
+                  <TableHead className="w-[8%] text-center">DLC</TableHead>
+                )}
+                <TableHead className="text-center">Data</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {pageItems.map((row) =>
                 row.isData ? (
-                  <TableRow key={row.key} className="h-10 border-border/70 hover:bg-muted/40">
-                    <TableCell className="font-mono text-[11px] text-muted-foreground tabular-nums">
+                  <TableRow
+                    key={row.key}
+                    className="h-10 border-border/70 hover:bg-muted/40"
+                  >
+                    <TableCell className="text-left font-mono text-[11px] text-muted-foreground tabular-nums">
                       {row.timestamp !== null ? row.timestamp.toFixed(6) : "—"}
                     </TableCell>
                     {showChannel && (
-                      <TableCell className="font-mono text-[11px] text-muted-foreground">
+                      <TableCell className="text-center font-mono text-[11px] text-muted-foreground">
                         {row.channel}
                       </TableCell>
                     )}
-                    <TableCell className="font-mono font-semibold">
+                    <TableCell className="text-center font-mono font-semibold">
                       <span className="inline-flex rounded-md border border-border/70 bg-muted/50 px-1.5 py-0.5 text-[11px]">
                         0x{row.idText}
                       </span>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="text-center">
                       <Badge
                         variant={row.dir === "Rx" ? "secondary" : "outline"}
                         className={cn(
@@ -845,18 +848,21 @@ export function LiveFeedPanel({
                       </Badge>
                     </TableCell>
                     {showFrameType && (
-                      <TableCell>
-                        <Badge variant="outline" className="h-5 px-1.5 font-mono text-[10px] font-normal text-muted-foreground">
+                      <TableCell className="text-center">
+                        <Badge
+                          variant="outline"
+                          className="h-5 px-1.5 font-mono text-[10px] font-normal text-muted-foreground"
+                        >
                           {row.frameType === "fd" ? "CAN FD" : "CAN"}
                         </Badge>
                       </TableCell>
                     )}
                     {showDlc && (
-                      <TableCell className="text-right font-mono text-[11px] tabular-nums text-muted-foreground">
+                      <TableCell className="text-center font-mono text-[11px] tabular-nums text-muted-foreground">
                         {row.dlc}
                       </TableCell>
                     )}
-                    <TableCell className="max-w-0">
+                    <TableCell className="max-w-0 text-right">
                       <span
                         className="block truncate font-mono text-[11px] tracking-wide"
                         title={row.data}
@@ -869,42 +875,12 @@ export function LiveFeedPanel({
                   <TableRow key={row.key} className="hover:bg-transparent">
                     <TableCell
                       colSpan={columnCount}
-                      className="whitespace-pre-wrap break-words py-3 text-muted-foreground"
+                      className="whitespace-pre-wrap wrap-break-word py-3 text-muted-foreground"
                     >
                       {row.raw}
                     </TableCell>
                   </TableRow>
                 ),
-              )}
-              {pageItems.length === 0 && (
-                <TableRow className="hover:bg-transparent">
-                  <TableCell colSpan={columnCount} className="h-40 text-center">
-                    <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
-                      <SearchX className="size-5" />
-                      <p className="text-xs font-medium text-foreground">
-                        {dataCount === 0
-                          ? "No frames yet"
-                          : "No frames match the current filters"}
-                      </p>
-                      <p className="text-xs">
-                        {dataCount === 0
-                          ? "Start the trace window to see CAN frames here."
-                          : "Try widening the range or clearing the filters."}
-                      </p>
-                      {hasActiveFilter && (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="xs"
-                          onClick={clearFilters}
-                          className="mt-1"
-                        >
-                          Clear filters
-                        </Button>
-                      )}
-                    </div>
-                  </TableCell>
-                </TableRow>
               )}
             </TableBody>
           </table>
@@ -913,11 +889,11 @@ export function LiveFeedPanel({
           <Button
             type="button"
             size="xs"
-            className="absolute right-2 bottom-2 gap-1 shadow"
+            className="absolute bottom-4 right-4 gap-1 shadow hover:bg-primary bg-primary/80"
             onClick={() => setLive(true)}
           >
             <ArrowDownToLine className="size-3" />
-            {sort.dir === "asc" ? "Latest" : "Live"}
+            {ascending ? "Latest" : "Live"}
           </Button>
         )}
       </CardContent>
@@ -929,6 +905,7 @@ export function LiveFeedPanel({
           totalItems={visible.length}
           onPageChange={handlePageChange}
           onPageSizeChange={setPageSize}
+          compact
           className="shrink-0"
         />
       )}
